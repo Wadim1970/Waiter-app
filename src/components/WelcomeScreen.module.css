@@ -23,11 +23,10 @@
 /* Figma: top=206px/852px≈24.2%, left=48px/393px≈12.2%, w=294px/393px≈74.8%, h=527px/852px≈61.9% */
 .heroImage {
   position: absolute;
-  /* top: 24.2%;  <-- Удаляем привязку к верху */
-  bottom: 0;      /* Прижимаем к нижнему краю родителя/экрана */
-  left: 12.2%;
-  width: 74.8%;
-  height: 61.9%;
+  bottom: 0;
+  left: 12.2%; /* Возможно, этот параметр тоже стоит уменьшить, чтобы отцентровать картинку */
+  width: 86.02%;
+  height: 71.18%;
   object-fit: cover;
   pointer-events: none;
   user-select: none;
