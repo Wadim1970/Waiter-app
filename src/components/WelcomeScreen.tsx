@@ -17,7 +17,7 @@ export default function WelcomeScreen() {
       <img
         className={styles.heroImage}
         alt="Сотрудница ресторана"
-        src="/gemini-generated-image-ypcx89ypcx89ypcx-photoroom-1.png"
+        src="/icons/Gemini_Generated_Image_ypcx89ypcx89ypcx-Photoroom.png"
         draggable={false}
       />
 
