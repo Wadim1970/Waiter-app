@@ -12,6 +12,7 @@ export default defineConfig({
         'icons/Waiter_logo-192.png',
         'icons/Waiter_logo-512.png',
       ],
+      // Keep using the static public/manifest.json file as the single manifest source.
       manifest: false,
     }),
   ],
