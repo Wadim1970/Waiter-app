@@ -3,8 +3,8 @@
   top: 0;
   left: 0;
   width: 100vw;
-  height: 100vh;  /* Убрать dvh, использовать vh */
-  height: 100svh; /* Stable viewport height для мобильных */
+  height: 100vh;
+  height: 100svh; /* Stable viewport height */
   overflow: hidden;
   background: linear-gradient(148deg, rgb(7, 19, 31) 0%, rgb(16, 42, 69) 100%);
   display: flex;
@@ -12,8 +12,12 @@
   justify-content: center;
   z-index: 1;
   
-  /* УБРАТЬ padding для safe-area */
-  /* Вместо этого пусть контент сам управляет отступами */
+  /* iOS Safe Area - растянуть фон под системные области */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  
+  /* Android - принудительно спрятать системный UI */
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
 }
 
 .content {
