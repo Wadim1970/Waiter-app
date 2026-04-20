@@ -32,18 +32,6 @@
   user-select: none;
 }
 
-/* ───── Чёрный оверлей (правая часть) ───── */
-/* Figma: top=6.46%, left=40.71%, w=59.29%, h=93.54% */
-/*.bgOverlay {
-  position: absolute;
-  top: 6.46%;
-  left: 40.71%;
-  width: 59.29%;
-  height: 93.54%;
-  background: #000;
-  pointer-events: none;
-}*/
-
 /* ───── Логотип ───── */
 /* Figma: top=129px/852px≈15.14%, центр по горизонтали */
 .logo {
