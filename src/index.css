@@ -7,12 +7,15 @@
 html, body {
   margin: 0;
   padding: 0;
+  /* УБРАТЬ position: fixed и height: 100% */
+  height: auto !important;
+  min-height: 100%;
   width: 100%;
-  height: 100%;
-  overflow: hidden;
-  position: fixed;
-  overscroll-behavior: none;
+  /* Разрешить скролл */
+  overflow-x: hidden;
+  overflow-y: visible !important;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: none;
 }
 
 body {
@@ -21,13 +24,13 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #102A45; /* Цвет фона чтобы не было белого */
+  background-color: #102A45;
 }
 
 #root {
   width: 100%;
-  height: 100vh;
-  height: 100dvh; /* Dynamic viewport height для iOS */
+  min-height: 100vh;
+  height: auto;
   overflow-y: auto;
   overflow-x: hidden;
 }
