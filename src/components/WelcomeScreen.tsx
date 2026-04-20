@@ -12,7 +12,7 @@ export default function WelcomeScreen() {
 
   return (
     <main className={styles.container} aria-label="Экран приветствия">
-      <div className={styles.bgOverlay} aria-hidden="true" />
+      
 
       <img
         className={styles.heroImage}
