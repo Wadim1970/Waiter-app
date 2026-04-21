@@ -19,6 +19,19 @@
   backface-visibility: hidden;
 }
 
+/* ───── Логотип вверху ───── */
+.topLogo {
+  position: absolute;
+  top: 6.35vh; /* 55px при высоте экрана ~866px */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8.54vh; /* 74px */
+  height: 8.54vh; /* 74px */
+  z-index: 10;
+  object-fit: contain;
+  animation: fadeIn 0.6s ease-out backwards;
+}
+
 /* ───── Фото (левая часть) ───── */
 .heroImage {
   position: absolute;
@@ -32,10 +45,10 @@
   z-index: 3;
 }
 
-/* ───── Логотип (Единая полка) ───── */
+/* ───── Логотип RestAI (центральная часть) ───── */
 .logo {
   position: absolute;
-  top: 15.1vh;
+  top: 23.5vh; /* Опустили вниз, чтобы границы логотипа соприкасались с "welcome to family" */
   left: 50%;
   transform: translateX(-50%);
   z-index: 4;
@@ -43,7 +56,7 @@
   /* Flexbox выравнивает всё содержимое в ряд по нижней линии (baseline) */
   display: flex;
   align-items: baseline; 
-  gap: 0,5vw; /* Отступ между RAI и "est" */
+  gap: 0.5vw; /* Отступ между RAI и "est" */
 }
 
 .logoLetters {
@@ -76,7 +89,7 @@
 /* ───── Текст Приветствия ───── */
 .welcomeText {
   position: absolute;
-  top: 26.3vh;
+  top: 38.7vh; /* Соприкасается с границами RestAI */
   left: 50%;
   transform: translateX(-50%);
   font-family: 'Montserrat', sans-serif;
@@ -113,14 +126,33 @@
   animation: fadeInUp 0.8s ease-out 0.9s backwards;
 }
 
+/* ───── Полоса внизу экрана ───── */
+.bottomBar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  height: 9.24vh; /* 80px при высоте экрана ~866px */
+  background-color: rgba(28, 39, 60, 0.4); /* #1C273C с прозрачностью 40% */
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  z-index: 4;
+  animation: fadeIn 1s ease-out 1s backwards;
+}
+
 /* ───── Регистрация ───── */
 .registerSection {
   position: absolute;
-  top: 88.1vh;
+  bottom: 0; /* Привязка к низу экрана */
   left: 50%;
   transform: translateX(-50%);
+  height: 9.24vh; /* Высота панели */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  z-index: 5;
+  z-index: 6; /* Выше полосы */
   animation: fadeIn 1s ease-out 1.1s backwards;
 }
 
@@ -132,6 +164,7 @@
   font-size: 4.5vw;
   color: white;
   margin-bottom: 0.5vh;
+  cursor: pointer;
 }
 
 .registerSubtext {
@@ -140,6 +173,7 @@
   font-size: 3vw;
   color: white;
   opacity: 0.7;
+  margin: 0;
 }
 
 /* ───── Анимации ───── */
