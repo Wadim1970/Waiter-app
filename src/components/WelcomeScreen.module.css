@@ -1,4 +1,26 @@
-/* ───── Фото (героиня) ───── */
+/* ───── Контейнер ───── */
+.container {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100svh !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: linear-gradient(148deg, rgb(7, 19, 31) 0%, rgb(16, 42, 69) 100%);
+  z-index: 1 !important;
+
+  -webkit-transform: translate3d(0, 0, 0) !important;
+  transform: translate3d(0, 0, 0) !important;
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* ───── Фото (левая часть) ───── */
+/* Figma: top=206px/852px≈24.2%, left=48px/393px≈12.2%, w=294px/393px≈74.8%, h=527px/852px≈61.9% *//* ───── Фото (героиня) ───── */
 .heroImage {
   position: absolute;
   bottom: 0;
