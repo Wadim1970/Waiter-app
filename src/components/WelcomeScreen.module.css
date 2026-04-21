@@ -20,94 +20,142 @@
 }
 
 /* ───── Фото (левая часть) ───── */
-/* Figma: top=206px/852px≈24.2%, left=48px/393px≈12.2%, w=294px/393px≈74.8%, h=527px/852px≈61.9% *//* ───── Фото (героиня) ───── */
 .heroImage {
   position: absolute;
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  /* Расчет: (338px / 393px) * 100vw ≈ 86vw */
-  width: 86vw;  
-  /* Расчет: (607px / 852px) * 100vh ≈ 71.2vh */
+  width: 86vw; 
   height: 71.2vh; 
   object-fit: cover;
   pointer-events: none;
-  user-select: none;
+  z-index: 3;
 }
 
-/* ───── Логотип ───── */
+/* ───── Логотип (Единая полка) ───── */
 .logo {
   position: absolute;
-  /* (129px / 852px) * 100vh */
-  top: 15.1vh;    
+  top: 15.1vh;
   left: 50%;
   transform: translateX(-50%);
-  width: 33.3vw;   
-  height: 11.1vh;  
+  z-index: 4;
+  
+  /* Flexbox выравнивает всё содержимое в ряд по нижней линии (baseline) */
+  display: flex;
+  align-items: baseline; 
+  gap: 1vw; /* Отступ между RAI и "est" */
 }
 
-.letterA {
-  position: absolute;
-  /* (67px / 393px) * 100vw */
-  left: 17vw;    
+.logoLetters {
+  display: flex;
+  align-items: baseline;
+  gap: 0.2vw; /* Минимальный отступ между буквами R, A, I */
 }
 
-.letterI {
-  position: absolute;
-  /* (110px / 393px) * 100vw */
-  left: 28vw;     
+.logoLetters span {
+  font-family: 'Agbalumo', cursive;
+  font-size: 14vw;
+  color: #eb651a;
+  line-height: 1;
+  /* Убрали абсолютное позиционирование */
 }
+
+/* Анимации теперь только для появления, без координат */
+.letterR { animation: fadeInUp 0.6s ease-out 0.1s backwards; }
+.letterA { animation: fadeInUp 0.6s ease-out 0.2s backwards; }
+.letterI { animation: fadeInUp 0.6s ease-out 0.3s backwards; }
 
 .logoSubtext {
-  position: absolute;
-  top: 7.2vh;      
-  left: 10.7vw;     
   font-family: 'Inter', sans-serif;
-  font-size: 4vw; /* Текст тоже будет расти вместе с экраном */
+  font-size: 4vw;
   color: #eb651a;
   white-space: nowrap;
+  animation: fadeIn 0.6s ease-out 0.5s backwards;
+  /* Убрали top и left — теперь он сам встает на baseline */
 }
 
-/* ───── "welcome to family" ───── */
+/* ───── Текст Приветствия ───── */
 .welcomeText {
   position: absolute;
-  top: 26.3vh;         
-  left: 33.3vw;    
+  top: 26.3vh;
+  left: 50%;
+  transform: translateX(-50%);
   font-family: 'Montserrat', sans-serif;
   font-weight: 300;
-  font-size: 3.5vw; 
+  font-size: 3.5vw;
   color: white;
   opacity: 0.9;
-  white-space: nowrap;
+  z-index: 4;
+  animation: fadeIn 0.8s ease-out 0.7s backwards;
 }
 
 /* ───── Кнопка Вход ───── */
 .loginButton {
   position: absolute;
-  top: 72.2vh;    
+  top: 72.2vh;
   left: 50%;
   transform: translateX(-50%);
-  width: 58vw;    
-  height: 6vh;  
-  min-height: 44px; /* Оставляем в px, чтобы кнопка не стала слишком мелкой на малых экранах */
-  
-  background: rgba(235, 101, 26, 0.51);
-  border-radius: 10vw; /* Скругление тоже адаптивное */
-  
+  width: 58vw;
+  max-width: 280px;
+  height: 6vh;
+  min-height: 48px;
+  z-index: 5;
+  background: rgba(235, 101, 26, 0.6);
+  border: none;
+  border-radius: 10vw;
+  backdrop-filter: blur(4px);
   font-family: 'Montserrat', sans-serif;
   font-weight: 600;
-  font-size: 5vw; 
+  font-size: 4.5vw;
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
+  animation: fadeInUp 0.8s ease-out 0.9s backwards;
 }
 
 /* ───── Регистрация ───── */
 .registerSection {
   position: absolute;
-  top: 88.1vh;     
+  top: 88.1vh;
   left: 50%;
   transform: translateX(-50%);
   text-align: center;
+  z-index: 5;
+  animation: fadeIn 1s ease-out 1.1s backwards;
+}
+
+.registerLink {
+  background: none;
+  border: none;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 4.5vw;
+  color: white;
+  margin-bottom: 0.5vh;
+}
+
+.registerSubtext {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 300;
+  font-size: 3vw;
+  color: white;
+  opacity: 0.7;
+}
+
+/* ───── Анимации ───── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
