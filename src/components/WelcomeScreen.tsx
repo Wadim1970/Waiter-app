@@ -22,15 +22,13 @@ export default function WelcomeScreen() {
       />
 
       <header className={styles.logo}>
-        <div className={styles.logoLetters}>
-          {logoLetters.map(({ letter, className }) => (
-            <span key={letter} className={className}>
-              {letter}
-            </span>
-          ))}
-        </div>
-        <div className={styles.logoSubtext}>est</div>
-      </header>
+  <span className={styles.letterR}>R</span>
+  <div className={styles.logoSubtext}>est</div>
+  <div className={styles.logoLetters}>
+    <span className={styles.letterA}>A</span>
+    <span className={styles.letterI}>I</span>
+  </div>
+</header>
 
       <p className={styles.welcomeText}>welcome to family</p>
 
