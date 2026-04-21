@@ -24,7 +24,8 @@
 .heroImage {
   position: absolute;
   bottom: 0;
-  left: 12.2%; /* Возможно, этот параметр тоже стоит уменьшить, чтобы отцентровать картинку */
+  left: 50%;
+  transform: translateX(-50%);
   width: 86.02%;
   height: 71.18%;
   object-fit: cover;
