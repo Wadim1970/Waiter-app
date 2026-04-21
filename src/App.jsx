@@ -10,6 +10,7 @@ function App() {
         <Route path="/" element={<WelcomeScreen />} />
         <Route path="/login" element={<div>Login Screen (скоро)</div>} />
         <Route path="/register" element={<RegisterScreen />} />
+        <Route path="/verification" element={<VerificationScreen />} />
       </Routes>
     </BrowserRouter>
   )
