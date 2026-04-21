@@ -56,6 +56,30 @@ export default function RegisterScreen() {
 
   return (
     <main className={styles.container} aria-label="Экран регистрации">
+      {/* Кнопка назад */}
+      <button
+        type="button"
+        onClick={() => navigate('/')}
+        className={styles.backButton}
+        aria-label="Вернуться на главный экран"
+      >
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M15 18L9 12L15 6"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+
       <form className={styles.form} onSubmit={handleSubmit}>
         <div className={styles.inputGroup}>
           <input
