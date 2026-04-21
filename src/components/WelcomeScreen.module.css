@@ -48,7 +48,7 @@
 /* ───── Логотип RestAI (центральная часть) ───── */
 .logo {
   position: absolute;
-  top: 23.5vh; /* Опустили вниз, чтобы границы логотипа соприкасались с "welcome to family" */
+  top: 20.5vh; /* Опустили вниз, чтобы границы логотипа соприкасались с "welcome to family" */
   left: 50%;
   transform: translateX(-50%);
   z-index: 4;
@@ -89,7 +89,7 @@
 /* ───── Текст Приветствия ───── */
 .welcomeText {
   position: absolute;
-  top: 30.7vh; /* Соприкасается с границами RestAI */
+  top: 28.7vh; /* Соприкасается с границами RestAI */
   left: 50%;
   transform: translateX(-50%);
   font-family: 'Montserrat', sans-serif;
