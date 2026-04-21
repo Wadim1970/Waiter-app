@@ -43,7 +43,7 @@
   /* Flexbox выравнивает всё содержимое в ряд по нижней линии (baseline) */
   display: flex;
   align-items: baseline; 
-  gap: 1vw; /* Отступ между RAI и "est" */
+  gap: 0,5vw; /* Отступ между RAI и "est" */
 }
 
 .logoLetters {
@@ -52,26 +52,25 @@
   gap: 0.2vw; /* Минимальный отступ между буквами R, A, I */
 }
 
-.logoLetters span {
+.letterR, .letterA, .letterI {
   font-family: 'Agbalumo', cursive;
   font-size: 14vw;
   color: #eb651a;
   line-height: 1;
-  /* Убрали абсолютное позиционирование */
 }
 
 /* Анимации теперь только для появления, без координат */
 .letterR { animation: fadeInUp 0.6s ease-out 0.1s backwards; }
-.letterA { animation: fadeInUp 0.6s ease-out 0.2s backwards; }
-.letterI { animation: fadeInUp 0.6s ease-out 0.3s backwards; }
+.letterA { animation: fadeInUp 0.6s ease-out 0.3s backwards; }
+.letterI { animation: fadeInUp 0.6s ease-out 0.4s backwards; }
 
 .logoSubtext {
   font-family: 'Inter', sans-serif;
   font-size: 4vw;
   color: #eb651a;
+  font-weight: 700;
   white-space: nowrap;
-  animation: fadeIn 0.6s ease-out 0.5s backwards;
-  /* Убрали top и left — теперь он сам встает на baseline */
+  animation: fadeIn 0.6s ease-out 0.2s backwards;
 }
 
 /* ───── Текст Приветствия ───── */
