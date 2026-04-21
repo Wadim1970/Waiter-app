@@ -13,6 +13,13 @@ export default function WelcomeScreen() {
   return (
     <main className={styles.container} aria-label="Экран приветствия">
       
+      {/* Новый логотип вверху */}
+      <img
+        className={styles.topLogo}
+        alt="Логотип RestAI"
+        src="/icons/Black.png"
+        draggable={false}
+      />
 
       <img
         className={styles.heroImage}
@@ -22,13 +29,13 @@ export default function WelcomeScreen() {
       />
 
       <header className={styles.logo}>
-  <span className={styles.letterR}>R</span>
-  <div className={styles.logoSubtext}>est</div>
-  <div className={styles.logoLetters}>
-    <span className={styles.letterA}>A</span>
-    <span className={styles.letterI}>I</span>
-  </div>
-</header>
+        <span className={styles.letterR}>R</span>
+        <div className={styles.logoSubtext}>est</div>
+        <div className={styles.logoLetters}>
+          <span className={styles.letterA}>A</span>
+          <span className={styles.letterI}>I</span>
+        </div>
+      </header>
 
       <p className={styles.welcomeText}>welcome to family</p>
 
@@ -40,6 +47,9 @@ export default function WelcomeScreen() {
       >
         Вход
       </button>
+
+      {/* Добавляем полосу внизу */}
+      <div className={styles.bottomBar}></div>
 
       <div className={styles.registerSection}>
         <button
