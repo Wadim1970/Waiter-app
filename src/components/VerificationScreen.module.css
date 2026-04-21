@@ -1,0 +1,232 @@
+/* ───── Контейнер ───── */
+.container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ───── Кнопка назад (стрелка влево) ───── */
+.backButton {
+  position: absolute;
+  top: clamp(1rem, 3vh, 2rem); /* 16-32px */
+  left: clamp(1rem, 4vw, 1.5rem); /* 16-24px */
+  width: clamp(2.5rem, 8vw, 3rem); /* 40-48px */
+  height: clamp(2.5rem, 8vw, 3rem); /* 40-48px */
+  
+  background: none;
+  border: none;
+  color: #000000;
+  cursor: pointer;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  z-index: 10;
+}
+
+.backButton:hover {
+  opacity: 0.7;
+}
+
+.backButton:active {
+  transform: scale(0.9);
+}
+
+.backButton svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* ───── Форма ───── */
+.form {
+  width: 100%;
+  max-width: 30rem; /* 480px */
+  padding: 0 2rem; /* 32px - отступы с боков */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ───── Контейнер для полей PIN кода ───── */
+.codeInputsContainer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+/* ───── Поля для PIN кода ───── */
+.codeInputs {
+  display: flex;
+  gap: clamp(1rem, 4.5vw, 1.125rem); /* 16-18px */
+  margin-bottom: 1rem; /* 16px - расстояние до подсказки */
+}
+
+.codeInput {
+  width: clamp(2rem, 9vw, 2.25rem); /* 32-36px */
+  height: clamp(3.5rem, 13vw, 3.875rem); /* 56-62px */
+  
+  /* Окантовка */
+  border: 1px solid #575757;
+  border-radius: 0.5rem; /* 8px - небольшое скругление */
+  
+  /* Шрифт */
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: clamp(1.5rem, 6vw, 2rem); /* 24-32px */
+  color: #000000;
+  text-align: center;
+  
+  /* Убираем стандартные стили */
+  outline: none;
+  box-sizing: border-box;
+  
+  /* Плавный переход */
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Фокус на поле */
+.codeInput:focus {
+  border-color: #EB651A;
+  box-shadow: 0 0 0 2px rgba(235, 101, 26, 0.1);
+}
+
+/* ───── Подсказка под полями ───── */
+.hint {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400; /* Regular */
+  font-size: clamp(0.875rem, 4vw, 1rem); /* 14-16px */
+  color: #000000;
+  margin: 0;
+  text-align: center;
+}
+
+/* ───── Кнопка ОК ───── */
+.submitButton {
+  position: absolute;
+  bottom: clamp(5rem, 12vh, 8rem); /* 80-128px (100px средний) от низа */
+  left: 50%;
+  transform: translateX(-50%);
+  
+  /* Размеры */
+  width: clamp(12rem, 50vw, 14.25rem); /* 192-228px */
+  height: clamp(3rem, 6.5vh, 3.1875rem); /* 48-51px */
+  
+  /* Фон и границы */
+  background-color: #EB651A;
+  border: none;
+  border-radius: 0.625rem; /* 10px */
+  
+  /* Тень: x=4, y=4, blur=5, opacity=20% */
+  box-shadow: 4px 4px 5px rgba(0, 0, 0, 0.2);
+  
+  /* Шрифт */
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600; /* SemiBold */
+  font-size: clamp(1rem, 5.5vw, 1.5rem); /* 16-24px (5.5vw средний) */
+  color: #ffffff;
+  
+  /* Курсор и переходы */
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  
+  /* Центрирование текста */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Hover эффект */
+.submitButton:hover {
+  background-color: #d45815;
+  box-shadow: 6px 6px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* Active эффект */
+.submitButton:active {
+  transform: translateX(-50%) scale(0.98);
+  box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Disabled состояние */
+.submitButton:disabled {
+  background-color: #B9B9B9;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* ───── Медиа-запросы для маленьких экранов ───── */
+@media (max-height: 37.5rem) { /* 600px */
+  .submitButton {
+    bottom: 3rem; /* 48px */
+    height: 2.75rem; /* 44px */
+  }
+  
+  .codeInputsContainer {
+    margin-bottom: 1.5rem;
+  }
+  
+  .backButton {
+    top: 0.75rem; /* 12px */
+    left: 0.75rem; /* 12px */
+    width: 2rem; /* 32px */
+    height: 2rem; /* 32px */
+  }
+}
+
+/* ───── Медиа-запросы для очень маленьких экранов ───── */
+@media (max-height: 31.25rem) and (orientation: landscape) { /* 500px альбомная */
+  .form {
+    padding: 1rem;
+  }
+  
+  .codeInputs {
+    gap: 0.75rem; /* 12px */
+    margin-bottom: 0.75rem;
+  }
+  
+  .codeInput {
+    width: 1.75rem; /* 28px */
+    height: 3rem; /* 48px */
+    font-size: 1.25rem; /* 20px */
+  }
+  
+  .hint {
+    font-size: 0.75rem; /* 12px */
+  }
+  
+  .submitButton {
+    bottom: 2rem; /* 32px */
+    height: 2.5rem; /* 40px */
+    font-size: 0.875rem; /* 14px */
+  }
+  
+  .backButton {
+    top: 0.5rem; /* 8px */
+    left: 0.5rem; /* 8px */
+    width: 1.75rem; /* 28px */
+    height: 1.75rem; /* 28px */
+  }
+}
+
+/* ───── Медиа-запросы для планшетов и десктопа ───── */
+@media (min-width: 48rem) { /* 768px */
+  .container {
+    max-width: 30rem; /* 480px - центрируем на больших экранах */
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
