@@ -89,7 +89,7 @@
 /* ───── Текст Приветствия ───── */
 .welcomeText {
   position: absolute;
-  top: 38.7vh; /* Соприкасается с границами RestAI */
+  top: 30.7vh; /* Соприкасается с границами RestAI */
   left: 50%;
   transform: translateX(-50%);
   font-family: 'Montserrat', sans-serif;
