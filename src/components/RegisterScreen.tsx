@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { supabase, WaiterRegistration } from '../lib/supabase'
 import styles from './RegisterScreen.module.css'
 
 export default function RegisterScreen() {
@@ -7,6 +8,7 @@ export default function RegisterScreen() {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [isPhoneFocused, setIsPhoneFocused] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   const handlePhoneFocus = () => {
     setIsPhoneFocused(true)
@@ -25,17 +27,19 @@ export default function RegisterScreen() {
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     
-    // Если пользователь пытается удалить +7, не даем это сделать
-    if (value.startsWith('+7')) {
-      setPhone(value)
+    // Разрешаем только цифры после +7
+    const numbers = value.replace(/\D/g, '')
+    
+    if (numbers.startsWith('7')) {
+      setPhone('+' + numbers)
     } else if (!value) {
       setPhone('')
     } else {
-      setPhone('+7' + value)
+      setPhone('+7')
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     // Валидация
@@ -48,10 +52,50 @@ export default function RegisterScreen() {
       alert('Пожалуйста, введите корректный номер телефона')
       return
     }
-    
-    // Переход на следующий экран
-    console.log('Данные:', { name, phone })
-    // navigate('/next-step')
+
+    setIsLoading(true)
+
+    try {
+      // Создаем запись в таблице waiters
+      const waiterData: WaiterRegistration = {
+        first_name: name.trim(),
+        phone: phone,
+        employment_type: 'подработка',
+        phone_verified: false
+      }
+
+      const { data, error } = await supabase
+        .from('waiters')
+        .insert([waiterData])
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Ошибка при создании записи:', error)
+        alert('Ошибка при регистрации. Попробуйте снова.')
+        return
+      }
+
+      console.log('Официант зарегистрирован:', data)
+
+      // TODO: Здесь должна быть отправка SMS с кодом верификации
+      // Например, через Twilio, SMS.ru или другой сервис
+      console.log('Отправка SMS на номер:', phone)
+
+      // Переход на экран верификации
+      navigate('/verification', {
+        state: {
+          phone: phone,
+          waiterId: data.id
+        }
+      })
+
+    } catch (err) {
+      console.error('Непредвиденная ошибка:', err)
+      alert('Произошла ошибка. Попробуйте позже.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -62,6 +106,7 @@ export default function RegisterScreen() {
         onClick={() => navigate('/')}
         className={styles.backButton}
         aria-label="Вернуться на главный экран"
+        disabled={isLoading}
       >
         <svg
           width="24"
@@ -88,6 +133,7 @@ export default function RegisterScreen() {
             placeholder="Имя"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            disabled={isLoading}
             aria-label="Введите ваше имя"
           />
         </div>
@@ -102,6 +148,7 @@ export default function RegisterScreen() {
             onFocus={handlePhoneFocus}
             onBlur={handlePhoneBlur}
             maxLength={12}
+            disabled={isLoading}
             aria-label="Введите номер телефона"
           />
         </div>
@@ -109,9 +156,10 @@ export default function RegisterScreen() {
         <button
           type="submit"
           className={styles.submitButton}
+          disabled={isLoading}
           aria-label="Продолжить регистрацию"
         >
-          Далее
+          {isLoading ? 'Загрузка...' : 'Далее'}
         </button>
       </form>
     </main>
