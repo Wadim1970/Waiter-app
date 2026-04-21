@@ -60,7 +60,7 @@ export default function RegisterScreen() {
       const waiterData: WaiterRegistration = {
         first_name: name.trim(),
         phone: phone,
-        employment_type: 'подработка',
+        employment_type: 'part-time',
         phone_verified: false
       }
 
