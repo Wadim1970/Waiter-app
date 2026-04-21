@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import WelcomeScreen from './components/WelcomeScreen'
 import RegisterScreen from './components/RegisterScreen'
+import VerificationScreen from './components/VerificationScreen'
 import './App.css'
 
 function App() {
