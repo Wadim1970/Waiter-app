@@ -128,7 +128,7 @@
   /* Фон и границы */
   background-color: #EB651A;
   border: none;
-  border-radius: 0.625rem; /* 10px */
+  border-radius: 1.9rem; /* 10px */
   
   /* Тень: x=4, y=4, blur=5, opacity=20% */
   box-shadow: 4px 4px 5px rgba(0, 0, 0, 0.2);
