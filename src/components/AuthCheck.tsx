@@ -1,11 +1,17 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 export default function AuthCheck() {
   const navigate = useNavigate()
+  const hasCheckedRef = useRef(false)
 
   useEffect(() => {
+    if (hasCheckedRef.current) {
+      return
+    }
+    hasCheckedRef.current = true
+
     const checkAuth = async () => {
       const savedWaiterId = localStorage.getItem('waiter_device_id')
 
@@ -33,7 +39,7 @@ export default function AuthCheck() {
         } else if (waiter && waiter.phone_verified === false) {
           console.log('⚠️ Официант найден, но не верифицирован')
         } else {
-          console.log('❌ Официант не найден, возможно удалён из базы')
+          console.log('❌ Официант не найден, возможно удален из базы')
           localStorage.removeItem('waiter_device_id')
         }
       } catch (err) {

@@ -127,7 +127,7 @@ export default function RegisterScreen() {
     })
 
     localStorage.setItem('waiter_device_id', waiterId)
-    console.log('✅ waiter_device_id сохранён:', waiterId)
+    console.log('✅ waiter_device_id сохранен:', waiterId)
 
   } catch (err) {
     console.error('Непредвиденная ошибка:', err)
