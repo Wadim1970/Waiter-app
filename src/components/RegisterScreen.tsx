@@ -40,23 +40,58 @@ export default function RegisterScreen() {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    // Валидация
-    if (!name.trim()) {
-      alert('Пожалуйста, введите ваше имя')
-      return
-    }
-    
-    if (!phone || phone.length < 12) {
-      alert('Пожалуйста, введите корректный номер телефона')
+  e.preventDefault()
+  
+  // Валидация
+  if (!name.trim()) {
+    alert('Пожалуйста, введите ваше имя')
+    return
+  }
+  
+  if (!phone || phone.length < 12) {
+    alert('Пожалуйста, введите корректный номер телефона')
+    return
+  }
+
+  setIsLoading(true)
+
+  try {
+    // 1️⃣ Проверяем существование телефона
+    const { data: existingWaiter, error: checkError } = await supabase
+      .from('waiters')
+      .select('id, phone_verified')
+      .eq('phone', phone)
+      .maybeSingle()
+
+    if (checkError) {
+      console.error('Ошибка при проверке телефона:', checkError)
+      alert('Ошибка при проверке данных. Попробуйте снова.')
+      setIsLoading(false)
       return
     }
 
-    setIsLoading(true)
+    // 2️⃣ Если телефон найден И верифицирован
+    if (existingWaiter && existingWaiter.phone_verified === true) {
+      alert('Такой номер уже зарегистрирован в системе. Обратитесь в службу поддержки.')
+      setIsLoading(false)
+      return
+    }
 
-    try {
-      // Создаем запись в таблице waiters
+    let waiterId: string
+
+    // 3️⃣ Если телефон найден но НЕ верифицирован - используем существующую запись
+    if (existingWaiter && existingWaiter.phone_verified === false) {
+      waiterId = existingWaiter.id
+      
+      // Обновляем имя на случай если пользователь ввёл другое
+      await supabase
+        .from('waiters')
+        .update({ first_name: name.trim() })
+        .eq('id', waiterId)
+      
+      console.log('Используем существующую запись:', waiterId)
+    } else {
+      // 4️⃣ Создаём новую запись (телефона нет в базе)
       const waiterData: WaiterRegistration = {
         first_name: name.trim(),
         phone: phone,
@@ -76,27 +111,28 @@ export default function RegisterScreen() {
         return
       }
 
+      waiterId = data.id
       console.log('Официант зарегистрирован:', data)
-
-      // TODO: Здесь должна быть отправка SMS с кодом верификации
-      // Например, через Twilio, SMS.ru или другой сервис
-      console.log('Отправка SMS на номер:', phone)
-
-      // Переход на экран верификации
-      navigate('/verification', {
-        state: {
-          phone: phone,
-          waiterId: data.id
-        }
-      })
-
-    } catch (err) {
-      console.error('Непредвиденная ошибка:', err)
-      alert('Произошла ошибка. Попробуйте позже.')
-    } finally {
-      setIsLoading(false)
     }
+
+    // TODO: Здесь должна быть отправка SMS с кодом вер��фикации
+    console.log('Отправка SMS на номер:', phone)
+
+    // Переход на экран верификации
+    navigate('/verification', {
+      state: {
+        phone: phone,
+        waiterId: waiterId
+      }
+    })
+
+  } catch (err) {
+    console.error('Непредвиденная ошибка:', err)
+    alert('Произошла ошибка. Попробуйте позже.')
+  } finally {
+    setIsLoading(false)
   }
+}
 
   return (
     <main className={styles.container} aria-label="Экран регистрации">
