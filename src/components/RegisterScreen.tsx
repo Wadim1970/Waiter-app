@@ -198,8 +198,35 @@ export default function RegisterScreen() {
       console.log('Официант зарегистрирован:', data)
     }
 
-    // TODO: Здесь должна быть отправка SMS с кодом вер��фикации
-    console.log('Отправка SMS на номер:', phone)
+    // Отправка SMS через n8n webhook
+try {
+  const webhookUrl = import.meta.env.VITE_WEBHOOK_URL
+  const webhookSecret = import.meta.env.VITE_WEBHOOK_SECRET
+
+  const smsResponse = await fetch(webhookUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Webhook-Secret': webhookSecret
+    },
+    body: JSON.stringify({
+      waiterId: waiterId,
+      phone: phone,
+      name: name.trim()
+    })
+  })
+
+  if (!smsResponse.ok) {
+    const errorData = await smsResponse.json()
+    throw new Error(errorData.message || 'Ошибка отправки SMS')
+  }
+
+  console.log('✅ SMS отправлена успешно')
+} catch (smsError: any) {
+  console.error('Ошибка отправки SMS:', smsError)
+  alert('Не удалось отправить SMS. Попробуйте снова.')
+  return
+}
 
     // Переход на экран верификации
     navigate('/verification', {
