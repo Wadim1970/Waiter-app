@@ -39,19 +39,102 @@ export default function RegisterScreen() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault()
-  
-  // Валидация
-  if (!name.trim()) {
-    alert('Пожалуйста, введите ваше имя')
-    return
+  const handleSubmit = async () => {
+  if (!name.trim() || !phone.trim()) {
+    alert('Пожалуйста, заполните все поля');
+    return;
   }
-  
-  if (!phone || phone.length < 12) {
-    alert('Пожалуйста, введите корректный номер телефона')
-    return
+
+  setIsLoading(true);
+
+  try {
+    // Получаем или создаём device_id
+    let deviceId = localStorage.getItem('waiter_device_id');
+
+    // 1. Проверяем существует ли официант с таким телефоном
+    const { data: existingWaiter } = await supabase
+      .from('waiters')
+      .select('id, phone_verified')
+      .eq('phone', phone)
+      .maybeSingle();
+
+    let waiterId: string;
+
+    if (existingWaiter) {
+      // Официант существует
+      waiterId = existingWaiter.id;
+
+      // Обновляем имя
+      await supabase
+        .from('waiters')
+        .update({ name: name.trim() })
+        .eq('id', waiterId);
+
+      // Если уже верифицирован - пропускаем верификацию
+      if (existingWaiter.phone_verified) {
+        localStorage.setItem('waiter_device_id', waiterId);
+        navigate('/profile');
+        return;
+      }
+    } else {
+      // Создаём нового официанта
+      if (!deviceId) {
+        deviceId = crypto.randomUUID();
+        localStorage.setItem('waiter_device_id', deviceId);
+      }
+
+      const { data: newWaiter, error } = await supabase
+        .from('waiters')
+        .insert({
+          name: name.trim(),
+          phone: phone.trim(),
+          device_id: deviceId,
+          phone_verified: false
+        })
+        .select('id')
+        .single();
+
+      if (error) throw error;
+      waiterId = newWaiter.id;
+    }
+
+    // 2. Вызываем n8n webhook для отправки SMS
+    const webhookUrl = import.meta.env.VITE_WEBHOOK_URL;
+    const webhookSecret = import.meta.env.VITE_WEBHOOK_SECRET;
+
+    const smsResponse = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Webhook-Secret': webhookSecret
+      },
+      body: JSON.stringify({
+        waiterId: waiterId,
+        phone: phone.trim(),
+        name: name.trim()
+      })
+    });
+
+    if (!smsResponse.ok) {
+      const errorData = await smsResponse.json();
+      throw new Error(errorData.message || 'Ошибка отправки SMS');
+    }
+
+    // 3. Переходим на экран верификации
+    navigate('/verification', {
+      state: {
+        phone: phone.trim(),
+        waiterId: waiterId
+      }
+    });
+
+  } catch (error: any) {
+    console.error('Ошибка регистрации:', error);
+    alert(error.message || 'Произошла ошибка. Попробуйте снова.');
+  } finally {
+    setIsLoading(false);
   }
+};
 
   setIsLoading(true)
 
