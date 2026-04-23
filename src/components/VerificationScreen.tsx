@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import styles from './VerificationScreen.module.css'
+import { supabase } from '../config/supabase'
 
 export default function VerificationScreen() {
   const navigate = useNavigate()
@@ -57,24 +58,69 @@ export default function VerificationScreen() {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    const fullCode = code.join('')
-    
-    if (fullCode.length < 4) {
-      alert('Пожалуйста, введите полный PIN код')
-      return
+  e.preventDefault()
+  
+  const fullCode = code.join('')
+  
+  if (fullCode.length < 4) {
+    alert('Пожалуйста, введите полный PIN код')
+    return
+  }
+
+  try {
+    // Импортируй supabase в начале файла!
+    const { supabase } = await import('../config/supabase')
+
+    // Получаем данные официанта
+    const { data: waiter, error } = await supabase
+      .from('waiters')
+      .select('id, pin_code, pin_expires_at')
+      .eq('id', waiterId)
+      .maybeSingle()
+
+    if (error || !waiter) {
+      throw new Error('Официант не найден')
     }
 
-    // TODO: Здесь будет проверка PIN-кода из SMS
-    console.log('Проверка PIN-кода:', fullCode)
-    console.log('Телефон:', phone)
-    console.log('ID официанта:', waiterId)
-    
-    // Временная заглушка
-    alert('PIN код верифицирован! (временная заглушка)')
-    // navigate('/profile') - когда будет готов профиль
+    // Проверяем срок действия PIN
+    if (!waiter.pin_expires_at) {
+      throw new Error('PIN-код не был отправлен. Вернитесь назад и попробуйте снова.')
+    }
+
+    const expiresAt = new Date(waiter.pin_expires_at)
+    if (expiresAt < new Date()) {
+      throw new Error('Код истёк. Вернитесь назад и запросите новый.')
+    }
+
+    // Проверяем PIN
+    if (waiter.pin_code !== fullCode) {
+      throw new Error('Неверный код. Попробуйте снова.')
+    }
+
+    // ✅ PIN правильный! Обновляем статус
+    const { error: updateError } = await supabase
+      .from('waiters')
+      .update({
+        phone_verified: true,
+        pin_code: null, // Очищаем использованный PIN
+        pin_expires_at: null
+      })
+      .eq('id', waiterId)
+
+    if (updateError) throw updateError
+
+    // Сохраняем device_id
+    localStorage.setItem('waiter_device_id', waiterId)
+
+    // Переходим в профиль
+    alert('Номер телефона подтверждён! ✅')
+    navigate('/profile')
+
+  } catch (error: any) {
+    console.error('Ошибка верификации:', error)
+    alert(error.message || 'Произошла ошибка')
   }
+}
 
   return (
     <main className={styles.container} aria-label="Экран верификации">
