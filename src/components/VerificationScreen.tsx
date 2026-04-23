@@ -68,9 +68,7 @@ export default function VerificationScreen() {
   }
 
   try {
-    // Импортируй supabase в начале файла!
-    const { supabase } = await import('../config/supabase')
-
+    
     // Получаем данные официанта
     const { data: waiter, error } = await supabase
       .from('waiters')
