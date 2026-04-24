@@ -119,7 +119,7 @@
 
 /* ───── Кнопка Далее ───── */
 .submitButton {
-  position: absolute;
+  position: fixed;
   bottom: clamp(5rem, 12vh, 8rem); /* 80-128px (100px средний) от низа */
   left: 50%;
   transform: translateX(-50%);
