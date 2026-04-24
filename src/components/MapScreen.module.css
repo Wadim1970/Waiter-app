@@ -1,0 +1,63 @@
+.container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.map {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-family: 'Montserrat', sans-serif;
+  color: #666;
+}
+
+/* Popup */
+.popup {
+  min-width: 200px;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.popup h3 {
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+  font-size: 1rem;
+  color: #000000;
+}
+
+.logo {
+  width: 100%;
+  max-width: 200px;
+  height: auto;
+  margin-bottom: 0.5rem;
+  border-radius: 0.5rem;
+  object-fit: cover;
+}
+
+.address {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.jobs {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #EB651A;
+}
