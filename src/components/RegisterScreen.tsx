@@ -39,7 +39,9 @@ export default function RegisterScreen() {
     }
   }
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault(); // ← ДОБАВЬ ЭТУ СТРОКУ!
+  
   if (!name.trim() || !phone.trim()) {
     alert('Пожалуйста, заполните все поля');
     return;
