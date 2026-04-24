@@ -17,7 +17,7 @@
 
 /* ───── Кнопка назад (стрелка влево) ───── */
 .backButton {
-  position: absolute;
+  position: fixed;
   top: clamp(1rem, 3vh, 2rem); /* 16-32px */
   left: clamp(1rem, 4vw, 1.5rem); /* 16-24px */
   width: clamp(2.5rem, 8vw, 3rem); /* 40-48px */
