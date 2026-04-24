@@ -69,7 +69,7 @@ export default function RegisterScreen() {
       // Обновляем имя
       await supabase
         .from('waiters')
-        .update({ name: name.trim() })
+        .update({ first_name: name.trim() })
         .eq('id', waiterId);
 
       // Если уже верифицирован - пропускаем верификацию
@@ -88,7 +88,7 @@ export default function RegisterScreen() {
       const { data: newWaiter, error } = await supabase
         .from('waiters')
         .insert({
-          name: name.trim(),
+          first_name: name.trim(),
           phone: phone.trim(),
           device_id: deviceId,
           phone_verified: false
