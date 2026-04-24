@@ -111,7 +111,6 @@ export default function VerificationScreen() {
     localStorage.setItem('waiter_device_id', waiterId)
 
     // Переходим в профиль
-    alert('Номер телефона подтверждён! ✅')
     navigate('/profile')
 
   } catch (error: any) {
