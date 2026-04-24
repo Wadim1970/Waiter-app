@@ -1,0 +1,41 @@
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: clamp(60px, 17.3vw, 68px); /* 68px для 393px */
+  background: rgba(217, 217, 217, 0.2);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 clamp(16px, 5.09vw, 20px);
+}
+
+.iconButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.iconButton:active {
+  transform: scale(0.9);
+  opacity: 0.7;
+}
+
+.icon {
+  width: clamp(22px, 6.62vw, 26px); /* 26px для 393px */
+  height: clamp(22px, 6.62vw, 26px);
+}
+
+.homeIcon {
+  width: clamp(38px, 10.69vw, 42px); /* 42px для 393px */
+  height: clamp(38px, 10.69vw, 42px);
+}
