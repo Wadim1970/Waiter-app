@@ -91,7 +91,7 @@ export default function RegisterScreen() {
           first_name: name.trim(),
           phone: phone.trim(),
           device_id: deviceId,
-          employment_type: 'permanent',
+          employment_type: 'freelance',
           phone_verified: false
         })
         .select('id')
