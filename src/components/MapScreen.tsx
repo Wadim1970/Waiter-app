@@ -68,67 +68,90 @@ export default function MapScreen() {
   }
 
   const loadRestaurants = async () => {
-    try {
-      setLoading(true)
+  try {
+    setLoading(true)
+    
+    const dateString = selectedDate.toISOString().split('T')[0]
+    
+    console.log('🔍 Загружаем рестораны для даты:', dateString) // DEBUG
+
+    const { data, error } = await supabase
+      .from('restaurants')
+      .select(`
+        restaurantId,
+        name,
+        address,
+        latitude,
+        longitude,
+        logo_url,
+        jobs!inner (
+          id,
+          slots_available,
+          shift_date,
+          pay_amount
+        )
+      `)
+      .gt('jobs.slots_available', 0)
+      .eq('jobs.shift_date', dateString)
+      .not('latitude', 'is', null)
+      .not('longitude', 'is', null)
+
+    console.log('📊 Данные из Supabase:', data) // DEBUG
+    console.log('❌ Ошибка:', error) // DEBUG
+
+    if (error) throw error
+
+    if (!data || data.length === 0) {
+      console.log('⚠️ Нет данных для выбранной даты')
+      setRestaurants([])
+      return
+    }
+
+    const restaurantsMap = new Map<string, Restaurant>()
+    
+    data?.forEach((item: any) => {
+      console.log('🏪 Обрабатываем ресторан:', item) // DEBUG
       
-      const dateString = selectedDate.toISOString().split('T')[0]
-
-      const { data, error } = await supabase
-        .from('restaurants')
-        .select(`
-          restaurantId,
-          name,
-          address,
-          latitude,
-          longitude,
-          logo_url,
-          jobs!inner (
-            id,
-            slots_available,
-            shift_date,
-            pay_amount
-          )
-        `)
-        .gt('jobs.slots_available', 0)
-        .eq('jobs.shift_date', dateString)
-        .not('latitude', 'is', null)
-        .not('longitude', 'is', null)
-
-      if (error) throw error
-
-      const restaurantsMap = new Map<string, Restaurant>()
+      if (!restaurantsMap.has(item.restaurantId)) {
+        restaurantsMap.set(item.restaurantId, {
+          restaurantId: item.restaurantId,
+          name: item.name,
+          address: item.address,
+          latitude: parseFloat(item.latitude),
+          longitude: parseFloat(item.longitude),
+          logo_url: item.logo_url,
+          available_jobs: 0,
+          avg_pay: 0
+        })
+      }
       
-      data?.forEach((item: any) => {
-        if (!restaurantsMap.has(item.restaurantId)) {
-          restaurantsMap.set(item.restaurantId, {
-            restaurantId: item.restaurantId,
-            name: item.name,
-            address: item.address,
-            latitude: parseFloat(item.latitude),
-            longitude: parseFloat(item.longitude),
-            logo_url: item.logo_url,
-            available_jobs: 0,
-            avg_pay: 0
-          })
-        }
-        const restaurant = restaurantsMap.get(item.restaurantId)!
+      const restaurant = restaurantsMap.get(item.restaurantId)!
+      
+      // ИЗМЕНЕНИЕ: проверяем что item.jobs существует
+      if (item.jobs && item.jobs.pay_amount) {
         restaurant.available_jobs += 1
         restaurant.avg_pay += parseFloat(item.jobs.pay_amount)
-      })
+      }
+    })
 
-      // Вычисляем среднюю оплату
-      restaurantsMap.forEach((restaurant) => {
+    // Вычисляем среднюю оплату
+    restaurantsMap.forEach((restaurant) => {
+      if (restaurant.available_jobs > 0) {
         restaurant.avg_pay = restaurant.avg_pay / restaurant.available_jobs
-      })
+      }
+    })
 
-      setRestaurants(Array.from(restaurantsMap.values()))
-    } catch (error) {
-      console.error('Ошибка загрузки ресторанов:', error)
-    } finally {
-      setLoading(false)
-      setInitialLoad(false)
-    }
+    const restaurantsList = Array.from(restaurantsMap.values())
+    console.log('✅ Финальный список ресторанов:', restaurantsList) // DEBUG
+    
+    setRestaurants(restaurantsList)
+  } catch (error) {
+    console.error('❌ Ошибка загрузки ресторанов:', error)
+  } finally {
+    setLoading(false)
+    setInitialLoad(false)
   }
+}
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date)
