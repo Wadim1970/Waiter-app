@@ -30,6 +30,7 @@ export default function MapScreen() {
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [userLocation, setUserLocation] = useState<[number, number]>([55.7558, 37.6173])
+  const [initialLoad, setInitialLoad] = useState(true) // НОВОЕ: отслеживаем первую загрузку
 
   useEffect(() => {
     getUserLocation()
@@ -103,6 +104,7 @@ export default function MapScreen() {
       console.error('Ошибка загрузки ресторанов:', error)
     } finally {
       setLoading(false)
+      setInitialLoad(false) // НОВОЕ: первая загрузка завершена
     }
   }
 
@@ -110,7 +112,8 @@ export default function MapScreen() {
     setSelectedDate(date)
   }
 
-  if (loading && restaurants.length === 0) {
+  // ИЗМЕНЕНО: показываем экран загрузки ТОЛЬКО при первой загрузке
+  if (initialLoad && loading) {
     return (
       <div className={styles.loading}>
         <p>Загрузка карты...</p>
@@ -121,6 +124,13 @@ export default function MapScreen() {
   return (
     <div className={styles.container}>
       <Header selectedDate={selectedDate} onDateSelect={handleDateSelect} />
+
+      {/* НОВОЕ: индикатор загрузки поверх карты */}
+      {loading && (
+        <div className={styles.loadingOverlay}>
+          <div className={styles.spinner}></div>
+        </div>
+      )}
 
       <MapContainer
         center={userLocation}
