@@ -1,19 +1,11 @@
 import { useEffect, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
-import L from 'leaflet'
+import L, { DivIcon } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { supabase } from '../lib/supabase'
 import Header from './Header'
 import Footer from './Footer'
 import styles from './MapScreen.module.css'
-
-// Исправляем баг с иконками маркеров
-delete (L.Icon.Default.prototype as any)._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-})
 
 interface Restaurant {
   restaurantId: string
@@ -23,6 +15,28 @@ interface Restaurant {
   longitude: number
   logo_url: string | null
   available_jobs: number
+  avg_pay: number // НОВОЕ: средняя оплата
+}
+
+// НОВОЕ: Функция создания кастомного маркера
+const createCustomMarker = (jobCount: number, avgPay: number): DivIcon => {
+  const iconHtml = `
+    <div class="custom-marker">
+      <div class="marker-count">
+        <div class="count-number">${jobCount}</div>
+        <div class="count-label">чел</div>
+      </div>
+      <div class="marker-price">${Math.round(avgPay)}<span class="ruble">₽</span></div>
+    </div>
+  `
+  
+  return L.divIcon({
+    html: iconHtml,
+    className: 'custom-marker-container',
+    iconSize: [102, 33],
+    iconAnchor: [51, 33], // Центр внизу маркера
+    popupAnchor: [0, -33] // Popup над маркером
+  })
 }
 
 export default function MapScreen() {
@@ -30,7 +44,7 @@ export default function MapScreen() {
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [userLocation, setUserLocation] = useState<[number, number]>([55.7558, 37.6173])
-  const [initialLoad, setInitialLoad] = useState(true) // НОВОЕ: отслеживаем первую загрузку
+  const [initialLoad, setInitialLoad] = useState(true)
 
   useEffect(() => {
     getUserLocation()
@@ -71,7 +85,8 @@ export default function MapScreen() {
           jobs!inner (
             id,
             slots_available,
-            shift_date
+            shift_date,
+            pay_amount
           )
         `)
         .gt('jobs.slots_available', 0)
@@ -92,11 +107,18 @@ export default function MapScreen() {
             latitude: parseFloat(item.latitude),
             longitude: parseFloat(item.longitude),
             logo_url: item.logo_url,
-            available_jobs: 0
+            available_jobs: 0,
+            avg_pay: 0
           })
         }
         const restaurant = restaurantsMap.get(item.restaurantId)!
         restaurant.available_jobs += 1
+        restaurant.avg_pay += parseFloat(item.jobs.pay_amount)
+      })
+
+      // Вычисляем среднюю оплату
+      restaurantsMap.forEach((restaurant) => {
+        restaurant.avg_pay = restaurant.avg_pay / restaurant.available_jobs
       })
 
       setRestaurants(Array.from(restaurantsMap.values()))
@@ -104,7 +126,7 @@ export default function MapScreen() {
       console.error('Ошибка загрузки ресторанов:', error)
     } finally {
       setLoading(false)
-      setInitialLoad(false) // НОВОЕ: первая загрузка завершена
+      setInitialLoad(false)
     }
   }
 
@@ -112,7 +134,6 @@ export default function MapScreen() {
     setSelectedDate(date)
   }
 
-  // ИЗМЕНЕНО: показываем экран загрузки ТОЛЬКО при первой загрузке
   if (initialLoad && loading) {
     return (
       <div className={styles.loading}>
@@ -125,7 +146,6 @@ export default function MapScreen() {
     <div className={styles.container}>
       <Header selectedDate={selectedDate} onDateSelect={handleDateSelect} />
 
-      {/* НОВОЕ: индикатор загрузки поверх карты */}
       {loading && (
         <div className={styles.loadingOverlay}>
           <div className={styles.spinner}></div>
@@ -150,6 +170,7 @@ export default function MapScreen() {
           <Marker
             key={restaurant.restaurantId}
             position={[restaurant.latitude, restaurant.longitude]}
+            icon={createCustomMarker(restaurant.available_jobs, restaurant.avg_pay)}
           >
             <Popup>
               <div className={styles.popup}>
@@ -164,6 +185,9 @@ export default function MapScreen() {
                 <p className={styles.address}>{restaurant.address}</p>
                 <p className={styles.jobs}>
                   🔥 {restaurant.available_jobs} {restaurant.available_jobs === 1 ? 'смена' : 'смен'}
+                </p>
+                <p className={styles.pay}>
+                  💰 Средняя оплата: {Math.round(restaurant.avg_pay)} ₽
                 </p>
               </div>
             </Popup>
