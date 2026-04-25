@@ -110,29 +110,33 @@ export default function MapScreen() {
     const restaurantsMap = new Map<string, Restaurant>()
     
     data?.forEach((item: any) => {
-      console.log('🏪 Обрабатываем ресторан:', item) // DEBUG
-      
-      if (!restaurantsMap.has(item.restaurantId)) {
-        restaurantsMap.set(item.restaurantId, {
-          restaurantId: item.restaurantId,
-          name: item.name,
-          address: item.address,
-          latitude: parseFloat(item.latitude),
-          longitude: parseFloat(item.longitude),
-          logo_url: item.logo_url,
-          available_jobs: 0,
-          avg_pay: 0
-        })
-      }
-      
-      const restaurant = restaurantsMap.get(item.restaurantId)!
-      
-      // ИЗМЕНЕНИЕ: проверяем что item.jobs существует
-      if (item.jobs && item.jobs.pay_amount) {
-        restaurant.available_jobs += 1
-        restaurant.avg_pay += parseFloat(item.jobs.pay_amount)
+  console.log('🏪 Обрабатываем ресторан:', item) // DEBUG
+  
+  if (!restaurantsMap.has(item.restaurantId)) {
+    restaurantsMap.set(item.restaurantId, {
+      restaurantId: item.restaurantId,
+      name: item.name,
+      address: item.address,
+      latitude: parseFloat(item.latitude),
+      longitude: parseFloat(item.longitude),
+      logo_url: item.logo_url,
+      available_jobs: 0,
+      avg_pay: 0
+    })
+  }
+  
+  const restaurant = restaurantsMap.get(item.restaurantId)!
+  
+  // ИСПРАВЛЕНО: item.jobs это МАССИВ!
+  if (item.jobs && Array.isArray(item.jobs)) {
+    item.jobs.forEach((job: any) => {
+      if (job.pay_amount && job.slots_available > 0) {
+        restaurant.available_jobs += job.slots_available  // ← ИЗМЕНЕНО: добавляем slots_available
+        restaurant.avg_pay += parseFloat(job.pay_amount)
       }
     })
+  }
+})
 
     // Вычисляем среднюю оплату
     restaurantsMap.forEach((restaurant) => {
