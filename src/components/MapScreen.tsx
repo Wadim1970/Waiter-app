@@ -73,31 +73,31 @@ export default function MapScreen() {
     
     const dateString = selectedDate.toISOString().split('T')[0]
     
-    console.log('🔍 Загружаем рестораны для даты:', dateString) // DEBUG
+    console.log('🔍 Загружаем рестораны для даты:', dateString)
 
     const { data, error } = await supabaseRestaurants
-  .from('restaurants')
-  .select(`
-    restaurantId,
-    name,
-    address,
-    latitude,
-    longitude,
-    logo_url,
-    jobs!inner (
-      id,
-      slots_available,
-      shift_date,
-      pay_amount
-    )
-  `)
-  .gt('jobs.slots_available', 0)
-  .eq('jobs.shift_date', dateString)
-  .not('latitude', 'is', null)
-  .not('longitude', 'is', null)
+      .from('restaurants')
+      .select(`
+        restaurantId,
+        name,
+        address,
+        latitude,
+        longitude,
+        logo_url,
+        jobs!inner (
+          id,
+          slots_available,
+          shift_date,
+          pay_amount
+        )
+      `)
+      .gt('jobs.slots_available', 0)
+      .eq('jobs.shift_date', dateString)
+      .not('latitude', 'is', null)
+      .not('longitude', 'is', null)
 
-    console.log('📊 Данные из Supabase:', data) // DEBUG
-    console.log('❌ Ошибка:', error) // DEBUG
+    console.log('📊 Данные из Supabase:', data)
+    console.log('❌ Ошибка:', error)
 
     if (error) throw error
 
@@ -110,33 +110,33 @@ export default function MapScreen() {
     const restaurantsMap = new Map<string, Restaurant>()
     
     data?.forEach((item: any) => {
-  console.log('🏪 Обрабатываем ресторан:', item) // DEBUG
-  
-  if (!restaurantsMap.has(item.restaurantId)) {
-    restaurantsMap.set(item.restaurantId, {
-      restaurantId: item.restaurantId,
-      name: item.name,
-      address: item.address,
-      latitude: parseFloat(item.latitude),
-      longitude: parseFloat(item.longitude),
-      logo_url: item.logo_url,
-      available_jobs: 0,
-      avg_pay: 0
-    })
-  }
-  
-  const restaurant = restaurantsMap.get(item.restaurantId)!
-  
-  // ИСПРАВЛЕНО: item.jobs это МАССИВ!
-  if (item.jobs && Array.isArray(item.jobs)) {
-    item.jobs.forEach((job: any) => {
-      if (job.pay_amount && job.slots_available > 0) {
-        restaurant.available_jobs += job.slots_available  // ← ИЗМЕНЕНО: добавляем slots_available
-        restaurant.avg_pay += parseFloat(job.pay_amount)
+      console.log('🏪 Обрабатываем ресторан:', item)
+      
+      if (!restaurantsMap.has(item.restaurantId)) {
+        restaurantsMap.set(item.restaurantId, {
+          restaurantId: item.restaurantId,
+          name: item.name,
+          address: item.address,
+          latitude: parseFloat(item.latitude),
+          longitude: parseFloat(item.longitude),
+          logo_url: item.logo_url,
+          available_jobs: 0,
+          avg_pay: 0
+        })
+      }
+      
+      const restaurant = restaurantsMap.get(item.restaurantId)!
+      
+      // ИСПРАВЛЕНО: обрабатываем массив вакансий
+      if (item.jobs && Array.isArray(item.jobs)) {
+        item.jobs.forEach((job: any) => {
+          if (job.pay_amount && job.slots_available > 0) {
+            restaurant.available_jobs += job.slots_available
+            restaurant.avg_pay += parseFloat(job.pay_amount)
+          }
+        })
       }
     })
-  }
-})
 
     // Вычисляем среднюю оплату
     restaurantsMap.forEach((restaurant) => {
@@ -146,7 +146,7 @@ export default function MapScreen() {
     })
 
     const restaurantsList = Array.from(restaurantsMap.values())
-    console.log('✅ Финальный список ресторанов:', restaurantsList) // DEBUG
+    console.log('✅ Финальный список ресторанов:', restaurantsList)
     
     setRestaurants(restaurantsList)
   } catch (error) {
@@ -156,7 +156,6 @@ export default function MapScreen() {
     setInitialLoad(false)
   }
 }
-
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date)
   }
