@@ -94,6 +94,7 @@
 }
 
 /* ========== КАСТОМНЫЕ МАРКЕРЫ ========== */
+/* ========== КАСТОМНЫЕ МАРКЕРЫ (ПО ДИЗАЙНУ FIGMA) ========== */
 
 /* Контейнер маркера - убираем стандартные стили Leaflet */
 :global(.custom-marker-container) {
@@ -101,24 +102,23 @@
   border: none !important;
 }
 
-/* Основной блок маркера - ФИКСИРОВАННЫЕ размеры */
+/* Основной блок маркера - ТОЧНО ПО FIGMA */
 :global(.custom-marker) {
-  width: 102px !important; /* ФИКСИРОВАННАЯ ширина */
-  height: 33px !important; /* ФИКСИРОВАННАЯ высота */
+  width: 102px !important;
+  height: 33px !important;
   min-width: 102px !important;
   max-width: 102px !important;
   min-height: 33px !important;
   max-height: 33px !important;
   
-  background: #FFFFFF;
-  border: 1px solid #15B400;
   display: flex;
-  align-items: center;
+  background-color: #ffffff;
+  border: 1px solid #15b400;
+  border-radius: 4px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   cursor: pointer;
   transition: transform 0.2s ease;
   
-  /* Предотвращаем любые изменения размера */
   flex-shrink: 0;
   flex-grow: 0;
   box-sizing: border-box;
@@ -128,78 +128,92 @@
   transform: scale(1.05);
 }
 
-/* Зелёный квадрат слева с количеством - ФИКСИРОВАННЫЕ размеры */
+/* Зелёный квадрат слева (view) - ТОЧНО ПО FIGMA */
 :global(.marker-count) {
-  width: 29px !important; /* ФИКСИРОВАННАЯ ширина */
-  height: 29px !important; /* ФИКСИРОВАННАЯ высота (33 - 2px для borders) */
+  margin-top: 2px !important;
+  margin-left: 2px !important;
+  width: 29px !important;
+  height: 29px !important;
   min-width: 29px !important;
   max-width: 29px !important;
   min-height: 29px !important;
   max-height: 29px !important;
   
-  background: #15B400;
-  margin: 1px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  position: relative;
+  background-color: #15b400;
   
-  /* Предотвращаем изменения */
   flex-shrink: 0;
   flex-grow: 0;
-  box-sizing: border-box;
 }
 
-/* Цифра количества вакансий - ФИКСИРОВАННЫЙ шрифт */
+/* Цифра количества вакансий (text-wrapper) - ТОЧНО ПО FIGMA */
 :global(.count-number) {
-  font-family: 'Inter', sans-serif;
+  position: absolute;
+  top: 0;
+  left: 9px;
+  
+  font-family: 'Inter', Helvetica, sans-serif;
   font-weight: 700; /* Bold */
-  font-size: 16px !important; /* ФИКСИРОВАННЫЙ размер */
-  color: #FFFFFF;
-  line-height: 1;
+  font-size: 16px !important;
+  color: #ffffff;
+  letter-spacing: 0;
+  line-height: normal;
+  white-space: nowrap;
+  
   margin: 0;
   padding: 0;
-  margin-top: 1px;
-  margin-bottom: 2px;
 }
 
-/* Надпись "чел" - ФИКСИРОВАННЫЙ шрифт */
+/* Надпись "чел" (div) - ТОЧНО ПО FIGMA */
 :global(.count-label) {
-  font-family: 'Inter', sans-serif;
+  position: absolute;
+  top: 14px;
+  left: 4px;
+  
+  font-family: 'Inter', Helvetica, sans-serif;
   font-weight: 400; /* Regular */
-  font-size: 12px !important; /* ФИКСИРОВАННЫЙ размер */
-  color: #FFFFFF;
-  line-height: 1;
+  font-size: 12px !important;
+  color: #ffffff;
+  letter-spacing: 0;
+  line-height: normal;
+  
   margin: 0;
   padding: 0;
-  margin-bottom: 1px;
 }
 
-/* Цена справа - ФИКСИРОВАННЫЕ размеры */
+/* Цена (text-wrapper-2) - ТОЧНО ПО FIGMA */
 :global(.marker-price) {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  margin-top: 8px;
+  margin-left: 9px;
+  width: 43px;
+  height: 19px;
   
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', Helvetica, sans-serif;
   font-weight: 700; /* Bold */
-  font-size: 16px !important; /* ФИКСИРОВАННЫЙ размер */
+  font-size: 16px !important;
   color: #000000;
+  letter-spacing: 0;
+  line-height: normal;
+  white-space: nowrap;
   
-  padding: 0 4px;
+  display: flex;
+  align-items: flex-start;
   gap: 2px;
-  
-  /* Предотвращаем изменения */
-  box-sizing: border-box;
 }
 
-/* Знак рубля - ФИКСИРОВАННЫЙ размер */
+/* Знак рубля (text-wrapper-3) - ТОЧНО ПО FIGMA */
 :global(.marker-price .ruble) {
-  font-size: 10px !important; /* ФИКСИРОВАННЫЙ размер */
-  font-weight: 700;
+  margin-top: 4px; /* 12px - 8px = 4px относительный отступ */
+  width: 9px;
+  height: 12px;
+  
+  font-family: 'Inter', Helvetica, sans-serif;
+  font-weight: 400; /* Regular */
+  font-size: 10px !important;
   color: #000000;
-  line-height: 1;
+  letter-spacing: 0;
+  line-height: normal;
+  white-space: nowrap;
 }
 /* Popup стили (обновлённые) */
 .popup {
