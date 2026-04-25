@@ -3,7 +3,7 @@
   top: 0;
   left: 0;
   right: 0;
-  height: clamp(100px, 31.8vw, 125px); /* 125px для 393px ширины */
+  height: 125px; /* Фиксированная высота */
   background: rgba(217, 217, 217, 0.2);
   backdrop-filter: blur(4px);
   z-index: 1000;
@@ -12,31 +12,36 @@
   align-items: center;
 }
 
+/* Название месяца - НИЖЕ хедера на 8px */
 .monthName {
-  margin-top: clamp(28px, 8.9vw, 35px); /* 35px для 393px */
+  position: absolute;
+  top: calc(125px + 8px); /* 125px (высота хедера) + 8px */
   font-family: 'Montserrat', sans-serif;
   font-weight: 700;
-  font-size: clamp(14px, 4.07vw, 16px); /* 16px для 393px */
+  font-size: 16px;
   color: #000000;
   letter-spacing: 0.05em;
 }
 
+/* Календарь - 16px от нижнего края хедера */
 .calendar {
+  position: absolute;
+  bottom: 16px; /* 16px от нижнего края хедера */
   display: flex;
-  gap: clamp(6px, 1.78vw, 7px); /* 7px для 393px */
-  margin-top: clamp(12px, 3.31vw, 13px); /* 13px для 393px (57-35-9) */
-  padding: 0 clamp(24px, 8.01vw, 31.5px); /* центрирование */
+  gap: 15px; /* Фиксированное расстояние между ячейками */
+  justify-content: center;
 }
 
+/* Овал с датой - ФИКСИРОВАННЫЕ размеры */
 .dayFrame {
-  width: clamp(32px, 9.16vw, 36px); /* 36px для 393px */
-  height: clamp(56px, 15.78vw, 62px); /* 62px для 393px */
+  width: 36px; /* Фиксированная ширина */
+  height: 62px; /* Фиксированная высота */
   background: rgba(167, 167, 167, 0.4);
   backdrop-filter: blur(6px);
-  border: 1px solid #717F98;
-  border-radius: clamp(23px, 6.62vw, 26px); /* 26px для 393px */
+  border: 1px solid #717F98; /* НОВЫЙ цвет обводки */
+  border-radius: 26px;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, opacity 0.2s ease;
   
   display: flex;
   flex-direction: column;
@@ -45,25 +50,34 @@
   position: relative;
 }
 
+/* Выбранный день - ЗЕЛЁНЫЙ с прозрачностью 100% */
 .dayFrame.selected {
-  background: #15B400;
-  border-color: #15B400;
+  background: #15B400; /* Зелёный */
+  opacity: 1; /* 100% непрозрачность */
+  border: 1px solid #717F98; /* Обводка остаётся той же */
 }
 
+/* Название дня недели */
 .dayName {
-  margin-top: clamp(6px, 1.78vw, 7px); /* 7px для 393px */
+  margin-top: 7px;
   font-family: 'Montserrat', sans-serif;
   font-weight: 400;
-  font-size: clamp(12px, 3.56vw, 14px); /* 14px для 393px */
+  font-size: 14px;
   color: #000000;
 }
 
+/* Выходные (Сб, Вс) - КРАСНЫЙ текст */
+.dayName.weekendName {
+  color: #F91C1F; /* Красный для Сб и Вс */
+}
+
+/* Круг с датой - ЕДИНЫЙ цвет для всех */
 .dateCircle {
   position: absolute;
   bottom: 1px;
-  width: clamp(28px, 8.14vw, 32px); /* 32px для 393px */
-  height: clamp(28px, 8.14vw, 32px); /* 32px для 393px */
-  background: #717F98;
+  width: 32px;
+  height: 32px;
+  background: #163651; /* НОВЫЙ цвет для ВСЕХ кругов */
   border-radius: 50%;
   
   display: flex;
@@ -72,18 +86,6 @@
   
   font-family: 'Montserrat', sans-serif;
   font-weight: 600;
-  font-size: clamp(14px, 4.07vw, 16px); /* 16px для 393px */
+  font-size: 16px;
   color: #FFFFFF;
-}
-
-.dateCircle.weekend {
-  background: #D58585;
-}
-
-.dayFrame.selected .dateCircle {
-  background: #0D8000;
-}
-
-.dayFrame.selected .dateCircle.weekend {
-  background: #B36565;
 }
