@@ -92,3 +92,214 @@
     transform: rotate(360deg);
   }
 }
+
+/* ========== КАСТОМНЫЕ МАРКЕРЫ ========== */
+
+/* ========== КАСТОМНЫЕ МАРКЕРЫ ========== */
+
+/* Контейнер маркера - убираем стандартные стили Leaflet */
+:global(.custom-marker-container) {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Основной блок маркера - ФИКСИРОВАННЫЕ размеры */
+:global(.custom-marker) {
+  width: 102px !important; /* ФИКСИРОВАННАЯ ширина */
+  height: 33px !important; /* ФИКСИРОВАННАЯ высота */
+  min-width: 102px !important;
+  max-width: 102px !important;
+  min-height: 33px !important;
+  max-height: 33px !important;
+  
+  background: #FFFFFF;
+  border: 1px solid #15B400;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  
+  /* Предотвращаем любые изменения размера */
+  flex-shrink: 0;
+  flex-grow: 0;
+  box-sizing: border-box;
+}
+
+:global(.custom-marker:hover) {
+  transform: scale(1.05);
+}
+
+/* Зелёный квадрат слева с количеством - ФИКСИРОВАННЫЕ размеры */
+:global(.marker-count) {
+  width: 29px !important; /* ФИКСИРОВАННАЯ ширина */
+  height: 31px !important; /* ФИКСИРОВАННАЯ высота (33 - 2px для borders) */
+  min-width: 29px !important;
+  max-width: 29px !important;
+  min-height: 31px !important;
+  max-height: 31px !important;
+  
+  background: #15B400;
+  margin: 1px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  
+  /* Предотвращаем изменения */
+  flex-shrink: 0;
+  flex-grow: 0;
+  box-sizing: border-box;
+}
+
+/* Цифра количества вакансий - ФИКСИРОВАННЫЙ шрифт */
+:global(.count-number) {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700; /* Bold */
+  font-size: 16px !important; /* ФИКСИРОВАННЫЙ размер */
+  color: #FFFFFF;
+  line-height: 1;
+  margin: 0;
+  padding: 0;
+  margin-bottom: 2px;
+}
+
+/* Надпись "чел" - ФИКСИРОВАННЫЙ шрифт */
+:global(.count-label) {
+  font-family: 'Inter', sans-serif;
+  font-weight: 400; /* Regular */
+  font-size: 12px !important; /* ФИКСИРОВАННЫЙ размер */
+  color: #FFFFFF;
+  line-height: 1;
+  margin: 0;
+  padding: 0;
+}
+
+/* Цена справа - ФИКСИРОВАННЫЕ размеры */
+:global(.marker-price) {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  font-family: 'Inter', sans-serif;
+  font-weight: 700; /* Bold */
+  font-size: 16px !important; /* ФИКСИРОВАННЫЙ размер */
+  color: #000000;
+  
+  padding: 0 4px;
+  gap: 2px;
+  
+  /* Предотвращаем изменения */
+  box-sizing: border-box;
+}
+
+/* Знак рубля - ФИКСИРОВАННЫЙ размер */
+:global(.marker-price .ruble) {
+  font-size: 10px !important; /* ФИКСИРОВАННЫЙ размер */
+  font-weight: 700;
+  color: #000000;
+  line-height: 1;
+}
+/* Popup стили (обновлённые) */
+.popup {
+  min-width: 200px;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.popup h3 {
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+  font-size: 1rem;
+  color: #000000;
+}
+
+.logo {
+  width: 100%;
+  max-width: 200px;
+  height: auto;
+  margin-bottom: 0.5rem;
+  border-radius: 0.5rem;
+  object-fit: cover;
+}
+
+.address {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.jobs {
+  margin: 0 0 0.25rem 0;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #15B400;
+}
+
+.pay {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #EB651A;
+}
+
+/* Индикатор загрузки поверх карты */
+.loadingOverlay {
+  position: fixed;
+  top: 125px;
+  left: 0;
+  right: 0;
+  bottom: 82px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(2px);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Спиннер загрузки */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(21, 180, 0, 0.2);
+  border-top-color: #15B400;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-family: 'Montserrat', sans-serif;
+  color: #666;
+}
+
+.container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.map {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
