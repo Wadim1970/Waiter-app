@@ -143,10 +143,7 @@ export default function MapScreen() {
 
 // УБРАЛИ ДЕЛЕНИЕ! avg_pay уже правильная (3500₽)
 
-const restaurantsList = Array.from(restaurantsMap.values())
-console.log('✅ Финальный список ресторанов:', restaurantsList)
 
-setRestaurants(restaurantsList)
     const restaurantsList = Array.from(restaurantsMap.values())
     console.log('✅ Финальный список ресторанов:', restaurantsList)
     
