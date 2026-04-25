@@ -4,7 +4,7 @@
   left: 0;
   right: 0;
   height: 125px; /* Фиксированная высота */
-  background: rgba(22, 54, 81, 0.1);
+  background: rgba(22, 54, 81, 0.05);
   backdrop-filter: blur(4px);
   z-index: 1000;
   display: flex;
