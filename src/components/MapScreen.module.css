@@ -130,8 +130,8 @@
 
 /* Зелёный квадрат слева (view) - ТОЧНО ПО FIGMA */
 :global(.marker-count) {
-  margin-top: 2px !important;
-  margin-left: 2px !important;
+  margin-top: 1px !important;
+  margin-left: 1px !important;
   width: 29px !important;
   height: 29px !important;
   min-width: 29px !important;
