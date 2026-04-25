@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import L, { DivIcon } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { supabase } from '../lib/supabase'
+import { supabaseRestaurants } from '../lib/supabase'
 import Header from './Header'
 import Footer from './Footer'
 import styles from './MapScreen.module.css'
@@ -75,26 +75,26 @@ export default function MapScreen() {
     
     console.log('🔍 Загружаем рестораны для даты:', dateString) // DEBUG
 
-    const { data, error } = await supabase
-      .from('restaurants')
-      .select(`
-        restaurantId,
-        name,
-        address,
-        latitude,
-        longitude,
-        logo_url,
-        jobs!inner (
-          id,
-          slots_available,
-          shift_date,
-          pay_amount
-        )
-      `)
-      .gt('jobs.slots_available', 0)
-      .eq('jobs.shift_date', dateString)
-      .not('latitude', 'is', null)
-      .not('longitude', 'is', null)
+    const { data, error } = await supabaseRestaurants
+  .from('restaurants')
+  .select(`
+    restaurantId,
+    name,
+    address,
+    latitude,
+    longitude,
+    logo_url,
+    jobs!inner (
+      id,
+      slots_available,
+      shift_date,
+      pay_amount
+    )
+  `)
+  .gt('jobs.slots_available', 0)
+  .eq('jobs.shift_date', dateString)
+  .not('latitude', 'is', null)
+  .not('longitude', 'is', null)
 
     console.log('📊 Данные из Supabase:', data) // DEBUG
     console.log('❌ Ошибка:', error) // DEBUG
