@@ -62,9 +62,8 @@
 
 /* ───── Группа для инпутов ───── */
 .inputGroup {
-  width: 100%;
-  max-width: 20rem; /* 320px */
-  margin-bottom: 1.25rem; /* 20px */
+  width: 320px; /* ФИКСИРОВАННАЯ ширина */
+  margin-bottom: 1.25rem; /* 20px - расстояние между полями */
 }
 
 .inputGroup:first-child {
@@ -73,8 +72,8 @@
 
 /* ───── Поля ввода ───── */
 .input {
-  width: 100%;
-  height: clamp(2.5rem, 5vh, 3rem); /* 40-48px */
+  width: 320px; /* ФИКСИРОВАННАЯ ширина */
+  height: 48px; /* ФИКСИРОВАННАЯ высота */
   padding: 0 1rem; /* 16px */
   
   /* Окантовка */
@@ -125,14 +124,14 @@
   left: 50%;
   transform: translateX(-50%);
   
-  /* Размеры */
-  width: clamp(12rem, 50vw, 14.25rem); /* 192-228px */
-  height: clamp(3rem, 6.5vh, 3.1875rem); /* 48-51px */
+  /* ФИКСИРОВАННЫЕ размеры */
+  width: 228px; /* Фиксированная ширина */
+  height: 51px; /* Фиксированная высота */
   
   /* Фон и границы */
   background-color: #EB651A;
   border: none;
-  border-radius: 1.900rem; /*  */
+  border-radius: 1.9rem;
   
   /* Тень: x=4, y=4, blur=5, opacity=20% */
   box-shadow: 4px 4px 5px rgba(0, 0, 0, 0.2);
@@ -171,7 +170,6 @@
   cursor: not-allowed;
   box-shadow: none;
 }
-
 /* ───── Медиа-запросы для маленьких экранов ───── */
 @media (max-height: 37.5rem) { /* 600px */
   .submitButton {
