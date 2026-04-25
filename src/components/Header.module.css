@@ -38,7 +38,7 @@
   height: 62px; /* Фиксированная высота */
   background: rgba(167, 167, 167, 0.4);
   backdrop-filter: blur(6px);
-  border: 1px solid #717F98; /* НОВЫЙ цвет обводки */
+  border: 1px solid #0096F4; /* НОВЫЙ цвет обводки */
   border-radius: 26px;
   cursor: pointer;
   transition: background 0.2s ease, opacity 0.2s ease;
@@ -77,7 +77,7 @@
   bottom: 1px;
   width: 32px;
   height: 32px;
-  background: #163651; /* НОВЫЙ цвет для ВСЕХ кругов */
+  background: #0096F4; /* НОВЫЙ цвет для ВСЕХ кругов */
   border-radius: 50%;
   
   display: flex;
