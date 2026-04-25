@@ -110,41 +110,43 @@ export default function MapScreen() {
     const restaurantsMap = new Map<string, Restaurant>()
     
     data?.forEach((item: any) => {
-      console.log('🏪 Обрабатываем ресторан:', item)
-      
-      if (!restaurantsMap.has(item.restaurantId)) {
-        restaurantsMap.set(item.restaurantId, {
-          restaurantId: item.restaurantId,
-          name: item.name,
-          address: item.address,
-          latitude: parseFloat(item.latitude),
-          longitude: parseFloat(item.longitude),
-          logo_url: item.logo_url,
-          available_jobs: 0,
-          avg_pay: 0
-        })
-      }
-      
-      const restaurant = restaurantsMap.get(item.restaurantId)!
-      
-      // ИСПРАВЛЕНО: обрабатываем массив вакансий
-      if (item.jobs && Array.isArray(item.jobs)) {
-        item.jobs.forEach((job: any) => {
-          if (job.pay_amount && job.slots_available > 0) {
-            restaurant.available_jobs += job.slots_available
-            restaurant.avg_pay += parseFloat(job.pay_amount)
-          }
-        })
+  console.log('🏪 Обрабатываем ресторан:', item)
+  
+  if (!restaurantsMap.has(item.restaurantId)) {
+    restaurantsMap.set(item.restaurantId, {
+      restaurantId: item.restaurantId,
+      name: item.name,
+      address: item.address,
+      latitude: parseFloat(item.latitude),
+      longitude: parseFloat(item.longitude),
+      logo_url: item.logo_url,
+      available_jobs: 0,
+      avg_pay: 0
+    })
+  }
+  
+  const restaurant = restaurantsMap.get(item.restaurantId)!
+  
+  // Обрабатываем массив вакансий
+  if (item.jobs && Array.isArray(item.jobs)) {
+    item.jobs.forEach((job: any) => {
+      if (job.pay_amount && job.slots_available > 0) {
+        restaurant.available_jobs += job.slots_available
+        // Берём оплату из первой вакансии (или можно max/min)
+        if (restaurant.avg_pay === 0) {
+          restaurant.avg_pay = parseFloat(job.pay_amount)
+        }
       }
     })
+  }
+})
 
-    // Вычисляем среднюю оплату
-    restaurantsMap.forEach((restaurant) => {
-      if (restaurant.available_jobs > 0) {
-        restaurant.avg_pay = restaurant.avg_pay / restaurant.available_jobs
-      }
-    })
+// УБРАЛИ ДЕЛЕНИЕ! avg_pay уже правильная (3500₽)
 
+const restaurantsList = Array.from(restaurantsMap.values())
+console.log('✅ Финальный список ресторанов:', restaurantsList)
+
+setRestaurants(restaurantsList)
     const restaurantsList = Array.from(restaurantsMap.values())
     console.log('✅ Финальный список ресторанов:', restaurantsList)
     
