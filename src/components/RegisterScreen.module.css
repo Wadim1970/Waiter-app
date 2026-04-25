@@ -13,6 +13,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  overscroll-behavior: contain; /* Предотвращает bounce на iOS */
 }
 
 /* ───── Кнопка назад (стрелка влево) ───── */
