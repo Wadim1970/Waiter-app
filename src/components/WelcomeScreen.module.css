@@ -102,15 +102,17 @@
 }
 
 /* ───── Кнопка Вход ───── */
+/* ───── Кнопка Вход ───── */
 .loginButton {
   position: absolute;
   top: clamp(31.25rem, 72.2vh, 46.875rem);
   left: 50%;
   transform: translateX(-50%);
-  width: min(58vw, 17.5rem);
-  max-width: 17.5rem;
-  height: clamp(3rem, 6vh, 4.375rem);
-  min-height: 3rem;
+  
+  /* ФИКСИРОВАННЫЕ размеры */
+  width: 228px; /* Фиксированная ширина */
+  height: 51px; /* Фиксированная высота */
+  
   padding: 0 1rem;
   z-index: 5;
   background: rgba(235, 101, 26, 0.6);
@@ -127,7 +129,7 @@
   justify-content: center;
   cursor: pointer;
   transition: transform 0.2s ease, background 0.2s ease;
-  animation: fadeIn 0.8s ease-out 0.9s backwards; /* Изменили с fadeInUp на fadeIn */
+  animation: fadeIn 0.8s ease-out 0.9s backwards;
 }
 
 .loginButton:hover {
