@@ -133,11 +133,11 @@
 /* Зелёный квадрат слева с количеством - ФИКСИРОВАННЫЕ размеры */
 :global(.marker-count) {
   width: 29px !important; /* ФИКСИРОВАННАЯ ширина */
-  height: 31px !important; /* ФИКСИРОВАННАЯ высота (33 - 2px для borders) */
+  height: 29px !important; /* ФИКСИРОВАННАЯ высота (33 - 2px для borders) */
   min-width: 29px !important;
   max-width: 29px !important;
-  min-height: 31px !important;
-  max-height: 31px !important;
+  min-height: 29px !important;
+  max-height: 29px !important;
   
   background: #15B400;
   margin: 1px;
