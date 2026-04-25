@@ -203,7 +203,7 @@
 
 /* Знак рубля (text-wrapper-3) - ТОЧНО ПО FIGMA */
 :global(.marker-price .ruble) {
-  margin-top: 4px; /* 12px - 8px = 4px относительный отступ */
+  margin-top: 2px; /* 12px - 8px = 4px относительный отступ */
   width: 9px;
   height: 12px;
   
