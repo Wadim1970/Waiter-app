@@ -3,13 +3,13 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: clamp(60px, 17.3vw, 68px); /* 68px для 393px */
+  height: 82px; /* Фиксированная высота */
   background: rgba(217, 217, 217, 0.2);
   backdrop-filter: blur(4px);
   z-index: 1000;
   
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* Выравнивание по верху для точного позиционирования */
   justify-content: space-around;
   padding: 0 clamp(16px, 5.09vw, 20px);
 }
@@ -30,12 +30,16 @@
   opacity: 0.7;
 }
 
+/* Маленькие иконки - 22px от верха */
 .icon {
-  width: clamp(22px, 6.62vw, 26px); /* 26px для 393px */
-  height: clamp(22px, 6.62vw, 26px);
+  width: 26px;
+  height: 26px;
+  margin-top: 22px; /* Фиксированное расстояние от верхнего края */
 }
 
+/* Большая центральная иконка - 14px от верха */
 .homeIcon {
-  width: clamp(38px, 10.69vw, 42px); /* 42px для 393px */
-  height: clamp(38px, 10.69vw, 42px);
+  width: 42px;
+  height: 42px;
+  margin-top: 14px; /* Фиксированное расстояние от верхнего края */
 }
