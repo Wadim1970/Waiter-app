@@ -59,8 +59,10 @@ export default function Header({ selectedDate, onDateSelect }: HeaderProps) {
             className={`${styles.dayFrame} ${isSameDay(date, selectedDate) ? styles.selected : ''}`}
             onClick={() => onDateSelect(date)}
           >
-            <span className={styles.dayName}>{getDayName(date)}</span>
-            <div className={`${styles.dateCircle} ${isWeekend(date) ? styles.weekend : ''}`}>
+            <span className={`${styles.dayName} ${isWeekend(date) ? styles.weekendName : ''}`}>
+              {getDayName(date)}
+            </span>
+            <div className={styles.dateCircle}>
               {date.getDate().toString().padStart(2, '0')}
             </div>
           </button>
