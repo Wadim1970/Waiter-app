@@ -68,7 +68,7 @@
   top: 125px; /* Под хедером */
   left: 0;
   right: 0;
-  bottom: 68px; /* Над футером */
+  bottom: 82px; /* Над футером */
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(2px);
   z-index: 999;
