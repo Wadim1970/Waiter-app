@@ -1,15 +1,30 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_WAITER_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_WAITER_ANON_KEY
+// ========== БАЗА 1: РЕСТОРАНЫ И СМЕНЫ (Supabase Cloud) ==========
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Отсутствуют переменные окружения для Supabase')
+  throw new Error('Отсутствуют переменные окружения для Supabase (restaurants)')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabaseRestaurants = createClient(supabaseUrl, supabaseAnonKey)
 
-// Типы для таблицы waiters
+// ========== БАЗА 2: ОФИЦИАНТЫ (VPS) ==========
+const supabaseWaiterUrl = import.meta.env.VITE_SUPABASE_WAITER_URL
+const supabaseWaiterAnonKey = import.meta.env.VITE_SUPABASE_WAITER_ANON_KEY
+
+if (!supabaseWaiterUrl || !supabaseWaiterAnonKey) {
+  throw new Error('Отсутствуют переменные окружения для Supabase Waiter')
+}
+
+export const supabaseWaiter = createClient(supabaseWaiterUrl, supabaseWaiterAnonKey)
+
+// Для обратной совместимости со старым кодом
+export const supabase = supabaseWaiter
+
+// ========== ТИПЫ ==========
+
 export interface WaiterRegistration {
   id?: string
   first_name: string
