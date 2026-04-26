@@ -43,7 +43,6 @@ export default defineConfig({
               }
             }
           },
-          // НОВОЕ: Кеш для Supabase
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
             handler: 'NetworkFirst',
@@ -51,12 +50,11 @@ export default defineConfig({
               cacheName: 'supabase-cache',
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 60 * 5 // 5 минут
+                maxAgeSeconds: 60 * 5
               },
               networkTimeoutSeconds: 3
             }
           },
-          // НОВОЕ: Кеш для изображений
           {
             urlPattern: /\.(?:png|jpg|jpeg|svg|webp)$/,
             handler: 'CacheFirst',
@@ -64,7 +62,7 @@ export default defineConfig({
               cacheName: 'images-cache',
               expiration: {
                 maxEntries: 60,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 дней
+                maxAgeSeconds: 60 * 60 * 24 * 30
               }
             }
           }
@@ -73,17 +71,26 @@ export default defineConfig({
     })
   ],
   base: './',
-  // НОВОЕ: Оптимизация сборки
   build: {
+    // УБРАЛИ manualChunks - rolldown-vite его не поддерживает в объектной форме
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'map-vendor': ['leaflet', 'react-leaflet'],
-          'supabase-vendor': ['@supabase/supabase-js']
+        // ФУНКЦИОНАЛЬНАЯ форма manualChunks (поддерживается rolldown)
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+              return 'react-vendor'
+            }
+            if (id.includes('leaflet')) {
+              return 'map-vendor'
+            }
+            if (id.includes('supabase')) {
+              return 'supabase-vendor'
+            }
+          }
         }
       }
-    },
-    chunkSizeWarningLimit: 1000
+    }
   }
 })
