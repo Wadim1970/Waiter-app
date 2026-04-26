@@ -149,17 +149,21 @@ export default function MapScreen() {
     loadRestaurants()
   }, [selectedDate])
 
-  // НОВОЕ: Предзагрузка данных для следующих 3 дней
-for (let i = 1; i <= 6; i++) { // Было: i <= 3
-  const nextDate = new Date(today)
-  nextDate.setDate(today.getDate() + i)
-  const dateString = nextDate.toISOString().split('T')[0]
-  
-  setTimeout(() => {
-    fetchRestaurantsForDate(dateString)
-  }, i * 300) // Было: 500
-}
-  
+  // НОВОЕ: Предзагрузка данных для следующих 6 дней
+  useEffect(() => {
+    const prefetchNextDays = async () => {
+      const today = new Date()
+      
+      for (let i = 1; i <= 6; i++) {
+        const nextDate = new Date(today)
+        nextDate.setDate(today.getDate() + i)
+        const dateString = nextDate.toISOString().split('T')[0]
+        
+        setTimeout(() => {
+          fetchRestaurantsForDate(dateString)
+        }, i * 300)
+      }
+    }
 
     // Запускаем предзагрузку через 1 секунду после первой загрузки
     const timer = setTimeout(prefetchNextDays, 1000)
