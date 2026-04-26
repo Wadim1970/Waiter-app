@@ -159,7 +159,7 @@ for (let i = 1; i <= 6; i++) { // Было: i <= 3
     fetchRestaurantsForDate(dateString)
   }, i * 300) // Было: 500
 }
-  }
+  
 
     // Запускаем предзагрузку через 1 секунду после первой загрузки
     const timer = setTimeout(prefetchNextDays, 1000)
