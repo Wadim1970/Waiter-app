@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import L, { DivIcon } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -15,10 +15,13 @@ interface Restaurant {
   longitude: number
   logo_url: string | null
   available_jobs: number
-  avg_pay: number // НОВОЕ: средняя оплата
+  avg_pay: number
 }
 
-// НОВОЕ: Функция создания кастомного маркера
+// Кеш для данных ресторанов
+const restaurantsCache = new Map<string, Restaurant[]>()
+
+// Функция создания кастомного маркера
 const createCustomMarker = (jobCount: number, avgPay: number): DivIcon => {
   const iconHtml = `
     <div class="custom-marker">
@@ -34,8 +37,8 @@ const createCustomMarker = (jobCount: number, avgPay: number): DivIcon => {
     html: iconHtml,
     className: 'custom-marker-container',
     iconSize: [102, 33],
-    iconAnchor: [51, 33], // Центр внизу маркера
-    popupAnchor: [0, -33] // Popup над маркером
+    iconAnchor: [51, 33],
+    popupAnchor: [0, -33]
   })
 }
 
@@ -67,97 +70,136 @@ export default function MapScreen() {
     }
   }
 
-  const loadRestaurants = async () => {
-  try {
-    setLoading(true)
-    
-    const dateString = selectedDate.toISOString().split('T')[0]
-    
-    console.log('🔍 Загружаем рестораны для даты:', dateString)
+  // НОВОЕ: Мемоизированная функция загрузки с кешем
+  const loadRestaurants = useCallback(async () => {
+    try {
+      setLoading(true)
+      
+      const dateString = selectedDate.toISOString().split('T')[0]
+      
+      console.log('🔍 Загружаем рестораны для даты:', dateString)
 
-    const { data, error } = await supabaseRestaurants
-      .from('restaurants')
-      .select(`
-        restaurantId,
-        name,
-        address,
-        latitude,
-        longitude,
-        logo_url,
-        jobs!inner (
-          id,
-          slots_available,
-          shift_date,
-          pay_amount
-        )
-      `)
-      .gt('jobs.slots_available', 0)
-      .eq('jobs.shift_date', dateString)
-      .not('latitude', 'is', null)
-      .not('longitude', 'is', null)
-
-    console.log('📊 Данные из Supabase:', data)
-    console.log('❌ Ошибка:', error)
-
-    if (error) throw error
-
-    if (!data || data.length === 0) {
-      console.log('⚠️ Нет данных для выбранной даты')
-      setRestaurants([])
-      return
-    }
-
-    const restaurantsMap = new Map<string, Restaurant>()
-    
-    data?.forEach((item: any) => {
-  console.log('🏪 Обрабатываем ресторан:', item)
-  
-  if (!restaurantsMap.has(item.restaurantId)) {
-    restaurantsMap.set(item.restaurantId, {
-      restaurantId: item.restaurantId,
-      name: item.name,
-      address: item.address,
-      latitude: parseFloat(item.latitude),
-      longitude: parseFloat(item.longitude),
-      logo_url: item.logo_url,
-      available_jobs: 0,
-      avg_pay: 0
-    })
-  }
-  
-  const restaurant = restaurantsMap.get(item.restaurantId)!
-  
-  // Обрабатываем массив вакансий
-  if (item.jobs && Array.isArray(item.jobs)) {
-    item.jobs.forEach((job: any) => {
-      if (job.pay_amount && job.slots_available > 0) {
-        restaurant.available_jobs += job.slots_available
-        // Берём оплату из первой вакансии (или можно max/min)
-        if (restaurant.avg_pay === 0) {
-          restaurant.avg_pay = parseFloat(job.pay_amount)
-        }
+      // НОВОЕ: Проверяем кеш
+      if (restaurantsCache.has(dateString)) {
+        console.log('✅ Данные из кеша')
+        setRestaurants(restaurantsCache.get(dateString)!)
+        setLoading(false)
+        setInitialLoad(false)
+        return
       }
-    })
-  }
-})
 
-// УБРАЛИ ДЕЛЕНИЕ! avg_pay уже правильная (3500₽)
+      const { data, error } = await supabaseRestaurants
+        .from('restaurants')
+        .select(`
+          restaurantId,
+          name,
+          address,
+          latitude,
+          longitude,
+          logo_url,
+          jobs!inner (
+            id,
+            slots_available,
+            shift_date,
+            pay_amount
+          )
+        `)
+        .gt('jobs.slots_available', 0)
+        .eq('jobs.shift_date', dateString)
+        .not('latitude', 'is', null)
+        .not('longitude', 'is', null)
 
+      console.log('📊 Данные из Supabase:', data)
 
-    const restaurantsList = Array.from(restaurantsMap.values())
-    console.log('✅ Финальный список ресторанов:', restaurantsList)
-    
-    setRestaurants(restaurantsList)
-  } catch (error) {
-    console.error('❌ Ошибка загрузки ресторанов:', error)
-  } finally {
-    setLoading(false)
-    setInitialLoad(false)
-  }
-}
+      if (error) throw error
+
+      if (!data || data.length === 0) {
+        console.log('⚠️ Нет данных для выбранной даты')
+        setRestaurants([])
+        restaurantsCache.set(dateString, []) // Кешируем пустой результат
+        return
+      }
+
+      const restaurantsMap = new Map<string, Restaurant>()
+      
+      data?.forEach((item: any) => {
+        if (!restaurantsMap.has(item.restaurantId)) {
+          restaurantsMap.set(item.restaurantId, {
+            restaurantId: item.restaurantId,
+            name: item.name,
+            address: item.address,
+            latitude: parseFloat(item.latitude),
+            longitude: parseFloat(item.longitude),
+            logo_url: item.logo_url,
+            available_jobs: 0,
+            avg_pay: 0
+          })
+        }
+        
+        const restaurant = restaurantsMap.get(item.restaurantId)!
+        
+        if (item.jobs && Array.isArray(item.jobs)) {
+          item.jobs.forEach((job: any) => {
+            if (job.pay_amount && job.slots_available > 0) {
+              restaurant.available_jobs += job.slots_available
+              if (restaurant.avg_pay === 0) {
+                restaurant.avg_pay = parseFloat(job.pay_amount)
+              }
+            }
+          })
+        }
+      })
+
+      const restaurantsList = Array.from(restaurantsMap.values())
+      console.log('✅ Финальный список ресторанов:', restaurantsList)
+      
+      // НОВОЕ: Сохраняем в кеш
+      restaurantsCache.set(dateString, restaurantsList)
+      
+      setRestaurants(restaurantsList)
+    } catch (error) {
+      console.error('❌ Ошибка загрузки ресторанов:', error)
+    } finally {
+      setLoading(false)
+      setInitialLoad(false)
+    }
+  }, [selectedDate])
+
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date)
   }
+
+  // НОВОЕ: Мемоизируем маркеры
+  const markers = useMemo(() => {
+    return restaurants.map((restaurant) => (
+      <Marker
+        key={restaurant.restaurantId}
+        position={[restaurant.latitude, restaurant.longitude]}
+        icon={createCustomMarker(restaurant.available_jobs, restaurant.avg_pay)}
+      >
+        <Popup>
+          <div className={styles.popup}>
+            {restaurant.logo_url && (
+              <img 
+                src={restaurant.logo_url} 
+                alt={restaurant.name}
+                className={styles.logo}
+                loading="lazy"
+              />
+            )}
+            <h3>{restaurant.name}</h3>
+            <p className={styles.address}>{restaurant.address}</p>
+            <p className={styles.jobs}>
+              🔥 {restaurant.available_jobs} {restaurant.available_jobs === 1 ? 'смена' : 'смен'}
+            </p>
+            <p className={styles.pay}>
+              💰 Средняя оплата: {Math.round(restaurant.avg_pay)} ₽
+            </p>
+          </div>
+        </Popup>
+      </Marker>
+    ))
+  }, [restaurants])
 
   if (initialLoad && loading) {
     return (
@@ -191,33 +233,7 @@ export default function MapScreen() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {restaurants.map((restaurant) => (
-          <Marker
-            key={restaurant.restaurantId}
-            position={[restaurant.latitude, restaurant.longitude]}
-            icon={createCustomMarker(restaurant.available_jobs, restaurant.avg_pay)}
-          >
-            <Popup>
-              <div className={styles.popup}>
-                {restaurant.logo_url && (
-                  <img 
-                    src={restaurant.logo_url} 
-                    alt={restaurant.name}
-                    className={styles.logo}
-                  />
-                )}
-                <h3>{restaurant.name}</h3>
-                <p className={styles.address}>{restaurant.address}</p>
-                <p className={styles.jobs}>
-                  🔥 {restaurant.available_jobs} {restaurant.available_jobs === 1 ? 'смена' : 'смен'}
-                </p>
-                <p className={styles.pay}>
-                  💰 Средняя оплата: {Math.round(restaurant.avg_pay)} ₽
-                </p>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+        {markers}
       </MapContainer>
 
       <Footer />
