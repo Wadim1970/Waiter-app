@@ -21,6 +21,9 @@ interface Restaurant {
 // Кеш для данных ресторанов
 const restaurantsCache = new Map<string, Restaurant[]>()
 
+// НОВОЕ: Флаг загрузки для каждой даты (чтобы не загружать дважды)
+const loadingDates = new Set<string>()
+
 // Функция создания кастомного маркера
 const createCustomMarker = (jobCount: number, avgPay: number): DivIcon => {
   const iconHtml = `
@@ -42,6 +45,95 @@ const createCustomMarker = (jobCount: number, avgPay: number): DivIcon => {
   })
 }
 
+// НОВОЕ: Функция загрузки данных для конкретной даты (переиспользуемая)
+const fetchRestaurantsForDate = async (dateString: string): Promise<Restaurant[]> => {
+  // Если уже загружаем эту дату - пропускаем
+  if (loadingDates.has(dateString)) {
+    return []
+  }
+
+  // Если уже в кеше - возвращаем из кеша
+  if (restaurantsCache.has(dateString)) {
+    console.log(`✅ Данные для ${dateString} уже в кеше`)
+    return restaurantsCache.get(dateString)!
+  }
+
+  try {
+    loadingDates.add(dateString)
+    console.log(`🔍 Загружаем данные для ${dateString}`)
+
+    const { data, error } = await supabaseRestaurants
+      .from('restaurants')
+      .select(`
+        restaurantId,
+        name,
+        address,
+        latitude,
+        longitude,
+        logo_url,
+        jobs!inner (
+          id,
+          slots_available,
+          shift_date,
+          pay_amount
+        )
+      `)
+      .gt('jobs.slots_available', 0)
+      .eq('jobs.shift_date', dateString)
+      .not('latitude', 'is', null)
+      .not('longitude', 'is', null)
+
+    if (error) throw error
+
+    if (!data || data.length === 0) {
+      console.log(`⚠️ Нет данных для ${dateString}`)
+      restaurantsCache.set(dateString, [])
+      return []
+    }
+
+    const restaurantsMap = new Map<string, Restaurant>()
+    
+    data?.forEach((item: any) => {
+      if (!restaurantsMap.has(item.restaurantId)) {
+        restaurantsMap.set(item.restaurantId, {
+          restaurantId: item.restaurantId,
+          name: item.name,
+          address: item.address,
+          latitude: parseFloat(item.latitude),
+          longitude: parseFloat(item.longitude),
+          logo_url: item.logo_url,
+          available_jobs: 0,
+          avg_pay: 0
+        })
+      }
+      
+      const restaurant = restaurantsMap.get(item.restaurantId)!
+      
+      if (item.jobs && Array.isArray(item.jobs)) {
+        item.jobs.forEach((job: any) => {
+          if (job.pay_amount && job.slots_available > 0) {
+            restaurant.available_jobs += job.slots_available
+            if (restaurant.avg_pay === 0) {
+              restaurant.avg_pay = parseFloat(job.pay_amount)
+            }
+          }
+        })
+      }
+    })
+
+    const restaurantsList = Array.from(restaurantsMap.values())
+    console.log(`✅ Загружено ${restaurantsList.length} ресторанов для ${dateString}`)
+    
+    restaurantsCache.set(dateString, restaurantsList)
+    return restaurantsList
+  } catch (error) {
+    console.error(`❌ Ошибка загрузки для ${dateString}:`, error)
+    return []
+  } finally {
+    loadingDates.delete(dateString)
+  }
+}
+
 export default function MapScreen() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [loading, setLoading] = useState(true)
@@ -57,6 +149,23 @@ export default function MapScreen() {
     loadRestaurants()
   }, [selectedDate])
 
+  // НОВОЕ: Предзагрузка данных для следующих 3 дней
+for (let i = 1; i <= 6; i++) { // Было: i <= 3
+  const nextDate = new Date(today)
+  nextDate.setDate(today.getDate() + i)
+  const dateString = nextDate.toISOString().split('T')[0]
+  
+  setTimeout(() => {
+    fetchRestaurantsForDate(dateString)
+  }, i * 300) // Было: 500
+}
+  }
+
+    // Запускаем предзагрузку через 1 секунду после первой загрузки
+    const timer = setTimeout(prefetchNextDays, 1000)
+    return () => clearTimeout(timer)
+  }, [])
+
   const getUserLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -70,93 +179,16 @@ export default function MapScreen() {
     }
   }
 
-  // НОВОЕ: Мемоизированная функция загрузки с кешем
   const loadRestaurants = useCallback(async () => {
     try {
       setLoading(true)
       
       const dateString = selectedDate.toISOString().split('T')[0]
       
-      console.log('🔍 Загружаем рестораны для даты:', dateString)
-
-      // НОВОЕ: Проверяем кеш
-      if (restaurantsCache.has(dateString)) {
-        console.log('✅ Данные из кеша')
-        setRestaurants(restaurantsCache.get(dateString)!)
-        setLoading(false)
-        setInitialLoad(false)
-        return
-      }
-
-      const { data, error } = await supabaseRestaurants
-        .from('restaurants')
-        .select(`
-          restaurantId,
-          name,
-          address,
-          latitude,
-          longitude,
-          logo_url,
-          jobs!inner (
-            id,
-            slots_available,
-            shift_date,
-            pay_amount
-          )
-        `)
-        .gt('jobs.slots_available', 0)
-        .eq('jobs.shift_date', dateString)
-        .not('latitude', 'is', null)
-        .not('longitude', 'is', null)
-
-      console.log('📊 Данные из Supabase:', data)
-
-      if (error) throw error
-
-      if (!data || data.length === 0) {
-        console.log('⚠️ Нет данных для выбранной даты')
-        setRestaurants([])
-        restaurantsCache.set(dateString, []) // Кешируем пустой результат
-        return
-      }
-
-      const restaurantsMap = new Map<string, Restaurant>()
+      // Загружаем данные
+      const data = await fetchRestaurantsForDate(dateString)
+      setRestaurants(data)
       
-      data?.forEach((item: any) => {
-        if (!restaurantsMap.has(item.restaurantId)) {
-          restaurantsMap.set(item.restaurantId, {
-            restaurantId: item.restaurantId,
-            name: item.name,
-            address: item.address,
-            latitude: parseFloat(item.latitude),
-            longitude: parseFloat(item.longitude),
-            logo_url: item.logo_url,
-            available_jobs: 0,
-            avg_pay: 0
-          })
-        }
-        
-        const restaurant = restaurantsMap.get(item.restaurantId)!
-        
-        if (item.jobs && Array.isArray(item.jobs)) {
-          item.jobs.forEach((job: any) => {
-            if (job.pay_amount && job.slots_available > 0) {
-              restaurant.available_jobs += job.slots_available
-              if (restaurant.avg_pay === 0) {
-                restaurant.avg_pay = parseFloat(job.pay_amount)
-              }
-            }
-          })
-        }
-      })
-
-      const restaurantsList = Array.from(restaurantsMap.values())
-      console.log('✅ Финальный список ресторанов:', restaurantsList)
-      
-      // НОВОЕ: Сохраняем в кеш
-      restaurantsCache.set(dateString, restaurantsList)
-      
-      setRestaurants(restaurantsList)
     } catch (error) {
       console.error('❌ Ошибка загрузки ресторанов:', error)
     } finally {
@@ -169,7 +201,6 @@ export default function MapScreen() {
     setSelectedDate(date)
   }
 
-  // НОВОЕ: Мемоизируем маркеры
   const markers = useMemo(() => {
     return restaurants.map((restaurant) => (
       <Marker
