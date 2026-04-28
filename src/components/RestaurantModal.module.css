@@ -163,9 +163,10 @@
   background: #163651;
   border-radius: 0.875rem;
   outline: 1px solid #0D5C93;
-  padding: 0.6875rem 0 0.625rem 0; /* ИЗМЕНЕНО: убрали левый/правый padding */
+  padding: 0.6875rem 0 0 0; /* Убрали все внутренние отступы кроме верхнего */
   display: flex;
   flex-direction: column;
+  justify-content: space-between; /* НОВОЕ: распределяем контент */
 }
 
 .infoLabel {
@@ -173,8 +174,8 @@
   font-size: 1rem;
   font-family: 'Montserrat', sans-serif;
   font-weight: 400;
-  margin-bottom: 0.5rem;
-  padding-left: 0.625rem; /* НОВОЕ: отступ 10px слева */
+  padding-left: 0.625rem; /* 10px слева */
+  margin: 0;
 }
 
 .infoValue {
@@ -182,9 +183,10 @@
   font-size: 1.5rem;
   font-family: 'Montserrat', sans-serif;
   font-weight: 500;
-  padding-left: 0.625rem; /* НОВОЕ: отступ 10px слева */
-  padding-bottom: 0.625rem; /* НОВОЕ: отступ 10px снизу */
-  align-self: flex-start; /* НОВОЕ: выравнивание по левому краю */
+  padding-left: 0.625rem; /* 10px слева */
+  padding-bottom: 0.625rem; /* 10px снизу */
+  margin: 0;
+  text-align: left; /* НОВОЕ: точно по левому краю */
 }
 
 .payAmount {
@@ -193,15 +195,17 @@
   font-family: 'Montserrat', sans-serif;
   font-weight: 600;
   display: flex;
-  align-items: baseline; /* ИЗМЕНЕНО: выравнивание по базовой линии */
+  align-items: baseline; /* Выравнивание по базовой линии */
   gap: 0.25rem;
-  padding-left: 0.625rem; /* НОВОЕ: отступ 10px слева */
-  padding-bottom: 0.625rem; /* НОВОЕ: отступ 10px снизу */
+  padding-left: 0.625rem; /* 10px слева */
+  padding-bottom: 0.625rem; /* 10px снизу */
+  margin: 0;
 }
 
 .ruble {
   font-size: 1.5rem;
-  color: white; /* НОВОЕ: белый цвет */
+  color: #FFFFFF; /* БЕЛЫЙ цвет! */
+}
 }
 /* Секции */
 .section {
