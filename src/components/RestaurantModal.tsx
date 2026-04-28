@@ -51,17 +51,81 @@ export default function RestaurantModal({ restaurantId, shiftDate, onClose }: Re
     try {
       setLoading(true)
       
-      const { data: result, error } = await supabaseRestaurants
-        .rpc('get_restaurant_details', {
-          p_restaurant_id: restaurantId,
-          p_shift_date: shiftDate
-        })
+      console.log('🔍 Загружаю данные для:', restaurantId, shiftDate)
 
-      if (error) throw error
+      // Загружаем данные ресторана
+      const { data: restaurantData, error: restaurantError } = await supabaseRestaurants
+        .from('restaurants')
+        .select('*')
+        .eq('restaurantId', restaurantId)
+        .single()
+
+      if (restaurantError) {
+        console.error('Ошибка загрузки ресторана:', restaurantError)
+        throw restaurantError
+      }
+
+      console.log('✅ Ресторан:', restaurantData)
+
+      // Загружаем данные вакансии
+      const { data: jobData, error: jobError } = await supabaseRestaurants
+        .from('jobs')
+        .select('*')
+        .eq('restaurant_id', restaurantId)
+        .eq('shift_date', shiftDate)
+        .single()
+
+      if (jobError) {
+        console.error('Ошибка загрузки вакансии:', jobError)
+        throw jobError
+      }
+
+      console.log('✅ Вакансия:', jobData)
+
+      // Загружаем отзывы
+      const { data: reviewsData, error: reviewsError } = await supabaseRestaurants
+        .from('reviews_waiter')
+        .select('*')
+        .eq('restaurant_id', restaurantId)
+        .order('created_at', { ascending: false })
+
+      if (reviewsError) {
+        console.error('Ошибка загрузки отзывов:', reviewsError)
+      }
+
+      console.log('✅ Отзывы:', reviewsData)
+
+      // Формируем объект данных
+      const result: RestaurantDetails = {
+        restaurant: {
+          id: restaurantData.restaurantId,
+          name: restaurantData.name,
+          address: restaurantData.address,
+          rating_staff: restaurantData.rating_staff,
+          number_of_voters: restaurantData.number_of_voters || 0,
+          photo_url: 'https://utdfzrpkoscyikitceow.supabase.co/storage/v1/object/public/foto_restaurants/foto_holl.png'
+        },
+        job: {
+          start_time: jobData.start_time,
+          end_time: jobData.end_time,
+          pay_amount: jobData.pay_amount,
+          dress_code: jobData.dress_code,
+          tips_distribution: jobData.tips_distribution,
+          nutrition: jobData.nutrition,
+          required_documents: jobData.required_documents,
+          responsibility_zone: jobData.responsibility_zone,
+          duties: jobData.duties,
+          required_technologies: jobData.required_technologies,
+          slots_available: jobData.slots_available
+        },
+        reviews: reviewsData || []
+      }
+
+      console.log('✅ Финальные данные:', result)
       
       setData(result)
     } catch (error) {
-      console.error('Ошибка загрузки данных:', error)
+      console.error('❌ Ошибка загрузки данных:', error)
     } finally {
       setLoading(false)
     }
@@ -74,7 +138,7 @@ export default function RestaurantModal({ restaurantId, shiftDate, onClose }: Re
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     const endY = e.changedTouches[0].clientY
-    if (endY - startY > 100) { // Свайп вниз на 100px
+    if (endY - startY > 100) {
       onClose()
     }
   }
@@ -104,7 +168,7 @@ export default function RestaurantModal({ restaurantId, shiftDate, onClose }: Re
       <div className={styles.overlay}>
         <div className={styles.modal}>
           <button className={styles.closeButton} onClick={onClose}>✕</button>
-          <div className={styles.error}>Нет данных</div>
+          <div className={styles.error}>Нет данных для этой даты</div>
         </div>
       </div>
     )
@@ -136,6 +200,8 @@ export default function RestaurantModal({ restaurantId, shiftDate, onClose }: Re
                   {getShortName(restaurant.name)}
                 </h1>
                 <div className={styles.rating}>
+                  {/* НОВОЕ: Зелёная звёздочка */}
+                  <span className={styles.star}>⭐</span>
                   <span className={styles.ratingValue}>
                     {restaurant.rating_staff ? restaurant.rating_staff.toFixed(1) : '—'}
                   </span>
