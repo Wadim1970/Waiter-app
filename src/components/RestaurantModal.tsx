@@ -188,7 +188,7 @@ export default function RestaurantModal({ restaurantId, shiftDate, onClose }: Re
                 </h1>
                 <div className={styles.rating}>
                   {/* НОВОЕ: Зелёная звёздочка */}
-                  <span style={{ fontSize: '1.25rem' }}>⭐</span>
+                 <span style={{ fontSize: '1.25rem', color: '#03E067' }}>★</span>
                   <span className={styles.ratingValue}>
                     {restaurant.rating_staff ? restaurant.rating_staff.toFixed(1) : '—'}
                   </span>
