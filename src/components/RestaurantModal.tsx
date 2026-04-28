@@ -212,8 +212,8 @@ export default function RestaurantModal({ restaurantId, shiftDate, onClose }: Re
             <div className={styles.infoCard}>
               <div className={styles.infoLabel}>смена</div>
               <div className={styles.infoValue}>
-                {job.start_time} - {job.end_time}
-              </div>
+                  {job.start_time.slice(0, 5)} - {job.end_time.slice(0, 5)}
+               </div>
             </div>
             <div className={styles.infoCard}>
               <div className={styles.infoLabel}>оплата</div>
