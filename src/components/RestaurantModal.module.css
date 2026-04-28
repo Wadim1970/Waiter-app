@@ -163,7 +163,9 @@
   background: #163651;
   border-radius: 0.875rem;
   outline: 1px solid #0D5C93;
-  padding: 0.6875rem 0.625rem;
+  padding: 0.6875rem 0 0.625rem 0; /* ИЗМЕНЕНО: убрали левый/правый padding */
+  display: flex;
+  flex-direction: column;
 }
 
 .infoLabel {
@@ -172,6 +174,7 @@
   font-family: 'Montserrat', sans-serif;
   font-weight: 400;
   margin-bottom: 0.5rem;
+  padding-left: 0.625rem; /* НОВОЕ: отступ 10px слева */
 }
 
 .infoValue {
@@ -179,7 +182,9 @@
   font-size: 1.5rem;
   font-family: 'Montserrat', sans-serif;
   font-weight: 500;
-  text-align: center;
+  padding-left: 0.625rem; /* НОВОЕ: отступ 10px слева */
+  padding-bottom: 0.625rem; /* НОВОЕ: отступ 10px снизу */
+  align-self: flex-start; /* НОВОЕ: выравнивание по левому краю */
 }
 
 .payAmount {
@@ -187,17 +192,17 @@
   font-size: 2.25rem;
   font-family: 'Montserrat', sans-serif;
   font-weight: 600;
-  text-align: center;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: baseline; /* ИЗМЕНЕНО: выравнивание по базовой линии */
   gap: 0.25rem;
+  padding-left: 0.625rem; /* НОВОЕ: отступ 10px слева */
+  padding-bottom: 0.625rem; /* НОВОЕ: отступ 10px снизу */
 }
 
 .ruble {
   font-size: 1.5rem;
+  color: white; /* НОВОЕ: белый цвет */
 }
-
 /* Секции */
 .section {
   background: #163651;
