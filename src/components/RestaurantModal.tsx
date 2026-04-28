@@ -41,8 +41,7 @@ interface RestaurantModalProps {
 export default function RestaurantModal({ restaurantId, shiftDate, onClose }: RestaurantModalProps) {
   const [data, setData] = useState<RestaurantDetails | null>(null)
   const [loading, setLoading] = useState(true)
-  const [startY, setStartY] = useState(0)
-
+ 
   useEffect(() => {
     loadRestaurantDetails()
   }, [restaurantId, shiftDate])
@@ -131,18 +130,7 @@ export default function RestaurantModal({ restaurantId, shiftDate, onClose }: Re
     }
   }
 
-  // Swipe down для закрытия
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setStartY(e.touches[0].clientY)
-  }
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    const endY = e.changedTouches[0].clientY
-    if (endY - startY > 100) {
-      onClose()
-    }
-  }
-
+  
   const handleBooking = () => {
     // Пока заглушка - синее окно
     alert('Бронирование (заглушка)')
@@ -180,8 +168,7 @@ export default function RestaurantModal({ restaurantId, shiftDate, onClose }: Re
     <div className={styles.overlay}>
       <div 
         className={styles.modal}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
+       
       >
         {/* Кнопка закрытия */}
         <button className={styles.closeButton} onClick={onClose}>✕</button>
