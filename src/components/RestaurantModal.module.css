@@ -109,6 +109,11 @@
   padding-right: 0.625rem;
 }
 
+.star {
+  font-size: 1.25rem;
+  filter: hue-rotate(90deg) saturate(2);
+}
+
 .ratingValue {
   color: white;
   font-size: 1.5rem;
