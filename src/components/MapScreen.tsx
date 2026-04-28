@@ -6,6 +6,7 @@ import { supabaseRestaurants } from '../lib/supabase'
 import Header from './Header'
 import Footer from './Footer'
 import styles from './MapScreen.module.css'
+import RestaurantModal from './RestaurantModal' 
 
 interface Restaurant {
   restaurantId: string
@@ -140,6 +141,10 @@ export default function MapScreen() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [userLocation, setUserLocation] = useState<[number, number]>([55.7558, 37.6173])
   const [initialLoad, setInitialLoad] = useState(true)
+  const [selectedRestaurant, setSelectedRestaurant] = useState<{
+  id: string
+  date: string
+} | null>(null)
 
   useEffect(() => {
     getUserLocation()
@@ -206,35 +211,22 @@ export default function MapScreen() {
   }
 
   const markers = useMemo(() => {
-    return restaurants.map((restaurant) => (
-      <Marker
-        key={restaurant.restaurantId}
-        position={[restaurant.latitude, restaurant.longitude]}
-        icon={createCustomMarker(restaurant.available_jobs, restaurant.avg_pay)}
-      >
-        <Popup>
-          <div className={styles.popup}>
-            {restaurant.logo_url && (
-              <img 
-                src={restaurant.logo_url} 
-                alt={restaurant.name}
-                className={styles.logo}
-                loading="lazy"
-              />
-            )}
-            <h3>{restaurant.name}</h3>
-            <p className={styles.address}>{restaurant.address}</p>
-            <p className={styles.jobs}>
-              🔥 {restaurant.available_jobs} {restaurant.available_jobs === 1 ? 'смена' : 'смен'}
-            </p>
-            <p className={styles.pay}>
-              💰 Средняя оплата: {Math.round(restaurant.avg_pay)} ₽
-            </p>
-          </div>
-        </Popup>
-      </Marker>
-    ))
-  }, [restaurants])
+  return restaurants.map((restaurant) => (
+    <Marker
+      key={restaurant.restaurantId}
+      position={[restaurant.latitude, restaurant.longitude]}
+      icon={createCustomMarker(restaurant.available_jobs, restaurant.avg_pay)}
+      eventHandlers={{
+        click: () => {
+          setSelectedRestaurant({
+            id: restaurant.restaurantId,
+            date: selectedDate.toISOString().split('T')[0]
+          })
+        }
+      }}
+    />
+  ))
+}, [restaurants, selectedDate])
 
   if (initialLoad && loading) {
     return (
@@ -272,6 +264,14 @@ export default function MapScreen() {
       </MapContainer>
 
       <Footer />
+
+      {selectedRestaurant && (
+  <RestaurantModal
+    restaurantId={selectedRestaurant.id}
+    shiftDate={selectedRestaurant.date}
+    onClose={() => setSelectedRestaurant(null)}
+  />
+)}
     </div>
   )
 }
