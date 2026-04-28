@@ -47,89 +47,108 @@ export default function RestaurantModal({ restaurantId, shiftDate, onClose }: Re
   }, [restaurantId, shiftDate])
 
   const loadRestaurantDetails = async () => {
-    try {
-      setLoading(true)
-      
-      console.log('🔍 Загружаю данные для:', restaurantId, shiftDate)
+  try {
+    setLoading(true)
+    
+    console.log('🔍 [Android Debug] Загружаю данные для:', restaurantId, shiftDate)
 
-      // Загружаем данные ресторана
-      const { data: restaurantData, error: restaurantError } = await supabaseRestaurants
-        .from('restaurants')
-        .select('*')
-        .eq('restaurantId', restaurantId)
-        .single()
+    // Таймаут на случай зависания
+    const timeout = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Timeout: загрузка > 10 сек')), 10000)
+    )
 
-      if (restaurantError) {
-        console.error('Ошибка загрузки ресторана:', restaurantError)
-        throw restaurantError
-      }
+    // Загружаем данные ресторана
+    const restaurantPromise = supabaseRestaurants
+      .from('restaurants')
+      .select('*')
+      .eq('restaurantId', restaurantId)
+      .single()
 
-      console.log('✅ Ресторан:', restaurantData)
+    const { data: restaurantData, error: restaurantError } = await Promise.race([
+      restaurantPromise,
+      timeout
+    ]) as any
 
-      // Загружаем данные вакансии
-      const { data: jobData, error: jobError } = await supabaseRestaurants
-        .from('jobs')
-        .select('*')
-        .eq('restaurant_id', restaurantId)
-        .eq('shift_date', shiftDate)
-        .single()
-
-      if (jobError) {
-        console.error('Ошибка загрузки вакансии:', jobError)
-        throw jobError
-      }
-
-      console.log('✅ Вакансия:', jobData)
-
-      // Загружаем отзывы
-      const { data: reviewsData, error: reviewsError } = await supabaseRestaurants
-        .from('reviews_waiter')
-        .select('*')
-        .eq('restaurant_id', restaurantId)
-        .order('created_at', { ascending: false })
-
-      if (reviewsError) {
-        console.error('Ошибка загрузки отзывов:', reviewsError)
-      }
-
-      console.log('✅ Отзывы:', reviewsData)
-
-      // Формируем объект данных
-      const result: RestaurantDetails = {
-        restaurant: {
-          id: restaurantData.restaurantId,
-          name: restaurantData.name,
-          address: restaurantData.address,
-          rating_staff: restaurantData.rating_staff,
-          number_of_voters: restaurantData.number_of_voters || 0,
-          photo_url: 'https://utdfzrpkoscyikitceow.supabase.co/storage/v1/object/public/foto_restaurants/foto_holl.png'
-        },
-        job: {
-          start_time: jobData.start_time,
-          end_time: jobData.end_time,
-          pay_amount: jobData.pay_amount,
-          dress_code: jobData.dress_code,
-          tips_distribution: jobData.tips_distribution,
-          nutrition: jobData.nutrition,
-          required_documents: jobData.required_documents,
-          responsibility_zone: jobData.responsibility_zone,
-          duties: jobData.duties,
-          required_technologies: jobData.required_technologies,
-          slots_available: jobData.slots_available
-        },
-        reviews: reviewsData || []
-      }
-
-      console.log('✅ Финальные данные:', result)
-      
-      setData(result)
-    } catch (error) {
-      console.error('❌ Ошибка загрузки данных:', error)
-    } finally {
-      setLoading(false)
+    if (restaurantError) {
+      console.error('❌ [Android] Ошибка ресторана:', restaurantError)
+      throw restaurantError
     }
-  }
 
+    console.log('✅ [Android] Ресторан:', restaurantData)
+
+    // Загружаем ВСЕ вакансии (без .single!)
+    const { data: jobsData, error: jobError } = await supabaseRestaurants
+      .from('jobs')
+      .select('*')
+      .eq('restaurant_id', restaurantId)
+      .eq('shift_date', shiftDate)
+
+    if (jobError) {
+      console.error('❌ [Android] Ошибка вакансий:', jobError)
+      throw jobError
+    }
+
+    console.log('✅ [Android] Вакансии:', jobsData)
+
+    // Берём первую вакансию
+    const jobData = jobsData && jobsData.length > 0 ? jobsData[0] : null
+
+    if (!jobData) {
+      throw new Error('Нет вакансий на эту дату')
+    }
+
+    console.log('✅ [Android] Выбранная вакансия:', jobData)
+
+    // Загружаем отзывы (необязательно)
+    const { data: reviewsData, error: reviewsError } = await supabaseRestaurants
+      .from('reviews_waiter')
+      .select('*')
+      .eq('restaurant_id', restaurantId)
+      .order('created_at', { ascending: false })
+
+    if (reviewsError) {
+      console.error('⚠️ [Android] Ошибка отзывов (не критично):', reviewsError)
+    }
+
+    console.log('✅ [Android] Отзывы:', reviewsData)
+
+    // Формируем объект данных
+    const result: RestaurantDetails = {
+      restaurant: {
+        id: restaurantData.restaurantId,
+        name: restaurantData.name,
+        address: restaurantData.address,
+        rating_staff: restaurantData.rating_staff,
+        number_of_voters: restaurantData.number_of_voters || 0,
+        photo_url: 'https://utdfzrpkoscyikitceow.supabase.co/storage/v1/object/public/foto_restaurants/foto_holl.png'
+      },
+      job: {
+        start_time: jobData.start_time,
+        end_time: jobData.end_time,
+        pay_amount: jobData.pay_amount,
+        dress_code: jobData.dress_code,
+        tips_distribution: jobData.tips_distribution,
+        nutrition: jobData.nutrition,
+        required_documents: jobData.required_documents,
+        responsibility_zone: jobData.responsibility_zone,
+        duties: jobData.duties,
+        required_technologies: jobData.required_technologies,
+        slots_available: jobData.slots_available
+      },
+      reviews: reviewsData || []
+    }
+
+    console.log('✅ [Android] Финальные данные:', result)
+    
+    setData(result)
+  } catch (error: any) {
+    console.error('❌ [Android] КРИТИЧЕСКАЯ ОШИБКА:', error)
+    alert(`Ошибка загрузки:\n${error.message || 'Неизвестная ошибка'}`)
+  } finally {
+    console.log('🏁 [Android] setLoading(false)')
+    setLoading(false)
+  }
+}
   
   const handleBooking = () => {
     // Пока заглушка - синее окно
