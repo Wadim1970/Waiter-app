@@ -15,7 +15,7 @@ const Loader = () => (
     alignItems: 'center', 
     justifyContent: 'center', 
     height: '100vh',
-    background: '#fff'
+    background: '#102A45'
   }}>
     <div style={{
       width: '40px',
