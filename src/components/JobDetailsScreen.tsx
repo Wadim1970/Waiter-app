@@ -219,72 +219,77 @@ export default function JobDetailsScreen({ restaurantId, shiftDate, onClose }: J
             </div>
           </div>
 
-          {/* Требования и условия */}
-          <div className={styles.section}>
-            <h2 className={styles.sectionTitle}>ТРЕБОВАНИЯ И УСЛОВИЯ</h2>
-            <div className={styles.requirements}>
-              <div className={styles.requirement}>
-                <div className={styles.bullet} />
-                <div className={styles.requirementContent}>
-                  <span className={styles.requirementLabel}>Дресс-код: </span>
-                  <span className={styles.requirementText}>{job.dress_code}</span>
-                </div>
-              </div>
-              <div className={styles.requirement}>
-                <div className={styles.bullet} />
-                <div className={styles.requirementContent}>
-                  <div className={styles.requirementLabel}>Чаевые:</div>
-                  <div className={styles.requirementText}>{job.tips_distribution}</div>
-                </div>
-              </div>
-              <div className={styles.requirement}>
-                <div className={styles.bullet} />
-                <div className={styles.requirementContent}>
-                  <div className={styles.requirementLabel}>Питание:</div>
-                  <div className={styles.requirementText}>{job.nutrition}</div>
-                </div>
-              </div>
-              <div className={styles.requirement}>
-                <div className={styles.bullet} />
-                <div className={styles.requirementContent}>
-                  <div className={styles.requirementLabel}>Документы:</div>
-                  <div className={styles.requirementText}>
-                    {Array.isArray(job.required_documents) 
-                      ? job.required_documents.join(', ') 
-                      : job.required_documents}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+         {/* Требования и условия */}
+<div className={styles.section}>
+  <h2 className={styles.sectionTitle}>ТРЕБОВАНИЯ И УСЛОВИЯ</h2>
+  <div className={styles.requirements}>
+    <div className={styles.requirement}>
+      <div className={styles.bullet} />
+      <div className={styles.requirementContent}>
+        <span className={styles.requirementLabel}>Дресс-код: </span>
+        <span className={styles.requirementText}>{job.dress_code}</span>
+      </div>
+    </div>
+    
+    <div className={styles.requirement}>
+      <div className={styles.bullet} />
+      <div className={styles.requirementContent}>
+        <span className={styles.requirementLabel}>Чаевые: </span>
+        <span className={styles.requirementText}>{job.tips_distribution}</span>
+      </div>
+    </div>
+    
+    <div className={styles.requirement}>
+      <div className={styles.bullet} />
+      <div className={styles.requirementContent}>
+        <span className={styles.requirementLabel}>Питание: </span>
+        <span className={styles.requirementText}>{job.nutrition}</span>
+      </div>
+    </div>
+    
+    <div className={styles.requirement}>
+      <div className={styles.bullet} />
+      <div className={styles.requirementContent}>
+        <span className={styles.requirementLabel}>Документы: </span>
+        <span className={styles.requirementText}>
+          {Array.isArray(job.required_documents) 
+            ? job.required_documents.join(', ') 
+            : job.required_documents}
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
 
-          {/* Описание задач */}
-          <div className={styles.section}>
-            <h2 className={styles.sectionTitle}>ОПИСАНИЕ ЗАДАЧ</h2>
-            <div className={styles.requirements}>
-              <div className={styles.requirement}>
-                <div className={styles.bullet} />
-                <div className={styles.requirementContent}>
-                  <span className={styles.requirementLabel}>Зона ответственности: </span>
-                  <span className={styles.requirementText}>{job.responsibility_zone}</span>
-                </div>
-              </div>
-              <div className={styles.requirement}>
-                <div className={styles.bullet} />
-                <div className={styles.requirementContent}>
-                  <div className={styles.requirementLabel}>Обязанности:</div>
-                  <div className={styles.requirementText}>{job.duties}</div>
-                </div>
-              </div>
-              <div className={styles.requirement}>
-                <div className={styles.bullet} />
-                <div className={styles.requirementContent}>
-                  <div className={styles.requirementLabel}>Технологии:</div>
-                  <div className={styles.requirementText}>{job.required_technologies}</div>
-                </div>
-              </div>
-            </div>
-          </div>
+         {/* Описание задач */}
+<div className={styles.section}>
+  <h2 className={styles.sectionTitle}>ОПИСАНИЕ ЗАДАЧ</h2>
+  <div className={styles.requirements}>
+    <div className={styles.requirement}>
+      <div className={styles.bullet} />
+      <div className={styles.requirementContent}>
+        <span className={styles.requirementLabel}>Зона ответственности: </span>
+        <span className={styles.requirementText}>{job.responsibility_zone}</span>
+      </div>
+    </div>
+    
+    <div className={styles.requirement}>
+      <div className={styles.bullet} />
+      <div className={styles.requirementContent}>
+        <span className={styles.requirementLabel}>Обязанности: </span>
+        <span className={styles.requirementText}>{job.duties}</span>
+      </div>
+    </div>
+    
+    <div className={styles.requirement}>
+      <div className={styles.bullet} />
+      <div className={styles.requirementContent}>
+        <span className={styles.requirementLabel}>Технологии: </span>
+        <span className={styles.requirementText}>{job.required_technologies}</span>
+      </div>
+    </div>
+  </div>
+</div>
 
           {/* Отзывы */}
           {reviews && reviews.length > 0 && (
