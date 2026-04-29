@@ -59,7 +59,43 @@ const minSwipeDistance = 50
  const loadRestaurantDetails = async () => {
   try {
     setLoading(true)
+
+    const startTime = performance.now() // НОВОЕ
+    console.log('🔍 [START] Начало загрузки данных', new Date().toISOString())
     
+    console.log('🔍 [Оптимизация] Загружаю данные для:', restaurantId, shiftDate)
+
+    const [restaurantResult, jobsResult, reviewsResult] = await Promise.all([
+      supabaseRestaurants
+        .from('restaurants')
+        .select('restaurantId, name, address, rating_staff, number_of_voters')
+        .eq('restaurantId', restaurantId)
+        .single(),
+      
+      supabaseRestaurants
+        .from('jobs')
+        .select('*')
+        .eq('restaurant_id', restaurantId)
+        .eq('shift_date', shiftDate)
+        .limit(1),
+      
+      supabaseRestaurants
+        .from('reviews_waiter')
+        .select('*')
+        .eq('restaurant_id', restaurantId)
+        .order('created_at', { ascending: false })
+        .limit(5)
+    ])
+    
+    const endTime = performance.now() // НОВОЕ
+    const duration = endTime - startTime // НОВОЕ
+    
+    // НОВОЕ: ALERT С ВРЕМЕНЕМ
+    alert(`✅ Данные загружены за ${duration.toFixed(0)} мс`)
+    
+    console.log(`✅ [END] Данные загружены за ${duration.toFixed(0)} мс`)
+
+    // ... остальной код
     console.log('🔍 [Оптимизация] Загружаю данные для:', restaurantId, shiftDate)
 
     // НОВОЕ: Параллельные запросы вместо последовательных
