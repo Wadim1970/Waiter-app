@@ -1,12 +1,12 @@
-import { useEffect, useState, useCallback, useMemo } from 'react'
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import { useEffect, useState, useCallback, useMemo, memo } from 'react'
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
 import L, { DivIcon } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { supabaseRestaurants } from '../lib/supabase'
+import { useMapStore } from '../store/mapStore' // НОВОЕ: Подключение Zustand
 import Header from './Header'
 import Footer from './Footer'
 import styles from './MapScreen.module.css'
-import RestaurantModal from './RestaurantModal' 
 
 interface Restaurant {
   restaurantId: string
@@ -19,10 +19,15 @@ interface Restaurant {
   avg_pay: number
 }
 
+// НОВОЕ: Пропсы для MapScreen (нужны для "Hide, don't Unmount")
+interface MapScreenProps {
+  onJobClick?: (restaurantId: string, shiftDate: string) => void
+}
+
 // Кеш для данных ресторанов
 const restaurantsCache = new Map<string, Restaurant[]>()
 
-// НОВОЕ: Флаг загрузки для каждой даты (чтобы не загружать дважды)
+// Флаг загрузки для каждой даты
 const loadingDates = new Set<string>()
 
 // Функция создания кастомного маркера
@@ -46,14 +51,12 @@ const createCustomMarker = (jobCount: number, avgPay: number): DivIcon => {
   })
 }
 
-// НОВОЕ: Функция загрузки данных для конкретной даты (переиспользуемая)
+// Функция загрузки данных для конкретной даты
 const fetchRestaurantsForDate = async (dateString: string): Promise<Restaurant[]> => {
-  // Если уже загружаем эту дату - пропускаем
   if (loadingDates.has(dateString)) {
     return []
   }
 
-  // Если уже в кеше - возвращаем из кеша
   if (restaurantsCache.has(dateString)) {
     console.log(`✅ Данные для ${dateString} уже в кеше`)
     return restaurantsCache.get(dateString)!
@@ -135,16 +138,33 @@ const fetchRestaurantsForDate = async (dateString: string): Promise<Restaurant[]
   }
 }
 
-export default function MapScreen() {
+// НОВОЕ: Компонент для отслеживания событий карты
+function MapEvents() {
+  const { setCenter, setZoom } = useMapStore()
+  
+  useMapEvents({
+    // НОВОЕ: Сохраняем центр карты при перемещении
+    moveend: (e) => {
+      const center = e.target.getCenter()
+      setCenter([center.lat, center.lng])
+    },
+    // НОВОЕ: Сохраняем зум при изменении
+    zoomend: (e) => {
+      setZoom(e.target.getZoom())
+    }
+  })
+  
+  return null
+}
+
+// НОВОЕ: Оборачиваем компонент в React.memo для предотвращения лишних рендеров
+function MapScreen({ onJobClick }: MapScreenProps) {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+  // ИЗМЕНЕНИЕ: selectedDate теперь из Zustand
+  const { selectedDate, setSelectedDate, center, zoom } = useMapStore()
   const [userLocation, setUserLocation] = useState<[number, number]>([55.7558, 37.6173])
   const [initialLoad, setInitialLoad] = useState(true)
-  const [selectedRestaurant, setSelectedRestaurant] = useState<{
-  id: string
-  date: string
-} | null>(null)
 
   useEffect(() => {
     getUserLocation()
@@ -154,7 +174,7 @@ export default function MapScreen() {
     loadRestaurants()
   }, [selectedDate])
 
-  // НОВОЕ: Предзагрузка данных для следующих 6 дней
+  // Предзагрузка данных для следующих 6 дней
   useEffect(() => {
     const prefetchNextDays = async () => {
       const today = new Date()
@@ -170,7 +190,6 @@ export default function MapScreen() {
       }
     }
 
-    // Запускаем предзагрузку через 1 секунду после первой загрузки
     const timer = setTimeout(prefetchNextDays, 1000)
     return () => clearTimeout(timer)
   }, [])
@@ -194,7 +213,6 @@ export default function MapScreen() {
       
       const dateString = selectedDate.toISOString().split('T')[0]
       
-      // Загружаем данные
       const data = await fetchRestaurantsForDate(dateString)
       setRestaurants(data)
       
@@ -206,27 +224,29 @@ export default function MapScreen() {
     }
   }, [selectedDate])
 
+  // ИЗМЕНЕНИЕ: handleDateSelect теперь обновляет Zustand
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date)
   }
 
+  // НОВОЕ: useMemo для маркеров (оптимизация рендера)
   const markers = useMemo(() => {
-  return restaurants.map((restaurant) => (
-    <Marker
-      key={restaurant.restaurantId}
-      position={[restaurant.latitude, restaurant.longitude]}
-      icon={createCustomMarker(restaurant.available_jobs, restaurant.avg_pay)}
-      eventHandlers={{
-        click: () => {
-          setSelectedRestaurant({
-            id: restaurant.restaurantId,
-            date: selectedDate.toISOString().split('T')[0]
-          })
-        }
-      }}
-    />
-  ))
-}, [restaurants, selectedDate])
+    return restaurants.map((restaurant) => (
+      <Marker
+        key={restaurant.restaurantId}
+        position={[restaurant.latitude, restaurant.longitude]}
+        icon={createCustomMarker(restaurant.available_jobs, restaurant.avg_pay)}
+        eventHandlers={{
+          click: () => {
+            // ИЗМЕНЕНИЕ: Вызываем onJobClick если передан
+            if (onJobClick) {
+              onJobClick(restaurant.restaurantId, selectedDate.toISOString().split('T')[0])
+            }
+          }
+        }}
+      />
+    ))
+  }, [restaurants, selectedDate, onJobClick])
 
   if (initialLoad && loading) {
     return (
@@ -246,9 +266,10 @@ export default function MapScreen() {
         </div>
       )}
 
+      {/* ИЗМЕНЕНИЕ: center и zoom теперь из Zustand */}
       <MapContainer
-        center={userLocation}
-        zoom={13}
+        center={center}
+        zoom={zoom}
         className={styles.map}
         zoomControl={true}
         scrollWheelZoom={true}
@@ -260,18 +281,16 @@ export default function MapScreen() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
+        {/* НОВОЕ: Компонент для отслеживания событий карты */}
+        <MapEvents />
+
         {markers}
       </MapContainer>
 
       <Footer />
-
-      {selectedRestaurant && (
-  <RestaurantModal
-    restaurantId={selectedRestaurant.id}
-    shiftDate={selectedRestaurant.date}
-    onClose={() => setSelectedRestaurant(null)}
-  />
-)}
     </div>
   )
 }
+
+// НОВОЕ: Экспортируем компонент обёрнутый в React.memo
+export default memo(MapScreen)
