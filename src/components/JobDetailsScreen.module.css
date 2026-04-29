@@ -32,9 +32,9 @@
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  /* НОВОЕ: GPU-подсказки для Android Chrome */
   will-change: transform;
   transform: translateZ(0);
+  z-index: 1; /* ДОБАВЛЕНО */
 }
 
 /* НОВОЕ: Анимация выезда снизу при открытии */
@@ -362,6 +362,7 @@
   width: 100%;
   padding: 1rem 2.8125rem 1.875rem;
   background: linear-gradient(360deg, #143148 0%, rgba(20, 49, 72, 0.60) 100%);
+  z-index: 200; /* ДОБАВЛЕНО */
 }
 
 .bookButton {
