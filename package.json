@@ -34,6 +34,6 @@
     "vite-plugin-pwa": "^0.21.1"
   },
   "overrides": {
-    "vite": "^5.4.1",
+    "vite": "^5.4.1"
   }
 }
