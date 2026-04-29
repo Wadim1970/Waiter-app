@@ -2,15 +2,13 @@ import { lazy, Suspense, useState } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import WelcomeScreen from './components/WelcomeScreen'
 import AuthCheck from './components/AuthCheck'
-import JobDetailsScreen from './components/JobDetailsScreen' // НОВОЕ: Импорт страницы деталей
+import JobDetailsScreen from './components/JobDetailsScreen'
 import './App.css'
 
-// LAZY LOADING для тяжёлых компонентов
 const RegisterScreen = lazy(() => import('./components/RegisterScreen'))
 const VerificationScreen = lazy(() => import('./components/VerificationScreen'))
 const MapScreen = lazy(() => import('./components/MapScreen'))
 
-// Loader
 const Loader = () => (
   <div style={{ 
     display: 'flex', 
@@ -35,7 +33,6 @@ const Loader = () => (
   </div>
 )
 
-// Заглушка для экранов
 const PlaceholderScreen = ({ title }: { title: string }) => (
   <div style={{ 
     display: 'flex', 
@@ -51,13 +48,33 @@ const PlaceholderScreen = ({ title }: { title: string }) => (
   </div>
 )
 
-function App() {
-  // НОВОЕ: Стейт для управления JobDetailsScreen
+// НОВОЕ: Обёртка для MapScreen с логикой "Hide, don't Unmount"
+function MapScreenWithDetails() {
   const [jobDetails, setJobDetails] = useState<{
     restaurantId: string
     shiftDate: string
   } | null>(null)
 
+  return (
+    <>
+      <div style={{ display: jobDetails ? 'none' : 'block' }}>
+        <MapScreen onJobClick={(restaurantId, shiftDate) => {
+          setJobDetails({ restaurantId, shiftDate })
+        }} />
+      </div>
+
+      {jobDetails && (
+        <JobDetailsScreen
+          restaurantId={jobDetails.restaurantId}
+          shiftDate={jobDetails.shiftDate}
+          onClose={() => setJobDetails(null)}
+        />
+      )}
+    </>
+  )
+}
+
+function App() {
   return (
     <BrowserRouter>
       <AuthCheck />
@@ -68,33 +85,10 @@ function App() {
           <Route path="/register" element={<RegisterScreen />} />
           <Route path="/verification" element={<VerificationScreen />} />
           
-          {/* ИЗМЕНЕНО: MapScreen с пробросом функции для открытия деталей */}
-          <Route 
-            path="/map" 
-            element={
-              <>
-                {/* НОВОЕ: MapScreen всегда в DOM, скрывается когда открыты детали */}
-                <div style={{ display: jobDetails ? 'none' : 'block' }}>
-                  <MapScreen onJobClick={(restaurantId, shiftDate) => {
-                    setJobDetails({ restaurantId, shiftDate })
-                  }} />
-                </div>
-
-                {/* НОВОЕ: JobDetailsScreen рендерится условно */}
-                {jobDetails && (
-                  <JobDetailsScreen
-                    restaurantId={jobDetails.restaurantId}
-                    shiftDate={jobDetails.shiftDate}
-                    onClose={() => setJobDetails(null)}
-                  />
-                )}
-              </>
-            } 
-          />
+          {/* ИЗМЕНЕНО: Используем обёртку */}
+          <Route path="/map" element={<MapScreenWithDetails />} />
+          <Route path="/profile" element={<MapScreenWithDetails />} />
           
-          <Route path="/profile" element={<MapScreen />} />
-          
-          {/* Заглушки для футера */}
           <Route path="/search" element={<PlaceholderScreen title="🔍 Поиск" />} />
           <Route path="/orders" element={<PlaceholderScreen title="📋 Заказы" />} />
           <Route path="/finance" element={<PlaceholderScreen title="💰 Финансы" />} />
