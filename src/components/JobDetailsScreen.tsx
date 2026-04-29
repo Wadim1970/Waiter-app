@@ -42,6 +42,14 @@ export default function JobDetailsScreen({ restaurantId, shiftDate, onClose }: J
   const [data, setData] = useState<RestaurantDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [isClosing, setIsClosing] = useState(false) // НОВОЕ: Для анимации закрытия
+  const [isClosing, setIsClosing] = useState(false)
+
+// НОВОЕ: Состояние для свайпа
+const [touchStart, setTouchStart] = useState<number | null>(null)
+const [touchEnd, setTouchEnd] = useState<number | null>(null)
+
+// НОВОЕ: Минимальное расстояние свайпа (50px)
+const minSwipeDistance = 50
 
   useEffect(() => {
     loadRestaurantDetails()
@@ -132,6 +140,36 @@ export default function JobDetailsScreen({ restaurantId, shiftDate, onClose }: J
     alert('Бронирование (заглушка)')
   }
 
+  const handleBooking = () => {
+  alert('Бронирование (заглушка)')
+}
+
+// НОВОЕ: Обработчики свайпа
+const onTouchStart = (e: React.TouchEvent) => {
+  setTouchEnd(null) // Сбрасываем конец касания
+  setTouchStart(e.targetTouches[0].clientY)
+}
+
+const onTouchMove = (e: React.TouchEvent) => {
+  setTouchEnd(e.targetTouches[0].clientY)
+}
+
+const onTouchEnd = () => {
+  if (!touchStart || !touchEnd) return
+  
+  const distance = touchStart - touchEnd
+  const isDownSwipe = distance < -minSwipeDistance // Свайп вниз
+  
+  if (isDownSwipe) {
+    console.log('🔽 Свайп вниз обнаружен, закрываю страницу')
+    handleClose()
+  }
+  
+  // Сбрасываем состояние
+  setTouchStart(null)
+  setTouchEnd(null)
+}
+
   const getShortName = (fullName: string) => {
     return fullName.split('(')[0].trim().toUpperCase()
   }
@@ -165,7 +203,12 @@ export default function JobDetailsScreen({ restaurantId, shiftDate, onClose }: J
     <button className={styles.closeButton} onClick={handleClose}>✕</button>
 
     {/* ИЗМЕНЕНИЕ: Хедер ВЫНЕСЕН из .screen */}
-    <div className={styles.header}>
+    <div 
+  className={styles.header}
+  onTouchStart={onTouchStart}
+  onTouchMove={onTouchMove}
+  onTouchEnd={onTouchEnd}
+>
       <img 
         src={restaurant.photo_url} 
         alt={restaurant.name}
