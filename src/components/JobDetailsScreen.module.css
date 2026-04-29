@@ -5,10 +5,14 @@
   left: 0;
   width: 100vw;
   height: 100vh;
+  height: 100dvh; /* НОВОЕ: Динамическая высота viewport для iOS */
   background: #143148;
   z-index: 9999;
-  /* НОВОЕ: Анимация появления фона */
   animation: fadeIn 0.3s ease-out;
+  
+  /* НОВОЕ: Заполнить безопасные области iOS */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* НОВОЕ: Анимация затухания фона при закрытии */
