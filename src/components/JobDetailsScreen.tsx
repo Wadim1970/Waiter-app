@@ -160,157 +160,156 @@ export default function JobDetailsScreen({ restaurantId, shiftDate, onClose }: J
   const { restaurant, job, reviews } = data
 
   return (
-    // НОВОЕ: Добавлен класс .closing для анимации
-    <div className={`${styles.overlay} ${isClosing ? styles.closing : ''}`}>
-      <div className={`${styles.screen} ${isClosing ? styles.slideDown : styles.slideUp}`}>
-        {/* ИЗМЕНЕНИЕ: onClick вызывает handleClose вместо onClose */}
-        <button className={styles.closeButton} onClick={handleClose}>✕</button>
+  <div className={`${styles.overlay} ${isClosing ? styles.closing : ''}`}>
+    {/* ИЗМЕНЕНИЕ: Кнопка закрытия ВЫНЕСЕНА из .screen */}
+    <button className={styles.closeButton} onClick={handleClose}>✕</button>
 
-        {/* Хедер с фото */}
-        <div className={styles.header}>
-          <img 
-            src={restaurant.photo_url} 
-            alt={restaurant.name}
-            className={styles.headerImage}
-          />
-          <div className={styles.headerOverlay}>
-            <div className={styles.headerContent}>
-              <div className={styles.restaurantInfo}>
-                <h1 className={styles.restaurantName}>
-                  {getShortName(restaurant.name)}
-                </h1>
-                <div className={styles.rating}>
-                  <span style={{ fontSize: '1.25rem', color: '#03E067' }}>★</span>
-                  <span className={styles.ratingValue}>
-                    {restaurant.rating_staff ? restaurant.rating_staff.toFixed(1) : '—'}
-                  </span>
-                </div>
+    {/* ИЗМЕНЕНИЕ: Хедер ВЫНЕСЕН из .screen */}
+    <div className={styles.header}>
+      <img 
+        src={restaurant.photo_url} 
+        alt={restaurant.name}
+        className={styles.headerImage}
+      />
+      <div className={styles.headerOverlay}>
+        <div className={styles.headerContent}>
+          <div className={styles.restaurantInfo}>
+            <h1 className={styles.restaurantName}>
+              {getShortName(restaurant.name)}
+            </h1>
+            <div className={styles.rating}>
+              <span style={{ fontSize: '1.25rem', color: '#03E067' }}>★</span>
+              <span className={styles.ratingValue}>
+                {restaurant.rating_staff ? restaurant.rating_staff.toFixed(1) : '—'}
+              </span>
+            </div>
+          </div>
+          <div className={styles.addressRow}>
+            <p className={styles.address}>{restaurant.address}</p>
+            <div className={styles.reviewsCount}>
+              <span>{restaurant.number_of_voters || 0}</span>
+              <span className={styles.reviewsLabel}>отзыва</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* ИЗМЕНЕНИЕ: Футер ВЫНЕСЕН из .screen */}
+    <div className={styles.footer}>
+      <button className={styles.bookButton} onClick={handleBooking}>
+        ЗАБРОНИРОВАТЬ СМЕНУ
+      </button>
+    </div>
+
+    {/* ИЗМЕНЕНИЕ: .screen теперь содержит ТОЛЬКО контент */}
+    <div className={`${styles.screen} ${isClosing ? styles.slideDown : styles.slideUp}`}>
+      <div className={styles.content}>
+        {/* Время и оплата */}
+        <div className={styles.infoRow}>
+          <div className={styles.infoCard}>
+            <div className={styles.infoLabel}>смена</div>
+            <div className={styles.infoValueWrapper}>
+              <div className={styles.infoValue}>
+                {job.start_time.slice(0, 5)} - {job.end_time.slice(0, 5)}
               </div>
-              <div className={styles.addressRow}>
-                <p className={styles.address}>{restaurant.address}</p>
-                <div className={styles.reviewsCount}>
-                  <span>{restaurant.number_of_voters || 0}</span>
-                  <span className={styles.reviewsLabel}>отзыва</span>
-                </div>
+            </div>
+          </div>
+          <div className={styles.infoCard}>
+            <div className={styles.infoLabel}>оплата</div>
+            <div className={styles.payAmountWrapper}>
+              <div className={styles.payAmount}>
+                {job.pay_amount}<span className={styles.ruble}>₽</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Контент */}
-        <div className={styles.content}>
-          {/* Время и оплата */}
-          <div className={styles.infoRow}>
-            <div className={styles.infoCard}>
-              <div className={styles.infoLabel}>смена</div>
-              <div className={styles.infoValueWrapper}>
-                <div className={styles.infoValue}>
-                  {job.start_time.slice(0, 5)} - {job.end_time.slice(0, 5)}
-                </div>
+        {/* Требования и условия */}
+        <div className={styles.section}>
+          <h2 className={styles.sectionTitle}>ТРЕБОВАНИЯ И УСЛОВИЯ</h2>
+          <div className={styles.requirements}>
+            <div className={styles.requirement}>
+              <div className={styles.bullet} />
+              <div className={styles.requirementContent}>
+                <span className={styles.requirementLabel}>Дресс-код: </span>
+                <span className={styles.requirementText}>{job.dress_code}</span>
               </div>
             </div>
-            <div className={styles.infoCard}>
-              <div className={styles.infoLabel}>оплата</div>
-              <div className={styles.payAmountWrapper}>
-                <div className={styles.payAmount}>
-                  {job.pay_amount}<span className={styles.ruble}>₽</span>
-                </div>
+            
+            <div className={styles.requirement}>
+              <div className={styles.bullet} />
+              <div className={styles.requirementContent}>
+                <span className={styles.requirementLabel}>Чаевые: </span>
+                <span className={styles.requirementText}>{job.tips_distribution}</span>
+              </div>
+            </div>
+            
+            <div className={styles.requirement}>
+              <div className={styles.bullet} />
+              <div className={styles.requirementContent}>
+                <span className={styles.requirementLabel}>Питание: </span>
+                <span className={styles.requirementText}>{job.nutrition}</span>
+              </div>
+            </div>
+            
+            <div className={styles.requirement}>
+              <div className={styles.bullet} />
+              <div className={styles.requirementContent}>
+                <span className={styles.requirementLabel}>Документы: </span>
+                <span className={styles.requirementText}>
+                  {Array.isArray(job.required_documents) 
+                    ? job.required_documents.join(', ') 
+                    : job.required_documents}
+                </span>
               </div>
             </div>
           </div>
+        </div>
 
-         {/* Требования и условия */}
-<div className={styles.section}>
-  <h2 className={styles.sectionTitle}>ТРЕБОВАНИЯ И УСЛОВИЯ</h2>
-  <div className={styles.requirements}>
-    <div className={styles.requirement}>
-      <div className={styles.bullet} />
-      <div className={styles.requirementContent}>
-        <span className={styles.requirementLabel}>Дресс-код: </span>
-        <span className={styles.requirementText}>{job.dress_code}</span>
-      </div>
-    </div>
-    
-    <div className={styles.requirement}>
-      <div className={styles.bullet} />
-      <div className={styles.requirementContent}>
-        <span className={styles.requirementLabel}>Чаевые: </span>
-        <span className={styles.requirementText}>{job.tips_distribution}</span>
-      </div>
-    </div>
-    
-    <div className={styles.requirement}>
-      <div className={styles.bullet} />
-      <div className={styles.requirementContent}>
-        <span className={styles.requirementLabel}>Питание: </span>
-        <span className={styles.requirementText}>{job.nutrition}</span>
-      </div>
-    </div>
-    
-    <div className={styles.requirement}>
-      <div className={styles.bullet} />
-      <div className={styles.requirementContent}>
-        <span className={styles.requirementLabel}>Документы: </span>
-        <span className={styles.requirementText}>
-          {Array.isArray(job.required_documents) 
-            ? job.required_documents.join(', ') 
-            : job.required_documents}
-        </span>
-      </div>
-    </div>
-  </div>
-</div>
-
-         {/* Описание задач */}
-<div className={styles.section}>
-  <h2 className={styles.sectionTitle}>ОПИСАНИЕ ЗАДАЧ</h2>
-  <div className={styles.requirements}>
-    <div className={styles.requirement}>
-      <div className={styles.bullet} />
-      <div className={styles.requirementContent}>
-        <span className={styles.requirementLabel}>Зона ответственности: </span>
-        <span className={styles.requirementText}>{job.responsibility_zone}</span>
-      </div>
-    </div>
-    
-    <div className={styles.requirement}>
-      <div className={styles.bullet} />
-      <div className={styles.requirementContent}>
-        <span className={styles.requirementLabel}>Обязанности: </span>
-        <span className={styles.requirementText}>{job.duties}</span>
-      </div>
-    </div>
-    
-    <div className={styles.requirement}>
-      <div className={styles.bullet} />
-      <div className={styles.requirementContent}>
-        <span className={styles.requirementLabel}>Технологии: </span>
-        <span className={styles.requirementText}>{job.required_technologies}</span>
-      </div>
-    </div>
-  </div>
-</div>
-
-          {/* Отзывы */}
-          {reviews && reviews.length > 0 && (
-            <div className={styles.reviewsSection}>
-              {reviews.map((review, index) => (
-                <div key={index} className={styles.review}>
-                  <p className={styles.reviewComment}>"{review.comment}"</p>
-                  <p className={styles.reviewAuthor}>{review.name}</p>
-                </div>
-              ))}
+        {/* Описание задач */}
+        <div className={styles.section}>
+          <h2 className={styles.sectionTitle}>ОПИСАНИЕ ЗАДАЧ</h2>
+          <div className={styles.requirements}>
+            <div className={styles.requirement}>
+              <div className={styles.bullet} />
+              <div className={styles.requirementContent}>
+                <span className={styles.requirementLabel}>Зона ответственности: </span>
+                <span className={styles.requirementText}>{job.responsibility_zone}</span>
+              </div>
             </div>
-          )}
+            
+            <div className={styles.requirement}>
+              <div className={styles.bullet} />
+              <div className={styles.requirementContent}>
+                <span className={styles.requirementLabel}>Обязанности: </span>
+                <span className={styles.requirementText}>{job.duties}</span>
+              </div>
+            </div>
+            
+            <div className={styles.requirement}>
+              <div className={styles.bullet} />
+              <div className={styles.requirementContent}>
+                <span className={styles.requirementLabel}>Технологии: </span>
+                <span className={styles.requirementText}>{job.required_technologies}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Кнопка ��ронирования */}
-        <div className={styles.footer}>
-          <button className={styles.bookButton} onClick={handleBooking}>
-            ЗАБРОНИРОВАТЬ СМЕНУ
-          </button>
-        </div>
+        {/* Отзывы */}
+        {reviews && reviews.length > 0 && (
+          <div className={styles.reviewsSection}>
+            {reviews.map((review, index) => (
+              <div key={index} className={styles.review}>
+                <p className={styles.reviewComment}>"{review.comment}"</p>
+                <p className={styles.reviewAuthor}>{review.name}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
-  )
+  </div>
+)
 }
