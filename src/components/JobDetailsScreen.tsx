@@ -95,35 +95,6 @@ const minSwipeDistance = 50
     
     console.log(`✅ [END] Данные загружены за ${duration.toFixed(0)} мс`)
 
-    // ... остальной код
-    console.log('🔍 [Оптимизация] Загружаю данные для:', restaurantId, shiftDate)
-
-    // НОВОЕ: Параллельные запросы вместо последовательных
-    const [restaurantResult, jobsResult, reviewsResult] = await Promise.all([
-      // 1️⃣ Запрос ресторана (только нужные поля)
-      supabaseRestaurants
-        .from('restaurants')
-        .select('restaurantId, name, address, rating_staff, number_of_voters')
-        .eq('restaurantId', restaurantId)
-        .single(),
-      
-      // 2️⃣ Запрос вакансий (ограничиваем до 1 записи)
-      supabaseRestaurants
-        .from('jobs')
-        .select('*')
-        .eq('restaurant_id', restaurantId)
-        .eq('shift_date', shiftDate)
-        .limit(1),
-      
-      // 3️⃣ Запрос отзывов (ограничиваем до 5 записей)
-      supabaseRestaurants
-        .from('reviews_waiter')
-        .select('*')
-        .eq('restaurant_id', restaurantId)
-        .order('created_at', { ascending: false })
-        .limit(5)
-    ])
-
     // ИЗМЕНЕНИЕ: Проверяем ошибки после Promise.all
     if (restaurantResult.error) throw restaurantResult.error
     if (jobsResult.error) throw jobsResult.error
