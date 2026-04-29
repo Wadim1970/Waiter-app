@@ -42,7 +42,7 @@ export default function JobDetailsScreen({ restaurantId, shiftDate, onClose }: J
   const [data, setData] = useState<RestaurantDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [isClosing, setIsClosing] = useState(false) // НОВОЕ: Для анимации закрытия
-  const [isClosing, setIsClosing] = useState(false)
+  
 
 // НОВОЕ: Состояние для свайпа
 const [touchStart, setTouchStart] = useState<number | null>(null)
