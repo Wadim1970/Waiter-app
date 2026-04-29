@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 export default function AuthCheck() {
   const navigate = useNavigate()
+  const location = useLocation()
   const hasCheckedRef = useRef(false)
 
   useEffect(() => {
@@ -33,11 +34,16 @@ export default function AuthCheck() {
         }
 
         if (waiter && waiter.phone_verified === true) {
-          console.log('✅ Официант найден и верифицирован:', waiter)
-          // TODO: Переход в профиль (когда будет готов)
-          // navigate('/profile')
+          console.log('✅ Официант найден и верифицирован:', waiter.first_name)
+          
+          // НОВОЕ: Автоматический переход на карту только если на главной странице
+          if (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/register') {
+            console.log('🔄 Перенаправляю на /map')
+            navigate('/map', { replace: true })
+          }
         } else if (waiter && waiter.phone_verified === false) {
           console.log('⚠️ Официант найден, но не верифицирован')
+          // Пользователь на этапе верификации, не редиректим
         } else {
           console.log('❌ Официант не найден, возможно удален из базы')
           localStorage.removeItem('waiter_device_id')
@@ -48,7 +54,7 @@ export default function AuthCheck() {
     }
 
     checkAuth()
-  }, [navigate])
+  }, [navigate, location])
 
   return null
 }
