@@ -140,10 +140,6 @@ const minSwipeDistance = 50
     alert('Бронирование (заглушка)')
   }
 
-  const handleBooking = () => {
-  alert('Бронирование (заглушка)')
-}
-
 // НОВОЕ: Обработчики свайпа
 const onTouchStart = (e: React.TouchEvent) => {
   setTouchEnd(null) // Сбрасываем конец касания
