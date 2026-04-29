@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabaseRestaurants } from '../lib/supabase'
 import styles from './JobDetailsScreen.module.css'
+import { pluralizeReviews } from '../utils/pluralize'
 
 interface RestaurantDetails {
   restaurant: {
@@ -224,10 +225,12 @@ const onTouchEnd = () => {
             </div>
           </div>
           <div className={styles.addressRow}>
-            <p className={styles.address}>{restaurant.address}</p>
-            <div className={styles.reviewsCount}>
+              <p className={styles.address}>{restaurant.address}</p>
+              <div className={styles.reviewsCount}>
               <span>{restaurant.number_of_voters || 0}</span>
-              <span className={styles.reviewsLabel}>отзыва</span>
+              <span className={styles.reviewsLabel}>
+               {pluralizeReviews(restaurant.number_of_voters || 0)}
+                  </span>
             </div>
           </div>
         </div>
