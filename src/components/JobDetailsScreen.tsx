@@ -47,71 +47,78 @@ export default function JobDetailsScreen({ restaurantId, shiftDate, onClose }: J
     loadRestaurantDetails()
   }, [restaurantId, shiftDate])
 
-  const loadRestaurantDetails = async () => {
-    try {
-      setLoading(true)
-      
-      console.log('🔍 Загружаю данные для:', restaurantId, shiftDate)
+ const loadRestaurantDetails = async () => {
+  try {
+    setLoading(true)
+    
+    console.log('🔍 [Оптимизация] Загружаю данные для:', restaurantId, shiftDate)
 
-      // ИЗМЕНЕНИЕ: Убрали .single() для вакансий, берём первую из массива
-      const { data: restaurantData, error: restaurantError } = await supabaseRestaurants
+    // НОВОЕ: Параллельные запросы вместо последовательных
+    const [restaurantResult, jobsResult, reviewsResult] = await Promise.all([
+      // 1️⃣ Запрос ресторана (только нужные поля)
+      supabaseRestaurants
         .from('restaurants')
-        .select('*')
+        .select('restaurantId, name, address, rating_staff, number_of_voters')
         .eq('restaurantId', restaurantId)
-        .single()
-
-      if (restaurantError) throw restaurantError
-
-      const { data: jobsData, error: jobError } = await supabaseRestaurants
+        .single(),
+      
+      // 2️⃣ Запрос вакансий (ограничиваем до 1 записи)
+      supabaseRestaurants
         .from('jobs')
         .select('*')
         .eq('restaurant_id', restaurantId)
         .eq('shift_date', shiftDate)
-
-      if (jobError) throw jobError
-
-      // ИЗМЕНЕНИЕ: Берём первую вакансию из массива
-      const jobData = jobsData && jobsData.length > 0 ? jobsData[0] : null
-      if (!jobData) throw new Error('Нет вакансий на эту дату')
-
-      const { data: reviewsData } = await supabaseRestaurants
+        .limit(1),
+      
+      // 3️⃣ Запрос отзывов (ограничиваем до 5 записей)
+      supabaseRestaurants
         .from('reviews_waiter')
         .select('*')
         .eq('restaurant_id', restaurantId)
         .order('created_at', { ascending: false })
+        .limit(5)
+    ])
 
-      const result: RestaurantDetails = {
-        restaurant: {
-          id: restaurantData.restaurantId,
-          name: restaurantData.name,
-          address: restaurantData.address,
-          rating_staff: restaurantData.rating_staff,
-          number_of_voters: restaurantData.number_of_voters || 0,
-          photo_url: 'https://utdfzrpkoscyikitceow.supabase.co/storage/v1/object/public/foto_restaurants/foto_holl.png'
-        },
-        job: {
-          start_time: jobData.start_time,
-          end_time: jobData.end_time,
-          pay_amount: jobData.pay_amount,
-          dress_code: jobData.dress_code,
-          tips_distribution: jobData.tips_distribution,
-          nutrition: jobData.nutrition,
-          required_documents: jobData.required_documents,
-          responsibility_zone: jobData.responsibility_zone,
-          duties: jobData.duties,
-          required_technologies: jobData.required_technologies,
-          slots_available: jobData.slots_available
-        },
-        reviews: reviewsData || []
-      }
-      
-      setData(result)
-    } catch (error) {
-      console.error('❌ Ошибка загрузки данных:', error)
-    } finally {
-      setLoading(false)
+    // ИЗМЕНЕНИЕ: Проверяем ошибки после Promise.all
+    if (restaurantResult.error) throw restaurantResult.error
+    if (jobsResult.error) throw jobsResult.error
+
+    // ИЗМЕНЕНИЕ: Берём первую вакансию из массива
+    const jobData = jobsResult.data && jobsResult.data.length > 0 ? jobsResult.data[0] : null
+    if (!jobData) throw new Error('Нет вакансий на эту дату')
+
+    const result: RestaurantDetails = {
+      restaurant: {
+        id: restaurantResult.data.restaurantId,
+        name: restaurantResult.data.name,
+        address: restaurantResult.data.address,
+        rating_staff: restaurantResult.data.rating_staff,
+        number_of_voters: restaurantResult.data.number_of_voters || 0,
+        photo_url: 'https://utdfzrpkoscyikitceow.supabase.co/storage/v1/object/public/foto_restaurants/foto_holl.png'
+      },
+      job: {
+        start_time: jobData.start_time,
+        end_time: jobData.end_time,
+        pay_amount: jobData.pay_amount,
+        dress_code: jobData.dress_code,
+        tips_distribution: jobData.tips_distribution,
+        nutrition: jobData.nutrition,
+        required_documents: jobData.required_documents,
+        responsibility_zone: jobData.responsibility_zone,
+        duties: jobData.duties,
+        required_technologies: jobData.required_technologies,
+        slots_available: jobData.slots_available
+      },
+      reviews: reviewsResult.data || []
     }
+    
+    setData(result)
+  } catch (error) {
+    console.error('❌ Ошибка загрузки данных:', error)
+  } finally {
+    setLoading(false)
   }
+}
 
   // НОВОЕ: Обработчик закрытия с анимацией
   const handleClose = () => {
