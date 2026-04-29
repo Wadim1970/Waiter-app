@@ -32,6 +32,9 @@
   width: 100%;
   height: 100%;
   overflow-y: auto;
+  /* НОВОЕ: GPU-подсказки для Android Chrome */
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 /* НОВОЕ: Анимация выезда снизу при открытии */
@@ -44,21 +47,23 @@
   animation: slideDown 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
+/* ИЗМЕНЕНИЕ: translate3d вместо translateY для GPU-ускорения */
 @keyframes slideUp {
   from {
-    transform: translateY(100%);
+    transform: translate3d(0, 100%, 0);
   }
   to {
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
   }
 }
 
+/* ИЗМЕНЕНИЕ: translate3d вместо translateY */
 @keyframes slideDown {
   from {
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
   }
   to {
-    transform: translateY(100%);
+    transform: translate3d(0, 100%, 0);
   }
 }
 
