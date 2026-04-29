@@ -1,0 +1,402 @@
+/* Overlay на весь экран */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #143148;
+  z-index: 9999;
+  /* НОВОЕ: Анимация появления фона */
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* НОВОЕ: Анимация затухания фона при закрытии */
+.overlay.closing {
+  animation: fadeOut 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* ИЗМЕНЕНИЕ: Переименовали .modal в .screen (это страница, а не модалка) */
+.screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* НОВОЕ: Анимация выезда снизу при открытии */
+.slideUp {
+  animation: slideUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* НОВОЕ: Анимация скрытия вниз при закрытии */
+.slideDown {
+  animation: slideDown 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+/* Кнопка закрытия */
+.closeButton {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.25rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.closeButton:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ИЗМЕНЕНИЕ: Хедер теперь fixed чтобы не уплывал */
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 13.8125rem; /* 221px */
+  z-index: 100;
+}
+
+.headerImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.headerOverlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3.6875rem; /* 59px */
+  background: linear-gradient(360deg, #153249 0%, rgba(21, 50, 73, 0.28) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.headerContent {
+  padding: 0 0.625rem;
+}
+
+.restaurantInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.restaurantName {
+  color: white;
+  font-size: 1.5rem;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  margin: 0;
+  flex: 1;
+}
+
+.rating {
+  display: flex;
+  align-items: center;
+  gap: 0.1875rem;
+  padding-right: 0.625rem;
+}
+
+.ratingValue {
+  color: white;
+  font-size: 1.5rem;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+}
+
+.addressRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.address {
+  color: white;
+  font-size: 0.875rem;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 300;
+  margin: 0;
+  flex: 1;
+}
+
+.reviewsCount {
+  display: flex;
+  align-items: center;
+  gap: 0.3125rem;
+  padding-right: 0.625rem;
+  color: white;
+  font-size: 0.875rem;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 300;
+}
+
+.reviewsLabel {
+  color: white;
+}
+
+/* ИЗМЕНЕНИЕ: Контент с отступом под fixed хедер */
+.content {
+  padding: 14.8125rem 0.625rem 7.5rem; /* 221px + 16px = 237px сверху */
+}
+
+/* Время и оплата */
+.infoRow {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* ИЗМЕНЕНИЕ: Убрали внутренние отступы, добавили flexbox */
+.infoCard {
+  flex: 1;
+  background: #163651;
+  border-radius: 0.875rem;
+  outline: 1px solid #0D5C93;
+  padding: 0.6875rem 0 0 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ИЗМЕНЕНИЕ: Добавили padding-left для отступа 10px */
+.infoLabel {
+  color: #91AABE;
+  font-size: 1rem;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  padding-left: 0.625rem; /* 10px */
+  margin-bottom: 0.5rem;
+}
+
+/* НОВОЕ: Обёртка для прижатия к низу */
+.infoValueWrapper {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  padding-left: 0.625rem; /* 10px */
+  padding-bottom: 0.625rem; /* 10px */
+}
+
+/* ИЗМЕНЕНИЕ: Убрали text-align: center */
+.infoValue {
+  color: white;
+  font-size: 1.5rem;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* НОВОЕ: Обёртка для прижатия к низу */
+.payAmountWrapper {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  padding-left: 0.625rem; /* 10px */
+  padding-bottom: 0.625rem; /* 10px */
+}
+
+/* ИЗМЕНЕНИЕ: Убрали justify-content: center, изменили align-items */
+.payAmount {
+  color: #03E067;
+  font-size: 2.25rem;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  line-height: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+
+/* ИЗМЕНЕНИЕ: Добавили белый цвет */
+.ruble {
+  font-size: 1.5rem;
+  color: white;
+}
+
+/* Секции */
+.section {
+  background: #163651;
+  border-radius: 0.875rem;
+  outline: 1px solid #0D5C93;
+  padding: 1.375rem 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.sectionTitle {
+  color: white;
+  font-size: 1rem;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin: 0 0 1.875rem 0;
+}
+
+.requirements {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.requirement {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6875rem;
+}
+
+.bullet {
+  width: 0.375rem;
+  height: 0.375rem;
+  background: #0096F4;
+  border-radius: 50%;
+  margin-top: 0.4375rem;
+  flex-shrink: 0;
+}
+
+.requirementContent {
+  flex: 1;
+}
+
+.requirementLabel {
+  color: white;
+  font-size: 1rem;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+}
+
+.requirementText {
+  color: #85A5D5;
+  font-size: 1rem;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+}
+
+/* Отзывы */
+.reviewsSection {
+  background: #163651;
+  border-radius: 0.875rem;
+  border-left: 0.25rem solid #0096F4;
+  padding: 1.875rem 1.4375rem 2.5625rem 1.8125rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  overflow-y: auto;
+  max-height: 25rem;
+}
+
+.review {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.reviewComment {
+  color: #85A5D5;
+  font-size: 1rem;
+  font-family: 'Montserrat', sans-serif;
+  font-style: italic;
+  font-weight: 400;
+  margin: 0;
+}
+
+.reviewAuthor {
+  color: white;
+  font-size: 0.875rem;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* Футер с кнопкой */
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 1rem 2.8125rem 1.875rem;
+  background: linear-gradient(360deg, #143148 0%, rgba(20, 49, 72, 0.60) 100%);
+}
+
+.bookButton {
+  width: 100%;
+  height: 3.1875rem;
+  background: #EB651A;
+  border-radius: 3.125rem;
+  border: none;
+  color: white;
+  font-size: 1rem;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.bookButton:hover {
+  opacity: 0.9;
+}
+
+.bookButton:active {
+  opacity: 0.8;
+}
+
+/* Загрузка */
+.loading,
+.error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  color: white;
+  font-size: 1.125rem;
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* Адаптивность для больших экранов */
+@media (min-width: 48rem) {
+  .screen {
+    max-width: 30rem;
+    margin: 0 auto;
+  }
+}
