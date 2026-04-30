@@ -60,11 +60,6 @@ const minSwipeDistance = 50
   try {
     setLoading(true)
 
-    const startTime = performance.now() // НОВОЕ
-    console.log('🔍 [START] Начало загрузки данных', new Date().toISOString())
-    
-    console.log('🔍 [Оптимизация] Загружаю данные для:', restaurantId, shiftDate)
-
     const [restaurantResult, jobsResult, reviewsResult] = await Promise.all([
       supabaseRestaurants
         .from('restaurants')
@@ -87,14 +82,6 @@ const minSwipeDistance = 50
         .limit(5)
     ])
     
-    const endTime = performance.now() // НОВОЕ
-    const duration = endTime - startTime // НОВОЕ
-    
-    // НОВОЕ: ALERT С ВРЕМЕНЕМ
-    alert(`✅ Данные загружены за ${duration.toFixed(0)} мс`)
-    
-    console.log(`✅ [END] Данные загружены за ${duration.toFixed(0)} мс`)
-
     // ИЗМЕНЕНИЕ: Проверяем ошибки после Promise.all
     if (restaurantResult.error) throw restaurantResult.error
     if (jobsResult.error) throw jobsResult.error
