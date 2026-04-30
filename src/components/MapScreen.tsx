@@ -237,13 +237,18 @@ function MapScreen({ onJobClick }: MapScreenProps) {
         position={[restaurant.latitude, restaurant.longitude]}
         icon={createCustomMarker(restaurant.available_jobs, restaurant.avg_pay)}
         eventHandlers={{
-          click: () => {
-            // ИЗМЕНЕНИЕ: Вызываем onJobClick если передан
-            if (onJobClick) {
-              onJobClick(restaurant.restaurantId, selectedDate.toISOString().split('T')[0])
-            }
-          }
-        }}
+  click: (e) => {
+    // НОВОЕ: Останавливаем все события карты
+    const map = e.target._map
+    if (map) {
+      map.stop() // Останавливает загрузку тайлов!
+    }
+    
+    if (onJobClick) {
+      onJobClick(restaurant.restaurantId, selectedDate.toISOString().split('T')[0])
+    }
+  }
+}}
       />
     ))
   }, [restaurants, selectedDate, onJobClick])
