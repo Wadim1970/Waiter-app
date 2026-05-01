@@ -7,9 +7,12 @@
 html, body {
   margin: 0;
   padding: 0;
-  height: 100%;
   width: 100%;
-  overflow: hidden;
+  min-height: 100%; /* ИЗМЕНЕНО: min-height вместо height */
+  height: auto !important; /* ДОБАВЛЕНО: разрешаем рост */
+  overflow-x: hidden;
+  overflow-y: auto !important; /* ИЗМЕНЕНО: разрешаем скролл */
+  -webkit-overflow-scrolling: touch; /* ДОБАВЛЕНО: плавный скролл iOS */
   overscroll-behavior: none;
 }
 
