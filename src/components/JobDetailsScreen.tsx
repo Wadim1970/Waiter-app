@@ -132,8 +132,9 @@ const minSwipeDistance = 50
   }
 
   const handleBooking = () => {
-    alert('Бронирование (заглушка)')
-  }
+  // TODO: Открыть форму регистрации
+  window.location.href = '/registration'
+}
 
 // НОВОЕ: Обработчики свайпа
 const onTouchStart = (e: React.TouchEvent) => {
