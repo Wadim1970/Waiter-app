@@ -31,7 +31,7 @@
 /* ───── Фото девушки ───── */
 .heroImage {
   position: absolute;
-  top: 13.375rem; /* 214px из Figma */
+  top: 20.0rem; /* 214px из Figma */
   left: 50%;
   transform: translateX(-50%);
   width: min(86vw, 22.25rem); /* 356px из Figma */
