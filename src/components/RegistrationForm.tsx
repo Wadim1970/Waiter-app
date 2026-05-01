@@ -59,7 +59,7 @@ export default function RegistrationForm() {
           
           {/* Кнопка Госуслуги */}
           <button className={styles.gosuslugiButton}>
-            <img src="/icons/gosuslugi.png" alt="Госуслуги" className={styles.gosuslugiIcon} />
+            <img src="/icons/logo_gosuslugi.png" alt="Госуслуги" className={styles.gosuslugiIcon} />
             <span>Заполнить через Госуслуги</span>
           </button>
 
