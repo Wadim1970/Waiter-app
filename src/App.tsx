@@ -4,6 +4,7 @@ import WelcomeScreen from './components/WelcomeScreen'
 import AuthCheck from './components/AuthCheck'
 import JobDetailsScreen from './components/JobDetailsScreen'
 import './App.css'
+import RegistrationForm from './components/RegistrationForm'
 
 const RegisterScreen = lazy(() => import('./components/RegisterScreen'))
 const VerificationScreen = lazy(() => import('./components/VerificationScreen'))
@@ -84,7 +85,7 @@ function App() {
           <Route path="/login" element={<div>Login Screen (скоро)</div>} />
           <Route path="/register" element={<RegisterScreen />} />
           <Route path="/verification" element={<VerificationScreen />} />
-          
+          <Route path="/registration" element={<RegistrationForm />} />
           {/* ИЗМЕНЕНО: Используем обёртку */}
           <Route path="/map" element={<MapScreenWithDetails />} />
           <Route path="/profile" element={<MapScreenWithDetails />} />
