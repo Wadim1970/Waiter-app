@@ -50,7 +50,6 @@
   will-change: transform;
   transform: translateZ(0);
   z-index: 1;
-  background: #143148;
 }
 /* Кнопка закрытия */
 .closeButton {
