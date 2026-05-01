@@ -6,7 +6,7 @@
   width: 100vw;
   height: 100vh;
   height: 100dvh;
-  background: #143148;
+  background: transparent;
   z-index: 9999;
   
   /* НОВОЕ: Вся страница выезжает снизу */
@@ -50,6 +50,7 @@
   will-change: transform;
   transform: translateZ(0);
   z-index: 1;
+  background: #143148;
 }
 /* Кнопка закрытия */
 .closeButton {
