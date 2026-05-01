@@ -239,7 +239,7 @@ const onTouchEnd = () => {
     </div>
 
     {/* ИЗМЕНЕНИЕ: .screen теперь содержит ТОЛЬКО контент */}
-    <div className={`${styles.screen} ${isClosing ? styles.slideDown : styles.slideUp}`}>
+    <div className={styles.screen}>
       <div className={styles.content}>
         {/* Время и оплата */}
         <div className={styles.infoRow}>
