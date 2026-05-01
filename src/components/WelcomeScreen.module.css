@@ -99,7 +99,7 @@
 /* ───── Кнопка "Вход" ───── */
 .loginButton {
   position: absolute;
-  bottom: 12rem;
+  bottom: 9rem;
   left: 50%;
   transform: translateX(-50%);
   
@@ -233,7 +233,7 @@
   }
   
   .loginButton {
-    bottom: 12rem;
+    bottom: 7rem;
   }
 }
 
@@ -269,7 +269,7 @@
   
   .loginButton {
     top: auto;
-    bottom: 12rem;
+    bottom: 6rem;
     height: 2.5rem;
   }
 }
