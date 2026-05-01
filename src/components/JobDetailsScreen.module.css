@@ -5,53 +5,23 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  height: 100dvh; /* НОВОЕ: Динамическая высота viewport для iOS */
+  height: 100dvh;
   background: #143148;
   z-index: 9999;
-  animation: fadeIn 0.3s ease-out;
   
-  /* НОВОЕ: Заполнить безопасные области iOS */
+  /* НОВОЕ: Вся страница выезжает снизу */
+  animation: slideUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* НОВОЕ: Анимация затухания фона при закрытии */
+/* НОВОЕ: Вся страница заезжает вниз при закрытии */
 .overlay.closing {
-  animation: fadeOut 0.3s ease-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes fadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
-/* ИЗМЕНЕНИЕ: Переименовали .modal в .screen (это страница, а не модалка) */
-.screen {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow-y: auto;
-  will-change: transform;
-  transform: translateZ(0);
-  z-index: 1; /* ДОБАВЛЕНО */
-}
-
-/* НОВОЕ: Анимация выезда снизу при открытии */
-.slideUp {
-  animation: slideUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-/* НОВОЕ: Анимация скрытия вниз при закрытии */
-.slideDown {
   animation: slideDown 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-/* ИЗМЕНЕНИЕ: translate3d вместо translateY для GPU-ускорения */
+/* НОВОЕ: Анимация выезда снизу */
 @keyframes slideUp {
   from {
     transform: translate3d(0, 100%, 0);
@@ -61,7 +31,7 @@
   }
 }
 
-/* ИЗМЕНЕНИЕ: translate3d вместо translateY */
+/* НОВОЕ: Анимация заезда вниз */
 @keyframes slideDown {
   from {
     transform: translate3d(0, 0, 0);
@@ -71,6 +41,16 @@
   }
 }
 
+/* .screen больше НЕ анимируется */
+.screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  will-change: transform;
+  transform: translateZ(0);
+  z-index: 1;
+}
 /* Кнопка закрытия */
 .closeButton {
   position: fixed;
