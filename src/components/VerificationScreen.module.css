@@ -81,7 +81,7 @@
   height: clamp(3.5rem, 13vw, 3.875rem); /* 56-62px */
   
   /* Окантовка */
-  border: 1px solid #575757;
+  border: 1px solid #B9B9B9;
   border-radius: 0.5rem; /* 8px - небольшое скругление */
   
   /* Шрифт */
