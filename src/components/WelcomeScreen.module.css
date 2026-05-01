@@ -100,7 +100,7 @@
 /* ───── Кнопка "Вход" ───── */
 .loginButton {
   position: absolute;
-  top: 38.4375rem; /* 615px из Figma */
+  top: 48.0rem; /* 615px из Figma */
   left: 50%;
   transform: translateX(-50%);
   
