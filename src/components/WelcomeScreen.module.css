@@ -2,9 +2,8 @@
 .container {
   position: relative;
   width: 100%;
-  min-height: 100vh;
   min-height: 100svh;
-  height: auto;
+  height: 55rem;
   overflow-y: auto;
   overflow-x: hidden;
   margin: 0;
