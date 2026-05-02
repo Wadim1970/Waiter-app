@@ -8,6 +8,16 @@
   "theme_color": "#102A45",
   "background_color": "#102A45",
   "orientation": "portrait",
+   "share_target": {
+    "action": "/registration",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
   "icons": [
     {
       "src": "/icons/Waiter_logo-180.png",
