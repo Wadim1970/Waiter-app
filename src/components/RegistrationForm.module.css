@@ -5,8 +5,9 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  height: 100svh;
-  background: #E4E4E7; /* Zinc-200 из Figma */
+  height: 100svh; /* Для Safari в браузере */
+  height: 100dvh; /* Для PWA режима */
+  background: #E4E4E7;
   z-index: 9999;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
