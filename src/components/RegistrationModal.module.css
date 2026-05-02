@@ -1,0 +1,99 @@
+/* Оверлей (прозрачный, не блокирует клики) */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+/* Модальное окно */
+.modalBox {
+  width: 100%;
+  max-width: 20rem; /* 320px */
+  height: 12rem; /* 192px */
+  background: #0EA5E9; /* Sky-500 */
+  border-radius: 1rem;
+  padding: 1.8125rem; /* 29px */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Заголовок */
+.title {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  color: white;
+  text-align: center;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Описание */
+.description {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  font-size: 0.875rem;
+  color: white;
+  text-align: center;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Контейнер кнопок */
+.buttons {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* Кнопка "Отказаться" */
+.cancelButton {
+  background: none;
+  border: none;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 1rem;
+  color: white;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+.cancelButton:hover {
+  opacity: 0.8;
+}
+
+/* Кнопка "ПРОДОЛЖИТЬ" */
+.continueButton {
+  width: 9rem; /* 144px */
+  height: 2.5rem; /* 40px */
+  background: #EA580C; /* Orange-600 */
+  border-radius: 2.75rem; /* 44px */
+  border: none;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: white;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.continueButton:hover {
+  opacity: 0.9;
+}
+
+.continueButton:active {
+  transform: scale(0.98);
+}
