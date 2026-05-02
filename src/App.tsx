@@ -5,6 +5,7 @@ import AuthCheck from './components/AuthCheck'
 import JobDetailsScreen from './components/JobDetailsScreen'
 import './App.css'
 import RegistrationForm from './components/RegistrationForm'
+import BookingSuccessScreen from './components/BookingSuccessScreen'
 
 const RegisterScreen = lazy(() => import('./components/RegisterScreen'))
 const VerificationScreen = lazy(() => import('./components/VerificationScreen'))
@@ -89,6 +90,7 @@ function App() {
           {/* ИЗМЕНЕНО: Используем обёртку */}
           <Route path="/map" element={<MapScreenWithDetails />} />
           <Route path="/profile" element={<MapScreenWithDetails />} />
+          <Route path="/booking-success" element={<BookingSuccessScreen />} />
           
           <Route path="/search" element={<PlaceholderScreen title="🔍 Поиск" />} />
           <Route path="/orders" element={<PlaceholderScreen title="📋 Заказы" />} />
