@@ -4,10 +4,12 @@ import styles from './RegistrationForm.module.css'
 
 export default function RegistrationForm() {
   const navigate = useNavigate()
-    
+  
   const [formData, setFormData] = useState({
-    // Паспорт
-    fullName: '',
+    // Паспорт (ИЗМЕНЕНО: три поля вместо одного)
+    lastName: '',
+    firstName: '',
+    patronymic: '',
     birthDate: '',
     gender: '',
     passportSeries: '',
@@ -34,7 +36,6 @@ export default function RegistrationForm() {
   })
 
   const handleSubmit = () => {
-    // TODO: Отправка на сервер
     console.log('Данные формы:', formData)
     console.log('Фотографии:', photos)
     alert('Данные отправлены на проверку!')
@@ -45,6 +46,35 @@ export default function RegistrationForm() {
     navigate(-1)
   }
 
+  // НОВОЕ: Обработчики загрузки фото
+  const handlePassportMainPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setPhotos(prev => ({ ...prev, passportMain: file }))
+      // TODO: В будущем здесь будет распознавание через DADATA
+      console.log('📸 Загружено фото основного разворота:', file.name)
+    }
+  }
+
+  const handlePassportRegistrationPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setPhotos(prev => ({ ...prev, passportRegistration: file }))
+      console.log('📸 Загружено фото регистрации:', file.name)
+    }
+  }
+
+  const handleMedicalBookPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length > 0) {
+      setPhotos(prev => ({ 
+        ...prev, 
+        medicalBook: [...prev.medicalBook, ...files] 
+      }))
+      console.log('📸 Загружено фото мед.книжки:', files.map(f => f.name))
+    }
+  }
+
   return (
     <div className={styles.container}>
       {/* Кнопка закрытия */}
@@ -53,28 +83,74 @@ export default function RegistrationForm() {
       {/* Скроллируемый контент */}
       <div className={styles.content}>
         
-        {/* БЛОК 1: Паспортные данные */}
+        {/* БЛОК 1: Паспортные данные (ОБНОВЛЁН) */}
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>ПАСПОРТНЫЕ ДАННЫЕ</h2>
           
-          {/* Кнопка Госуслуги */}
-          <button className={styles.gosuslugiButton}>
-            <img src="/icons/logo_gosuslugi.png" alt="Госуслуги" className={styles.gosuslugiIcon} />
-            <span>Заполнить через Госуслуги</span>
-          </button>
+          {/* НОВОЕ: Текст "сделайте фото паспорта" */}
+          <p className={styles.photoHint}>сделайте фото паспорта</p>
 
-          {/* Разделитель "или вручную" */}
-          <div className={styles.divider}>
-            <span>или вручную</span>
+          {/* НОВОЕ: Два поля для фото */}
+          <div className={styles.photoRow}>
+            <div className={styles.photoBox}>
+              <input 
+                type="file" 
+                accept="image/*"
+                capture="environment"
+                onChange={handlePassportMainPhoto}
+                id="passport-main"
+                style={{ display: 'none' }}
+              />
+              <label htmlFor="passport-main" className={styles.photoBoxLabel}>
+                <p className={styles.photoLabel}>основной разворот</p>
+                <span className={styles.addPhotoButton}>+ Добавить</span>
+              </label>
+            </div>
+            
+            <div className={styles.photoBox}>
+              <input 
+                type="file" 
+                accept="image/*"
+                capture="environment"
+                onChange={handlePassportRegistrationPhoto}
+                id="passport-registration"
+                style={{ display: 'none' }}
+              />
+              <label htmlFor="passport-registration" className={styles.photoBoxLabel}>
+                <p className={styles.photoLabel}>регистрация</p>
+                <span className={styles.addPhotoButton}>+ Добавить</span>
+              </label>
+            </div>
           </div>
 
-          {/* Поля паспорта */}
+          {/* НОВОЕ: Разделитель "проверьте данные*" */}
+          <div className={styles.divider}>
+            <span>проверьте данные*</span>
+          </div>
+
+          {/* НОВОЕ: Три поля вместо одного */}
           <input 
             type="text" 
             className={styles.input}
-            placeholder="ФИО  полностью"
-            value={formData.fullName}
-            onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+            placeholder="Фамилия"
+            value={formData.lastName}
+            onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+          />
+
+          <input 
+            type="text" 
+            className={styles.input}
+            placeholder="Имя"
+            value={formData.firstName}
+            onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+          />
+
+          <input 
+            type="text" 
+            className={styles.input}
+            placeholder="Отчество"
+            value={formData.patronymic}
+            onChange={(e) => setFormData({...formData, patronymic: e.target.value})}
           />
 
           <div className={styles.row}>
@@ -120,25 +196,14 @@ export default function RegistrationForm() {
             value={formData.passportIssuedBy}
             onChange={(e) => setFormData({...formData, passportIssuedBy: e.target.value})}
           />
+
+          {/* НОВОЕ: Подсказка внизу */}
+          <p className={styles.autoFillHint}>
+            если данные автоматически не заполнились, заполните их вручную
+          </p>
         </section>
 
-        {/* БЛОК 2: Фото паспорта */}
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>ФОТО ПАСПОРТА</h2>
-          
-          <div className={styles.photoRow}>
-            <div className={styles.photoBox}>
-              <p className={styles.photoLabel}>основной разворот</p>
-              <button className={styles.addPhotoButton}>+ Добавить</button>
-            </div>
-            <div className={styles.photoBox}>
-              <p className={styles.photoLabel}>регистрация</p>
-              <button className={styles.addPhotoButton}>+ Добавить</button>
-            </div>
-          </div>
-        </section>
-
-        {/* БЛОК 3: Медицинская книжка */}
+        {/* БЛОК 2: Медицинская книжка */}
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>МЕДИЦИНСКАЯ КНИЖКА</h2>
           <p className={styles.hint}>
@@ -148,23 +213,67 @@ export default function RegistrationForm() {
 
           <div className={styles.medicalPhotos}>
             <div className={styles.medicalPhotoBox}>
-              <span className={styles.addIcon}>+</span>
-              <p className={styles.medicalLabel}>стр. 1</p>
+              <input 
+                type="file" 
+                accept="image/*"
+                capture="environment"
+                onChange={handleMedicalBookPhoto}
+                id="medical-1"
+                style={{ display: 'none' }}
+              />
+              <label htmlFor="medical-1" className={styles.medicalPhotoLabel}>
+                <span className={styles.addIcon}>+</span>
+                <p className={styles.medicalLabel}>стр. 1</p>
+              </label>
             </div>
+            
             <div className={styles.medicalPhotoBox}>
-              <span className={styles.addIcon}>+</span>
-              <p className={styles.medicalLabel}>стр. 2</p>
+              <input 
+                type="file" 
+                accept="image/*"
+                capture="environment"
+                onChange={handleMedicalBookPhoto}
+                id="medical-2"
+                style={{ display: 'none' }}
+              />
+              <label htmlFor="medical-2" className={styles.medicalPhotoLabel}>
+                <span className={styles.addIcon}>+</span>
+                <p className={styles.medicalLabel}>стр. 2</p>
+              </label>
             </div>
+            
             <div className={styles.medicalPhotoBox}>
-              <span className={styles.addIcon}>+</span>
-              <p className={styles.medicalLabel}>стр. 3+</p>
+              <input 
+                type="file" 
+                accept="image/*"
+                capture="environment"
+                multiple
+                onChange={handleMedicalBookPhoto}
+                id="medical-3"
+                style={{ display: 'none' }}
+              />
+              <label htmlFor="medical-3" className={styles.medicalPhotoLabel}>
+                <span className={styles.addIcon}>+</span>
+                <p className={styles.medicalLabel}>стр. 3+</p>
+              </label>
             </div>
           </div>
 
-          <button className={styles.addMoreButton}>+ Добавить</button>
+          <input 
+            type="file" 
+            accept="image/*"
+            capture="environment"
+            multiple
+            onChange={handleMedicalBookPhoto}
+            id="medical-more"
+            style={{ display: 'none' }}
+          />
+          <label htmlFor="medical-more" className={styles.addMoreButton}>
+            + Добавить
+          </label>
         </section>
 
-        {/* БЛОК 4: Личная информация */}
+        {/* БЛОК 3: Личная информация */}
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>ЛИЧНАЯ ИНФОРМАЦИЯ</h2>
           
@@ -192,7 +301,7 @@ export default function RegistrationForm() {
           />
         </section>
 
-        {/* БЛОК 5: Выплата чаевых */}
+        {/* БЛОК 4: Выплата чаевых */}
         <section className={styles.section}>
           <div className={styles.tipsHeader}>
             <h2 className={styles.sectionTitle}>ВЫПЛАТА ЧАЕВЫХ</h2>
