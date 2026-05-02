@@ -335,6 +335,28 @@
   opacity: 0.9;
 }
 
+/* Стили ошибок валидации */
+.error {
+  border: 2px solid #EF4444 !important;
+}
+
+.errorBlock {
+  outline: 2px solid #EF4444;
+  outline-offset: 2px;
+  border-radius: 1rem;
+}
+
+.errorCheckbox {
+  color: #EF4444;
+}
+
+.errorMessage {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.75rem;
+  color: #EF4444;
+  margin: 0.5rem 0 0 0;
+}
+
 /* Адаптация */
 @media (min-width: 48rem) {
   .container {
