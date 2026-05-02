@@ -2,45 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import styles from './RegistrationForm.module.css'
 
-// Функция парсинга данных от Госуслуг
-function parseGosuslugiData(text: string) {
-  const lines = text.split('\n').map(line => line.trim()).filter(Boolean)
-  
-  const data: any = {}
-  
-  lines.forEach(line => {
-    if (line.includes('ФИО:')) {
-      data.fullName = line.replace('ФИО:', '').trim()
-    }
-    if (line.includes('Серия и номер:')) {
-      data.passportSeries = line.replace('Серия и номер:', '').trim()
-    }
-    if (line.includes('Кем выдан:')) {
-      data.passportIssuedBy = line.replace('Кем выдан:', '').trim()
-    }
-    if (line.includes('Дата выдачи:')) {
-      const dateStr = line.replace('Дата выдачи:', '').trim()
-      const [day, month, year] = dateStr.split('.')
-      data.passportIssueDate = `${year}-${month}-${day}`
-    }
-    if (line.includes('Дата рождения:')) {
-      const dateStr = line.replace('Дата рождения:', '').trim()
-      const [day, month, year] = dateStr.split('.')
-      data.birthDate = `${year}-${month}-${day}`
-    }
-    if (line.includes('Пол:')) {
-      const gender = line.replace('Пол:', '').trim()
-      data.gender = gender === 'Мужской' ? 'male' : 'female'
-    }
-  })
-  
-  return data
-}
-
 export default function RegistrationForm() {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  
+    
   const [formData, setFormData] = useState({
     // Паспорт
     fullName: '',
@@ -68,23 +32,6 @@ export default function RegistrationForm() {
     passportRegistration: null as File | null,
     medicalBook: [] as File[]
   })
-
-  useEffect(() => {
-  const sharedText = searchParams.get('text')
-  
-  if (sharedText) {
-    console.log('📥 Получены данные от Госуслуг:', sharedText)
-    const parsedData = parseGosuslugiData(sharedText)
-    console.log('✅ Распарсенные данные:', parsedData)
-    
-    setFormData(prev => ({
-      ...prev,
-      ...parsedData
-    }))
-    
-    navigate('/registration', { replace: true })
-  }
-}, [searchParams, navigate])
 
   const handleSubmit = () => {
     // TODO: Отправка на сервер
