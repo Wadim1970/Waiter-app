@@ -16,15 +16,15 @@
 .modalBox {
   width: 100%;
   max-width: 20rem; /* 320px */
-  height: 12rem; /* 192px */
-  background: #0EA5E9; /* Sky-500 */
+  min-height: 12rem; /* ИЗМЕНЕНО: min-height вместо height */
+  background: #0EA5E9;
   border-radius: 1rem;
-  padding: 1.8125rem; /* 29px */
+  padding: 1.8125rem 1.8125rem 1.5rem; /* ИЗМЕНЕНО: разные отступы */
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  gap: 1rem; /* ДОБАВЛЕНО: фиксированное расстояние */
 }
 
 /* Заголовок */
@@ -56,6 +56,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  margin-top: auto; /* ДОБАВЛЕНО: прижимает кнопки к низу */
 }
 
 /* Кнопка "Отказаться" */
@@ -79,8 +80,8 @@
 .continueButton {
   width: 9rem; /* 144px */
   height: 2.5rem; /* 40px */
-  background: #EA580C; /* Orange-600 */
-  border-radius: 2.75rem; /* 44px */
+  background: #EA580C;
+  border-radius: 2.75rem;
   border: none;
   font-family: 'Inter', sans-serif;
   font-weight: 700;
