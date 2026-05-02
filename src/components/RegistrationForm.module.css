@@ -367,7 +367,7 @@
 /* НОВОЕ: Затемнение и размытие когда модалка открыта */
 .formContent.blurred {
   filter: blur(3px);
-  opacity: 0;
+  
   pointer-events: none;
 }
 
