@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabaseWaiters } from '../lib/supabase'
+import { supabaseWaiter } from '../lib/supabase'
 import styles from './RegistrationForm.module.css'
 
 interface ValidationErrors {
