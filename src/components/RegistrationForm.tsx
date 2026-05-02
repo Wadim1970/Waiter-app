@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import styles from './RegistrationForm.module.css'
 
 export default function RegistrationForm() {
