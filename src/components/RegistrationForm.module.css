@@ -58,31 +58,17 @@
   margin: 0 0 1.25rem 0;
 }
 
-/* Кнопка Госуслуги */
-.gosuslugiButton {
-  width: 100%;
-  height: 3rem;
-  background: #1E40AF; /* Blue-700 */
-  border-radius: 1rem;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
+/* НОВОЕ: Текст "сделайте фото паспорта" */
+.photoHint {
   font-family: 'Montserrat', sans-serif;
-  font-weight: 700;
   font-size: 1rem;
-  color: white;
-  cursor: pointer;
-  margin-bottom: 1rem;
+  color: #64748B;
+  text-transform: lowercase;
+  margin: 0 0 1rem 0;
+  font-weight: 400;
 }
 
-.gosuslugiIcon {
-  width: 2rem;
-  height: 2rem;
-}
-
-/* Разделитель "или вручную" */
+/* Разделитель "проверьте данные*" */
 .divider {
   display: flex;
   align-items: center;
@@ -159,10 +145,20 @@
   color: #A3A3A3;
 }
 
+/* НОВОЕ: Подсказка "если данные автоматически не заполнились..." */
+.autoFillHint {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  color: #A3A3A3;
+  margin: 0.5rem 0 0 0;
+  line-height: 1.4;
+}
+
 /* Фото паспорта */
 .photoRow {
   display: flex;
   gap: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 .photoBox {
@@ -171,11 +167,19 @@
   background: white;
   border-radius: 1rem;
   border: 1px solid #A1A1AA;
+  overflow: hidden;
+}
+
+/* НОВОЕ: Обёртка для label внутри photoBox */
+.photoBoxLabel {
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem;
+  cursor: pointer;
 }
 
 .photoLabel {
@@ -186,12 +190,9 @@
 }
 
 .addPhotoButton {
-  background: none;
-  border: none;
   font-family: 'Inter', sans-serif;
   font-size: 0.875rem;
   color: #1E40AF;
-  cursor: pointer;
 }
 
 /* Медицинская книжка */
@@ -215,11 +216,19 @@
   background: white;
   border-radius: 1rem;
   border: 1px solid #A1A1AA;
+  overflow: hidden;
+}
+
+/* НОВОЕ: Обёртка для label внутри medicalPhotoBox */
+.medicalPhotoLabel {
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 0.25rem;
+  cursor: pointer;
 }
 
 .addIcon {
@@ -245,6 +254,9 @@
   font-size: 0.875rem;
   color: #1E40AF;
   cursor: pointer;
+  display: block;
+  text-align: center;
+  line-height: 2.25rem;
 }
 
 /* CloudTips */
