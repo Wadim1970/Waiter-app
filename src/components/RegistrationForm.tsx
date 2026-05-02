@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabaseWaiter } from '../lib/supabase'
+import RegistrationModal from './RegistrationModal'
 import styles from './RegistrationForm.module.css'
 
 interface ValidationErrors {
@@ -9,12 +10,16 @@ interface ValidationErrors {
 
 export default function RegistrationForm() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   
   // Получаем UUID официанта из localStorage
   const waiterId = localStorage.getItem('waiter_device_id')
   
+  // НОВОЕ: Проверяем нужно ли показать модалку
+  const shouldShowModal = searchParams.get('showModal') === 'true'
+  const [isModalVisible, setIsModalVisible] = useState(shouldShowModal)
+  
   const [formData, setFormData] = useState({
-    // Паспорт (ОБЯЗАТЕЛЬНЫЕ)
     lastName: '',
     firstName: '',
     patronymic: '',
@@ -23,16 +28,10 @@ export default function RegistrationForm() {
     passportSeries: '',
     passportIssueDate: '',
     passportIssuedBy: '',
-    
-    // Личная информация (ОБЯЗАТЕЛЬНЫЕ, кроме bio)
     inn: '',
     address: '',
-    about: '', // НЕОБЯЗАТЕЛЬНОЕ
-    
-    // CloudTips (НЕОБЯЗАТЕЛЬНОЕ)
+    about: '',
     cloudTipsLink: '',
-    
-    // Согласия (ОБЯЗАТЕЛЬНЫЕ)
     personalDataConsent: false,
     termsConsent: false
   })
@@ -46,11 +45,17 @@ export default function RegistrationForm() {
   const [errors, setErrors] = useState<ValidationErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Валидация формы
+  // НОВОЕ: Убираем параметр showModal из URL после монтирования
+  useEffect(() => {
+    if (shouldShowModal) {
+      // Убираем параметр из URL (но модалка уже открыта в state)
+      navigate('/registration', { replace: true })
+    }
+  }, [shouldShowModal, navigate])
+
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {}
 
-    // Проверяем обязательные текстовые поля
     const requiredFields = [
       'lastName',
       'firstName',
@@ -70,7 +75,6 @@ export default function RegistrationForm() {
       }
     })
 
-    // Проверяем фото паспорта (ОБЯЗАТЕЛЬНЫЕ)
     if (!photos.passportMain) {
       newErrors.passportMain = true
     }
@@ -78,12 +82,10 @@ export default function RegistrationForm() {
       newErrors.passportRegistration = true
     }
 
-    // Проверяем мед.книжку (минимум 3 фото)
     if (photos.medicalBook.length < 3) {
       newErrors.medicalBook = true
     }
 
-    // Проверяем согласия
     if (!formData.personalDataConsent) {
       newErrors.personalDataConsent = true
     }
@@ -95,21 +97,19 @@ export default function RegistrationForm() {
     return Object.keys(newErrors).length === 0
   }
 
-  // Загрузка фото в Supabase Storage
   const uploadPhoto = async (file: File, path: string): Promise<string | null> => {
     try {
       const fileExt = file.name.split('.').pop()
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
       const filePath = `${waiterId}/${path}/${fileName}`
 
-      const { error: uploadError } = await supabaseWaiters.storage
+      const { error: uploadError } = await supabaseWaiter.storage
         .from('waiter-documents')
         .upload(filePath, file)
 
       if (uploadError) throw uploadError
 
-      // Получаем публичный URL
-      const { data } = supabaseWaiters.storage
+      const { data } = supabaseWaiter.storage
         .from('waiter-documents')
         .getPublicUrl(filePath)
 
@@ -120,16 +120,13 @@ export default function RegistrationForm() {
     }
   }
 
-  // Отправка формы
   const handleSubmit = async () => {
-    // Проверяем наличие waiterId
     if (!waiterId) {
       alert('❌ Ошибка: не найден ID официанта. Пройдите регистрацию заново.')
       navigate('/register')
       return
     }
 
-    // Валидация
     if (!validateForm()) {
       alert('⚠️ Заполните все обязательные поля!')
       return
@@ -138,7 +135,6 @@ export default function RegistrationForm() {
     setIsSubmitting(true)
 
     try {
-      // 1. Загружаем фото паспорта
       const passportMainUrl = await uploadPhoto(photos.passportMain!, 'passport/main')
       const passportRegUrl = await uploadPhoto(photos.passportRegistration!, 'passport/registration')
 
@@ -146,7 +142,6 @@ export default function RegistrationForm() {
         throw new Error('Не удалось загрузить фото паспорта')
       }
 
-      // 2. Загружаем фото мед.книжки
       const medicalUrls: string[] = []
       for (let i = 0; i < Math.min(photos.medicalBook.length, 3); i++) {
         const url = await uploadPhoto(photos.medicalBook[i], `medical-book/page-${i + 1}`)
@@ -157,22 +152,16 @@ export default function RegistrationForm() {
         throw new Error('Не удалось загрузить все фото мед.книжки')
       }
 
-      // 3. Разбиваем серию и номер паспорта
       const passportParts = formData.passportSeries.trim().split(/\s+/)
       const passportSeries = passportParts[0] || ''
       const passportNumber = passportParts.slice(1).join('') || ''
 
-      // 4. ОБНОВЛЯЕМ запись официанта (НЕ INSERT!)
-      const { data, error } = await supabaseWaiters
+      const { data, error } = await supabaseWaiter
         .from('waiters')
         .update({
-          // ФИО
           last_name: formData.lastName.trim(),
           middle_name: formData.patronymic.trim(),
-          // first_name уже заполнен при регистрации, но можем обновить
           first_name: formData.firstName.trim(),
-          
-          // Паспорт
           date_of_birth: formData.birthDate,
           gender: formData.gender,
           passport_series: passportSeries,
@@ -181,30 +170,18 @@ export default function RegistrationForm() {
           passport_issue_date: formData.passportIssueDate,
           passport_photo_main_url: passportMainUrl,
           passport_photo_registration_url: passportRegUrl,
-          
-          // Мед.книжка
           medical_book_photo_1_url: medicalUrls[0],
           medical_book_photo_2_url: medicalUrls[1],
           medical_book_photo_3_url: medicalUrls[2],
-          
-          // Личная информация
           inn: formData.inn.trim(),
           address_registration: formData.address.trim(),
           bio: formData.about.trim() || null,
-          
-          // CloudTips
           cloudtips_link: formData.cloudTipsLink.trim() || null,
-          
-          // Согласия
           gdpr_consent: formData.personalDataConsent,
           gdpr_consent_date: new Date().toISOString(),
           terms_accepted: formData.termsConsent,
           terms_accepted_date: new Date().toISOString(),
-          
-          // ВАЖНО: Помечаем профиль как заполненный!
           profile_completed: true,
-          
-          // Обновляем timestamp
           updated_at: new Date().toISOString()
         })
         .eq('id', waiterId)
@@ -214,8 +191,9 @@ export default function RegistrationForm() {
       if (error) throw error
 
       console.log('✅ Профиль официанта обновлён:', data)
-      alert('✅ Данные успешно сохранены!')
-      navigate('/map')
+      
+      // НОВОЕ: Переход на синюю заглушку
+      navigate('/booking-success')
 
     } catch (error: any) {
       console.error('❌ Ошибка сохранения:', error)
@@ -229,7 +207,15 @@ export default function RegistrationForm() {
     navigate(-1)
   }
 
-  // Обработчики загрузки фото
+  // НОВОЕ: Обработчики модалки
+  const handleModalContinue = () => {
+    setIsModalVisible(false)
+  }
+
+  const handleModalCancel = () => {
+    navigate(-1) // Возврат на JobDetailsScreen
+  }
+
   const handlePassportMainPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -259,326 +245,337 @@ export default function RegistrationForm() {
 
   return (
     <div className={styles.container}>
-      <button className={styles.closeButton} onClick={handleClose}>✕</button>
+      {/* НОВОЕ: Модалка поверх формы */}
+      {isModalVisible && (
+        <RegistrationModal 
+          onContinue={handleModalContinue}
+          onCancel={handleModalCancel}
+        />
+      )}
 
-      <div className={styles.content}>
-        
-        {/* БЛОК 1: Паспортные данные */}
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>ПАСПОРТНЫЕ ДАННЫЕ</h2>
+      {/* НОВОЕ: Затемнение и размытие контента если модалка открыта */}
+      <div className={`${styles.formContent} ${isModalVisible ? styles.blurred : ''}`}>
+        <button className={styles.closeButton} onClick={handleClose}>✕</button>
+
+        <div className={styles.content}>
           
-          <p className={styles.photoHint}>сделайте фото паспорта</p>
-
-          <div className={styles.photoRow}>
-            <div className={`${styles.photoBox} ${errors.passportMain ? styles.error : ''}`}>
-              <input 
-                type="file" 
-                accept="image/*"
-                capture="environment"
-                onChange={handlePassportMainPhoto}
-                id="passport-main"
-                style={{ display: 'none' }}
-              />
-              <label htmlFor="passport-main" className={styles.photoBoxLabel}>
-                <p className={styles.photoLabel}>основной разворот</p>
-                <span className={styles.addPhotoButton}>
-                  {photos.passportMain ? '✓ Загружено' : '+ Добавить'}
-                </span>
-              </label>
-            </div>
+          {/* БЛОК 1: Паспортные данные */}
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>ПАСПОРТНЫЕ ДАННЫЕ</h2>
             
-            <div className={`${styles.photoBox} ${errors.passportRegistration ? styles.error : ''}`}>
-              <input 
-                type="file" 
-                accept="image/*"
-                capture="environment"
-                onChange={handlePassportRegistrationPhoto}
-                id="passport-registration"
-                style={{ display: 'none' }}
-              />
-              <label htmlFor="passport-registration" className={styles.photoBoxLabel}>
-                <p className={styles.photoLabel}>регистрация</p>
-                <span className={styles.addPhotoButton}>
-                  {photos.passportRegistration ? '✓ Загружено' : '+ Добавить'}
-                </span>
-              </label>
+            <p className={styles.photoHint}>сделайте фото паспорта</p>
+
+            <div className={styles.photoRow}>
+              <div className={`${styles.photoBox} ${errors.passportMain ? styles.error : ''}`}>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handlePassportMainPhoto}
+                  id="passport-main"
+                  style={{ display: 'none' }}
+                />
+                <label htmlFor="passport-main" className={styles.photoBoxLabel}>
+                  <p className={styles.photoLabel}>основной разворот</p>
+                  <span className={styles.addPhotoButton}>
+                    {photos.passportMain ? '✓ Загружено' : '+ Добавить'}
+                  </span>
+                </label>
+              </div>
+              
+              <div className={`${styles.photoBox} ${errors.passportRegistration ? styles.error : ''}`}>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handlePassportRegistrationPhoto}
+                  id="passport-registration"
+                  style={{ display: 'none' }}
+                />
+                <label htmlFor="passport-registration" className={styles.photoBoxLabel}>
+                  <p className={styles.photoLabel}>регистрация</p>
+                  <span className={styles.addPhotoButton}>
+                    {photos.passportRegistration ? '✓ Загружено' : '+ Добавить'}
+                  </span>
+                </label>
+              </div>
             </div>
-          </div>
 
-          <div className={styles.divider}>
-            <span>проверьте данные*</span>
-          </div>
+            <div className={styles.divider}>
+              <span>проверьте данные*</span>
+            </div>
 
-          <input 
-            type="text" 
-            className={`${styles.input} ${errors.lastName ? styles.error : ''}`}
-            placeholder="Фамилия"
-            value={formData.lastName}
-            onChange={(e) => {
-              setFormData({...formData, lastName: e.target.value})
-              setErrors(prev => ({ ...prev, lastName: false }))
-            }}
-          />
-
-          <input 
-            type="text" 
-            className={`${styles.input} ${errors.firstName ? styles.error : ''}`}
-            placeholder="Имя"
-            value={formData.firstName}
-            onChange={(e) => {
-              setFormData({...formData, firstName: e.target.value})
-              setErrors(prev => ({ ...prev, firstName: false }))
-            }}
-          />
-
-          <input 
-            type="text" 
-            className={`${styles.input} ${errors.patronymic ? styles.error : ''}`}
-            placeholder="Отчество"
-            value={formData.patronymic}
-            onChange={(e) => {
-              setFormData({...formData, patronymic: e.target.value})
-              setErrors(prev => ({ ...prev, patronymic: false }))
-            }}
-          />
-
-          <div className={styles.row}>
-            <input 
-              type="date" 
-              className={`${styles.inputHalf} ${errors.birthDate ? styles.error : ''}`}
-              placeholder="Дата рождения"
-              value={formData.birthDate}
-              onChange={(e) => {
-                setFormData({...formData, birthDate: e.target.value})
-                setErrors(prev => ({ ...prev, birthDate: false }))
-              }}
-            />
-            <select 
-              className={`${styles.inputHalf} ${errors.gender ? styles.error : ''}`}
-              value={formData.gender}
-              onChange={(e) => {
-                setFormData({...formData, gender: e.target.value})
-                setErrors(prev => ({ ...prev, gender: false }))
-              }}
-            >
-              <option value="">Пол</option>
-              <option value="male">Мужской</option>
-              <option value="female">Женский</option>
-            </select>
-          </div>
-
-          <div className={styles.row}>
             <input 
               type="text" 
-              className={`${styles.inputHalf} ${errors.passportSeries ? styles.error : ''}`}
-              placeholder="Серия и номер"
-              value={formData.passportSeries}
+              className={`${styles.input} ${errors.lastName ? styles.error : ''}`}
+              placeholder="Фамилия"
+              value={formData.lastName}
               onChange={(e) => {
-                setFormData({...formData, passportSeries: e.target.value})
-                setErrors(prev => ({ ...prev, passportSeries: false }))
+                setFormData({...formData, lastName: e.target.value})
+                setErrors(prev => ({ ...prev, lastName: false }))
               }}
             />
+
             <input 
-              type="date" 
-              className={`${styles.inputHalf} ${errors.passportIssueDate ? styles.error : ''}`}
-              placeholder="Дата выдачи"
-              value={formData.passportIssueDate}
+              type="text" 
+              className={`${styles.input} ${errors.firstName ? styles.error : ''}`}
+              placeholder="Имя"
+              value={formData.firstName}
               onChange={(e) => {
-                setFormData({...formData, passportIssueDate: e.target.value})
-                setErrors(prev => ({ ...prev, passportIssueDate: false }))
+                setFormData({...formData, firstName: e.target.value})
+                setErrors(prev => ({ ...prev, firstName: false }))
               }}
             />
-          </div>
 
-          <input 
-            type="text" 
-            className={`${styles.input} ${errors.passportIssuedBy ? styles.error : ''}`}
-            placeholder="Кем выдан"
-            value={formData.passportIssuedBy}
-            onChange={(e) => {
-              setFormData({...formData, passportIssuedBy: e.target.value})
-              setErrors(prev => ({ ...prev, passportIssuedBy: false }))
-            }}
-          />
+            <input 
+              type="text" 
+              className={`${styles.input} ${errors.patronymic ? styles.error : ''}`}
+              placeholder="Отчество"
+              value={formData.patronymic}
+              onChange={(e) => {
+                setFormData({...formData, patronymic: e.target.value})
+                setErrors(prev => ({ ...prev, patronymic: false }))
+              }}
+            />
 
-          <p className={styles.autoFillHint}>
-            если данные автоматически не заполнились, заполните их вручную
-          </p>
-        </section>
-
-        {/* БЛОК 2: Медицинская книжка */}
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>МЕДИЦИНСКАЯ КНИЖКА</h2>
-          <p className={styles.hint}>
-            Необходимо минимум 3 фото: личные данные, врачи/допуск, 
-            аттестация о профессиональной гигиенической подготовке (ГИГ).
-          </p>
-
-          <div className={`${styles.medicalPhotos} ${errors.medicalBook ? styles.errorBlock : ''}`}>
-            <div className={styles.medicalPhotoBox}>
+            <div className={styles.row}>
               <input 
-                type="file" 
-                accept="image/*"
-                capture="environment"
-                onChange={handleMedicalBookPhoto}
-                id="medical-1"
-                style={{ display: 'none' }}
+                type="date" 
+                className={`${styles.inputHalf} ${errors.birthDate ? styles.error : ''}`}
+                placeholder="Дата рождения"
+                value={formData.birthDate}
+                onChange={(e) => {
+                  setFormData({...formData, birthDate: e.target.value})
+                  setErrors(prev => ({ ...prev, birthDate: false }))
+                }}
               />
-              <label htmlFor="medical-1" className={styles.medicalPhotoLabel}>
-                <span className={styles.addIcon}>
-                  {photos.medicalBook[0] ? '✓' : '+'}
-                </span>
-                <p className={styles.medicalLabel}>стр. 1</p>
-              </label>
+              <select 
+                className={`${styles.inputHalf} ${errors.gender ? styles.error : ''}`}
+                value={formData.gender}
+                onChange={(e) => {
+                  setFormData({...formData, gender: e.target.value})
+                  setErrors(prev => ({ ...prev, gender: false }))
+                }}
+              >
+                <option value="">Пол</option>
+                <option value="male">Мужской</option>
+                <option value="female">Женский</option>
+              </select>
+            </div>
+
+            <div className={styles.row}>
+              <input 
+                type="text" 
+                className={`${styles.inputHalf} ${errors.passportSeries ? styles.error : ''}`}
+                placeholder="Серия и номер"
+                value={formData.passportSeries}
+                onChange={(e) => {
+                  setFormData({...formData, passportSeries: e.target.value})
+                  setErrors(prev => ({ ...prev, passportSeries: false }))
+                }}
+              />
+              <input 
+                type="date" 
+                className={`${styles.inputHalf} ${errors.passportIssueDate ? styles.error : ''}`}
+                placeholder="Дата выдачи"
+                value={formData.passportIssueDate}
+                onChange={(e) => {
+                  setFormData({...formData, passportIssueDate: e.target.value})
+                  setErrors(prev => ({ ...prev, passportIssueDate: false }))
+                }}
+              />
+            </div>
+
+            <input 
+              type="text" 
+              className={`${styles.input} ${errors.passportIssuedBy ? styles.error : ''}`}
+              placeholder="Кем выдан"
+              value={formData.passportIssuedBy}
+              onChange={(e) => {
+                setFormData({...formData, passportIssuedBy: e.target.value})
+                setErrors(prev => ({ ...prev, passportIssuedBy: false }))
+              }}
+            />
+
+            <p className={styles.autoFillHint}>
+              если данные автоматически не заполнились, заполните их вручную
+            </p>
+          </section>
+
+          {/* БЛОК 2: Медицинская книжка */}
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>МЕДИЦИНСКАЯ КНИЖКА</h2>
+            <p className={styles.hint}>
+              Необходимо минимум 3 фото: личные данные, врачи/допуск, 
+              аттестация о профессиональной гигиенической подготовке (ГИГ).
+            </p>
+
+            <div className={`${styles.medicalPhotos} ${errors.medicalBook ? styles.errorBlock : ''}`}>
+              <div className={styles.medicalPhotoBox}>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleMedicalBookPhoto}
+                  id="medical-1"
+                  style={{ display: 'none' }}
+                />
+                <label htmlFor="medical-1" className={styles.medicalPhotoLabel}>
+                  <span className={styles.addIcon}>
+                    {photos.medicalBook[0] ? '✓' : '+'}
+                  </span>
+                  <p className={styles.medicalLabel}>стр. 1</p>
+                </label>
+              </div>
+              
+              <div className={styles.medicalPhotoBox}>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleMedicalBookPhoto}
+                  id="medical-2"
+                  style={{ display: 'none' }}
+                />
+                <label htmlFor="medical-2" className={styles.medicalPhotoLabel}>
+                  <span className={styles.addIcon}>
+                    {photos.medicalBook[1] ? '✓' : '+'}
+                  </span>
+                  <p className={styles.medicalLabel}>стр. 2</p>
+                </label>
+              </div>
+              
+              <div className={styles.medicalPhotoBox}>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  capture="environment"
+                  multiple
+                  onChange={handleMedicalBookPhoto}
+                  id="medical-3"
+                  style={{ display: 'none' }}
+                />
+                <label htmlFor="medical-3" className={styles.medicalPhotoLabel}>
+                  <span className={styles.addIcon}>
+                    {photos.medicalBook[2] ? '✓' : '+'}
+                  </span>
+                  <p className={styles.medicalLabel}>стр. 3+</p>
+                </label>
+              </div>
+            </div>
+
+            {errors.medicalBook && (
+              <p className={styles.errorMessage}>Загрузите минимум 3 фотографии</p>
+            )}
+
+            <input 
+              type="file" 
+              accept="image/*"
+              capture="environment"
+              multiple
+              onChange={handleMedicalBookPhoto}
+              id="medical-more"
+              style={{ display: 'none' }}
+            />
+            <label htmlFor="medical-more" className={styles.addMoreButton}>
+              + Добавить ({photos.medicalBook.length} загружено)
+            </label>
+          </section>
+
+          {/* БЛОК 3: Личная информация */}
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>ЛИЧНАЯ ИНФОРМАЦИЯ</h2>
+            
+            <input 
+              type="text" 
+              className={`${styles.input} ${errors.inn ? styles.error : ''}`}
+              placeholder="ИНН"
+              value={formData.inn}
+              onChange={(e) => {
+                setFormData({...formData, inn: e.target.value})
+                setErrors(prev => ({ ...prev, inn: false }))
+              }}
+            />
+
+            <input 
+              type="text" 
+              className={`${styles.input} ${errors.address ? styles.error : ''}`}
+              placeholder="Адрес постоянной регистрации"
+              value={formData.address}
+              onChange={(e) => {
+                setFormData({...formData, address: e.target.value})
+                setErrors(prev => ({ ...prev, address: false }))
+              }}
+            />
+
+            <textarea 
+              className={styles.textarea}
+              placeholder="Расскажите о себе и предыдущем опыте работы в общепите.... (необязательно)"
+              value={formData.about}
+              onChange={(e) => setFormData({...formData, about: e.target.value})}
+            />
+          </section>
+
+          {/* БЛОК 4: Выплата чаевых */}
+          <section className={styles.section}>
+            <div className={styles.tipsHeader}>
+              <h2 className={styles.sectionTitle}>ВЫПЛАТА ЧАЕВЫХ</h2>
+              <span className={styles.cloudTipsBadge}>CloudTips</span>
             </div>
             
-            <div className={styles.medicalPhotoBox}>
-              <input 
-                type="file" 
-                accept="image/*"
-                capture="environment"
-                onChange={handleMedicalBookPhoto}
-                id="medical-2"
-                style={{ display: 'none' }}
-              />
-              <label htmlFor="medical-2" className={styles.medicalPhotoLabel}>
-                <span className={styles.addIcon}>
-                  {photos.medicalBook[1] ? '✓' : '+'}
-                </span>
-                <p className={styles.medicalLabel}>стр. 2</p>
-              </label>
-            </div>
+            <input 
+              type="url" 
+              className={styles.input}
+              placeholder="https://cloudtips.ru/p/... (необязательно)"
+              value={formData.cloudTipsLink}
+              onChange={(e) => setFormData({...formData, cloudTipsLink: e.target.value})}
+            />
             
-            <div className={styles.medicalPhotoBox}>
+            <p className={styles.hint}>
+              Ваша персональная ссылка для получения безналичного "чая" напрямую.
+            </p>
+          </section>
+
+          {/* ЧЕКБОКСЫ */}
+          <div className={styles.checkboxes}>
+            <label className={`${styles.checkbox} ${errors.personalDataConsent ? styles.errorCheckbox : ''}`}>
               <input 
-                type="file" 
-                accept="image/*"
-                capture="environment"
-                multiple
-                onChange={handleMedicalBookPhoto}
-                id="medical-3"
-                style={{ display: 'none' }}
+                type="checkbox"
+                checked={formData.personalDataConsent}
+                onChange={(e) => {
+                  setFormData({...formData, personalDataConsent: e.target.checked})
+                  setErrors(prev => ({ ...prev, personalDataConsent: false }))
+                }}
               />
-              <label htmlFor="medical-3" className={styles.medicalPhotoLabel}>
-                <span className={styles.addIcon}>
-                  {photos.medicalBook[2] ? '✓' : '+'}
-                </span>
-                <p className={styles.medicalLabel}>стр. 3+</p>
-              </label>
-            </div>
+              <span>
+                Я соглашаюсь на <a href="#" className={styles.link}>обработку персональных данных</a> согласно ФЗ-152.
+              </span>
+            </label>
+
+            <label className={`${styles.checkbox} ${errors.termsConsent ? styles.errorCheckbox : ''}`}>
+              <input 
+                type="checkbox"
+                checked={formData.termsConsent}
+                onChange={(e) => {
+                  setFormData({...formData, termsConsent: e.target.checked})
+                  setErrors(prev => ({ ...prev, termsConsent: false }))
+                }}
+              />
+              <span>
+                Я ознакомлен и принимаю <a href="#" className={styles.link}>Условия использования</a> сервиса.
+              </span>
+            </label>
           </div>
 
-          {errors.medicalBook && (
-            <p className={styles.errorMessage}>Загрузите минимум 3 фотографии</p>
-          )}
-
-          <input 
-            type="file" 
-            accept="image/*"
-            capture="environment"
-            multiple
-            onChange={handleMedicalBookPhoto}
-            id="medical-more"
-            style={{ display: 'none' }}
-          />
-          <label htmlFor="medical-more" className={styles.addMoreButton}>
-            + Добавить ({photos.medicalBook.length} загружено)
-          </label>
-        </section>
-
-        {/* БЛОК 3: Личная информация */}
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>ЛИЧНАЯ ИНФОРМАЦИЯ</h2>
-          
-          <input 
-            type="text" 
-            className={`${styles.input} ${errors.inn ? styles.error : ''}`}
-            placeholder="ИНН"
-            value={formData.inn}
-            onChange={(e) => {
-              setFormData({...formData, inn: e.target.value})
-              setErrors(prev => ({ ...prev, inn: false }))
-            }}
-          />
-
-          <input 
-            type="text" 
-            className={`${styles.input} ${errors.address ? styles.error : ''}`}
-            placeholder="Адрес постоянной регистрации"
-            value={formData.address}
-            onChange={(e) => {
-              setFormData({...formData, address: e.target.value})
-              setErrors(prev => ({ ...prev, address: false }))
-            }}
-          />
-
-          <textarea 
-            className={styles.textarea}
-            placeholder="Расскажите о себе и предыдущем опыте работы в общепите.... (необязательно)"
-            value={formData.about}
-            onChange={(e) => setFormData({...formData, about: e.target.value})}
-          />
-        </section>
-
-        {/* БЛОК 4: Выплата чаевых */}
-        <section className={styles.section}>
-          <div className={styles.tipsHeader}>
-            <h2 className={styles.sectionTitle}>ВЫПЛАТА ЧАЕВЫХ</h2>
-            <span className={styles.cloudTipsBadge}>CloudTips</span>
-          </div>
-          
-          <input 
-            type="url" 
-            className={styles.input}
-            placeholder="https://cloudtips.ru/p/... (необязательно)"
-            value={formData.cloudTipsLink}
-            onChange={(e) => setFormData({...formData, cloudTipsLink: e.target.value})}
-          />
-          
-          <p className={styles.hint}>
-            Ваша персональная ссылка для получения безналичного "чая" напрямую.
-          </p>
-        </section>
-
-        {/* ЧЕКБОКСЫ */}
-        <div className={styles.checkboxes}>
-          <label className={`${styles.checkbox} ${errors.personalDataConsent ? styles.errorCheckbox : ''}`}>
-            <input 
-              type="checkbox"
-              checked={formData.personalDataConsent}
-              onChange={(e) => {
-                setFormData({...formData, personalDataConsent: e.target.checked})
-                setErrors(prev => ({ ...prev, personalDataConsent: false }))
-              }}
-            />
-            <span>
-              Я соглашаюсь на <a href="#" className={styles.link}>обработку персональных данных</a> согласно ФЗ-152.
-            </span>
-          </label>
-
-          <label className={`${styles.checkbox} ${errors.termsConsent ? styles.errorCheckbox : ''}`}>
-            <input 
-              type="checkbox"
-              checked={formData.termsConsent}
-              onChange={(e) => {
-                setFormData({...formData, termsConsent: e.target.checked})
-                setErrors(prev => ({ ...prev, termsConsent: false }))
-              }}
-            />
-            <span>
-              Я ознакомлен и принимаю <a href="#" className={styles.link}>Условия использования</a> сервиса.
-            </span>
-          </label>
+          {/* КНОПКА ОТПРАВКИ */}
+          <button 
+            className={styles.submitButton}
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'СОХРАНЕНИЕ...' : 'ОТПРАВИТЬ НА ПРОВЕРКУ'}
+          </button>
         </div>
-
-        {/* КНОПКА ОТПРАВКИ */}
-        <button 
-          className={styles.submitButton}
-          onClick={handleSubmit}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? 'СОХРАНЕНИЕ...' : 'ОТПРАВИТЬ НА ПРОВЕРКУ'}
-        </button>
       </div>
     </div>
   )
