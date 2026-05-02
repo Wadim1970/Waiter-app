@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabaseRestaurants } from '../lib/supabase'
 import styles from './JobDetailsScreen.module.css'
 import { pluralizeReviews } from '../utils/pluralize'
+import { supabaseWaiter } from '../lib/supabase'
 
 interface RestaurantDetails {
   restaurant: {
@@ -131,9 +132,37 @@ const minSwipeDistance = 50
     }, 400) // Совпадает с duration анимации в CSS
   }
 
-  const handleBooking = () => {
-  // TODO: Открыть форму регистрации
-  window.location.href = '/registration'
+ const handleBooking = async () => {
+  // Получаем ID официанта
+  const waiterId = localStorage.getItem('waiter_device_id')
+  
+  if (!waiterId) {
+    alert('❌ Пожалуйста, войдите в систему')
+    navigate('/register')
+    return
+  }
+
+  try {
+    // Проверяем заполнен ли профиль
+    const { data, error } = await supabaseWaiter
+      .from('waiters')
+      .select('profile_completed')
+      .eq('id', waiterId)
+      .single()
+
+    if (error) throw error
+
+    if (data?.profile_completed) {
+      // Профиль заполнен → переход на синюю заглушку
+      navigate('/booking-success')
+    } else {
+      // Профиль НЕ заполнен → форма с модалкой
+      navigate('/registration?showModal=true')
+    }
+  } catch (error) {
+    console.error('Ошибка проверки профиля:', error)
+    alert('Ошибка проверки данных. Попробуйте снова.')
+  }
 }
 
 // НОВОЕ: Обработчики свайпа
