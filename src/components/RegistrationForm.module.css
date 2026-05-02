@@ -357,6 +357,42 @@
   margin: 0.5rem 0 0 0;
 }
 
+/* НОВОЕ: Обёртка для контента */
+.formContent {
+  width: 100%;
+  height: 100%;
+  transition: filter 0.3s ease, opacity 0.3s ease;
+}
+
+/* НОВОЕ: Затемнение и размытие когда модалка открыта */
+.formContent.blurred {
+  filter: blur(8px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Стили ошибок валидации */
+.error {
+  border: 2px solid #EF4444 !important;
+}
+
+.errorBlock {
+  outline: 2px solid #EF4444;
+  outline-offset: 2px;
+  border-radius: 1rem;
+}
+
+.errorCheckbox {
+  color: #EF4444;
+}
+
+.errorMessage {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.75rem;
+  color: #EF4444;
+  margin: 0.5rem 0 0 0;
+}
+
 /* Адаптация */
 @media (min-width: 48rem) {
   .container {
