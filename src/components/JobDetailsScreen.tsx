@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabaseRestaurants } from '../lib/supabase'
 import styles from './JobDetailsScreen.module.css'
 import { pluralizeReviews } from '../utils/pluralize'
@@ -41,6 +42,7 @@ interface JobDetailsScreenProps {
 }
 
 export default function JobDetailsScreen({ restaurantId, shiftDate, onClose }: JobDetailsScreenProps) {
+  const navigate = useNavigate()
   const [data, setData] = useState<RestaurantDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [isClosing, setIsClosing] = useState(false) // НОВОЕ: Для анимации закрытия
