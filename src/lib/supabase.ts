@@ -13,12 +13,19 @@ export const supabaseRestaurants = createClient(supabaseUrl, supabaseAnonKey)
 // ========== БАЗА 2: ОФИЦИАНТЫ (VPS) ==========
 const supabaseWaiterUrl = import.meta.env.VITE_SUPABASE_WAITER_URL
 const supabaseWaiterAnonKey = import.meta.env.VITE_SUPABASE_WAITER_ANON_KEY
+const supabaseWaiterServiceKey = import.meta.env.VITE_SUPABASE_WAITER_SERVICE_KEY // ← НОВОЕ
 
 if (!supabaseWaiterUrl || !supabaseWaiterAnonKey) {
   throw new Error('Отсутствуют переменные окружения для Supabase Waiter')
 }
 
+// Клиент с ANON KEY (для обычных запросов)
 export const supabaseWaiter = createClient(supabaseWaiterUrl, supabaseWaiterAnonKey)
+
+// Клиент с SERVICE ROLE KEY (для Storage, обходит RLS)
+export const supabaseWaiterAdmin = supabaseWaiterServiceKey 
+  ? createClient(supabaseWaiterUrl, supabaseWaiterServiceKey)
+  : supabaseWaiter // Фолбэк на ANON если SERVICE KEY не задан
 
 // Для обратной совместимости со старым кодом
 export const supabase = supabaseWaiter
