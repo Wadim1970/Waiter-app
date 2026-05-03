@@ -199,6 +199,22 @@
   filter: brightness(0); /* Делает иконку чёрной */
 }
 
+/* Список карточек смен */
+.shiftsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem; /* 16px между карточками */
+  padding: 0 1.125rem; /* 18px по бокам */
+  max-height: 30rem; /* Ограничение высоты для скролла */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Убираем отступы для секции рабочих смен */
+.workingShiftsSection .shiftsList {
+  padding: 0;
+  max-height: 12rem;
+}
 /* ═══════════════════════════════════════════════════════════════
    АДАПТАЦИЯ
    ═══════════════════════════════════════════════════════════════ */
