@@ -495,10 +495,7 @@ export default function RegistrationForm() {
             </label>
           </section>
 
-          {/* БЛОК 3: Личная информация */}
-          <section className={styles.section}>
-
-          {/* БЛОК 3: Личная информация */}
+         {/* БЛОК 3: Личная информация */}
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>ЛИЧНАЯ ИНФОРМАЦИЯ</h2>
             
