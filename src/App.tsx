@@ -6,6 +6,7 @@ import JobDetailsScreen from './components/JobDetailsScreen'
 import './App.css'
 import RegistrationForm from './components/RegistrationForm'
 import BookingSuccessScreen from './components/BookingSuccessScreen'
+import MyShiftsScreen from './components/MyShifts/MyShiftsScreen'
 
 const RegisterScreen = lazy(() => import('./components/RegisterScreen'))
 const VerificationScreen = lazy(() => import('./components/VerificationScreen'))
@@ -91,6 +92,7 @@ function App() {
           <Route path="/map" element={<MapScreenWithDetails />} />
           <Route path="/profile" element={<MapScreenWithDetails />} />
           <Route path="/booking-success" element={<BookingSuccessScreen />} />
+          <Route path="/my-shifts" element={<MyShiftsScreen />} />
           
           <Route path="/search" element={<PlaceholderScreen title="🔍 Поиск" />} />
           <Route path="/orders" element={<PlaceholderScreen title="📋 Заказы" />} />
