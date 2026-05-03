@@ -57,7 +57,10 @@ export default function ShiftCard({
     setIsLoading(true)
 
     try {
-      const { error } = await cancelBooking(bookingId)
+      const waiterId = localStorage.getItem('waiter_device_id')
+if (!waiterId) throw new Error('Waiter ID не найден')
+
+const { error } = await cancelBooking(bookingId, waiterId)
 
       if (error) {
         throw error
