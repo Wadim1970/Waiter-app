@@ -266,41 +266,38 @@ export default function RegistrationForm() {
             <p className={styles.photoHint}>сделайте фото паспорта</p>
 
             <div className={styles.photoRow}>
-              <div className={`${styles.photoBox} ${errors.passportMain ? styles.error : ''}`}>
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handlePassportMainPhoto}
-                  id="passport-main"
-                  style={{ display: 'none' }}
-                />
-                <label htmlFor="passport-main" className={styles.photoBoxLabel}>
-                  <p className={styles.photoLabel}>основной разворот</p>
-                  <span className={styles.addPhotoButton}>
-                    {photos.passportMain ? '✓ Загружено' : '+ Добавить'}
-                  </span>
-                </label>
-              </div>
-              
-              <div className={`${styles.photoBox} ${errors.passportRegistration ? styles.error : ''}`}>
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handlePassportRegistrationPhoto}
-                  id="passport-registration"
-                  style={{ display: 'none' }}
-                />
-                <label htmlFor="passport-registration" className={styles.photoBoxLabel}>
-                  <p className={styles.photoLabel}>регистрация</p>
-                  <span className={styles.addPhotoButton}>
-                    {photos.passportRegistration ? '✓ Загружено' : '+ Добавить'}
-                  </span>
-                </label>
-              </div>
-            </div>
-
+  <div className={`${styles.photoBox} ${errors.passportMain ? styles.error : ''}`}>
+    <input 
+      type="file" 
+      accept="image/*"
+      onChange={handlePassportMainPhoto}
+      id="passport-main"
+      style={{ display: 'none' }}
+    />
+    <label htmlFor="passport-main" className={styles.photoBoxLabel}>
+      <p className={styles.photoLabel}>основной разворот</p>
+      <span className={styles.addPhotoButton}>
+        {photos.passportMain ? '✓ Загружено' : '+ Добавить'}
+      </span>
+    </label>
+  </div>
+  
+  <div className={`${styles.photoBox} ${errors.passportRegistration ? styles.error : ''}`}>
+    <input 
+      type="file" 
+      accept="image/*"
+      onChange={handlePassportRegistrationPhoto}
+      id="passport-registration"
+      style={{ display: 'none' }}
+    />
+    <label htmlFor="passport-registration" className={styles.photoBoxLabel}>
+      <p className={styles.photoLabel}>регистрация</p>
+      <span className={styles.addPhotoButton}>
+        {photos.passportRegistration ? '✓ Загружено' : '+ Добавить'}
+      </span>
+    </label>
+  </div>
+</div>
             <div className={styles.divider}>
               <span>проверьте данные*</span>
             </div>
@@ -411,59 +408,71 @@ export default function RegistrationForm() {
             </p>
 
             <div className={`${styles.medicalPhotos} ${errors.medicalBook ? styles.errorBlock : ''}`}>
-              <div className={styles.medicalPhotoBox}>
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handleMedicalBookPhoto}
-                  id="medical-1"
-                  style={{ display: 'none' }}
-                />
-                <label htmlFor="medical-1" className={styles.medicalPhotoLabel}>
-                  <span className={styles.addIcon}>
-                    {photos.medicalBook[0] ? '✓' : '+'}
-                  </span>
-                  <p className={styles.medicalLabel}>стр. 1</p>
-                </label>
-              </div>
-              
-              <div className={styles.medicalPhotoBox}>
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handleMedicalBookPhoto}
-                  id="medical-2"
-                  style={{ display: 'none' }}
-                />
-                <label htmlFor="medical-2" className={styles.medicalPhotoLabel}>
-                  <span className={styles.addIcon}>
-                    {photos.medicalBook[1] ? '✓' : '+'}
-                  </span>
-                  <p className={styles.medicalLabel}>стр. 2</p>
-                </label>
-              </div>
-              
-              <div className={styles.medicalPhotoBox}>
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  capture="environment"
-                  multiple
-                  onChange={handleMedicalBookPhoto}
-                  id="medical-3"
-                  style={{ display: 'none' }}
-                />
-                <label htmlFor="medical-3" className={styles.medicalPhotoLabel}>
-                  <span className={styles.addIcon}>
-                    {photos.medicalBook[2] ? '✓' : '+'}
-                  </span>
-                  <p className={styles.medicalLabel}>стр. 3+</p>
-                </label>
-              </div>
-            </div>
+  <div className={styles.medicalPhotoBox}>
+    <input 
+      type="file" 
+      accept="image/*"
+      onChange={handleMedicalBookPhoto}
+      id="medical-1"
+      style={{ display: 'none' }}
+    />
+    <label htmlFor="medical-1" className={styles.medicalPhotoLabel}>
+      <span className={styles.addIcon}>
+        {photos.medicalBook[0] ? '✓' : '+'}
+      </span>
+      <p className={styles.medicalLabel}>стр. 1</p>
+    </label>
+  </div>
+  
+  <div className={styles.medicalPhotoBox}>
+    <input 
+      type="file" 
+      accept="image/*"
+      onChange={handleMedicalBookPhoto}
+      id="medical-2"
+      style={{ display: 'none' }}
+    />
+    <label htmlFor="medical-2" className={styles.medicalPhotoLabel}>
+      <span className={styles.addIcon}>
+        {photos.medicalBook[1] ? '✓' : '+'}
+      </span>
+      <p className={styles.medicalLabel}>стр. 2</p>
+    </label>
+  </div>
+  
+  <div className={styles.medicalPhotoBox}>
+    <input 
+      type="file" 
+      accept="image/*"
+      multiple
+      onChange={handleMedicalBookPhoto}
+      id="medical-3"
+      style={{ display: 'none' }}
+    />
+    <label htmlFor="medical-3" className={styles.medicalPhotoLabel}>
+      <span className={styles.addIcon}>
+        {photos.medicalBook[2] ? '✓' : '+'}
+      </span>
+      <p className={styles.medicalLabel}>стр. 3+</p>
+    </label>
+  </div>
+</div>
 
+{errors.medicalBook && (
+  <p className={styles.errorMessage}>Загрузите минимум 3 фотографии</p>
+)}
+
+<input 
+  type="file" 
+  accept="image/*"
+  multiple
+  onChange={handleMedicalBookPhoto}
+  id="medical-more"
+  style={{ display: 'none' }}
+/>
+<label htmlFor="medical-more" className={styles.addMoreButton}>
+  + Добавить ({photos.medicalBook.length} загружено)
+</label>
             {errors.medicalBook && (
               <p className={styles.errorMessage}>Загрузите минимум 3 фотографии</p>
             )}
