@@ -43,3 +43,9 @@
   height: 42px;
   margin-top: 14px; /* Фиксированное расстояние от верхнего края */
 }
+
+/* Активная кнопка */
+.active .icon,
+.active .homeIcon {
+  filter: brightness(0); /* Д��лает иконку чёрной */
+}
