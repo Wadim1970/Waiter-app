@@ -1,1 +1,199 @@
+/* Контейнер */
+.container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100svh;
+  background: #F4F4F5; /* Zinc-100 */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
 
+/* ═══════════════════════════════════════════════════════════════
+   ХЕДЕР (0-160px)
+   ═══════════════════════════════════════════════════════════════ */
+
+.header {
+  width: 100%;
+  height: 10rem; /* 160px */
+  background: white;
+  backdrop-filter: blur(2.5px);
+  border-bottom: 1px solid #D4D4D8; /* Zinc-300 */
+  padding: 0 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.title {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 1.25rem; /* 20px */
+  color: black;
+  margin: 0 0 1.5rem 0;
+  text-align: left;
+  margin-top: 3.375rem; /* 54px от верха */
+}
+
+/* Табы верхнего уровня: Активные / Прошедшие */
+.mainTabs {
+  display: flex;
+  gap: 5.3125rem; /* 85px между табами */
+}
+
+.mainTab {
+  background: none;
+  border: none;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #A3A3A3; /* Neutral-400 */
+  cursor: pointer;
+  padding: 0 0 0.5rem 0;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.mainTabActive {
+  color: #1D4ED8; /* Blue-700 */
+}
+
+/* Индикатор под активным табом */
+.mainTabIndicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 5rem; /* 80px */
+  height: 0.125rem; /* 2px */
+  background: #1D4ED8; /* Blue-700 */
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   РАБОЧИЕ СМЕНЫ (160-296px)
+   ═══════════════════════════════════════════════════════════════ */
+
+.workingShiftsSection {
+  width: 100%;
+  height: 8.5rem; /* 136px */
+  background: white;
+  padding: 1.125rem 1.5rem; /* 18px 24px */
+  border-bottom: 1px solid #D4D4D8; /* Zinc-300 */
+}
+
+.sectionTitle {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 0.875rem; /* 14px */
+  color: #A3A3A3; /* Neutral-400 */
+  margin: 0 0 2.5rem 0; /* 40px снизу */
+  text-transform: uppercase;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ОДОБРЕНЫ / ОЖИДАЮТ (312-852px)
+   ═══════════════════════════════════════════════════════════════ */
+
+.approvalSection {
+  width: 100%;
+  min-height: 33.75rem; /* 540px */
+  background: white;
+  padding: 1.75rem 1.125rem; /* 28px 18px */
+}
+
+/* Табы: Одобрены / Ожидают */
+.subTabs {
+  display: flex;
+  gap: 0.4375rem; /* 7px */
+  margin-bottom: 2.5rem; /* 40px */
+}
+
+.subTab {
+  width: 7rem; /* 112px */
+  height: 1.75rem; /* 28px */
+  background: transparent;
+  border: none;
+  border-radius: 0.75rem; /* 12px */
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 0.875rem; /* 14px */
+  color: #A3A3A3; /* Neutral-400 */
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.subTabActive {
+  background: #E0E7FF; /* Indigo-100 */
+  color: #16A34A; /* Green-600 */
+}
+
+/* Контент смен */
+.shiftsContent {
+  width: 100%;
+}
+
+/* Плейсхолдер (когда нет смен) */
+.placeholder {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 0.875rem; /* 14px */
+  color: #A3A3A3; /* Neutral-400 */
+  text-align: center;
+  padding: 2rem 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ФУТЕР (НАВИГАЦИЯ) 784-852px
+   ═══════════════════════════════════════════════════════════════ */
+
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 4rem; /* 64px */
+  background: rgba(228, 228, 231, 0.2); /* Zinc-300/20 */
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 1.5rem;
+  border-top: 1px solid rgba(228, 228, 231, 0.3);
+}
+
+.navButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: opacity 0.2s;
+}
+
+.navButton:hover {
+  opacity: 0.7;
+}
+
+.navIcon {
+  width: 1.75rem; /* 28px */
+  height: 1.75rem; /* 28px */
+  object-fit: contain;
+}
+
+/* Активная кнопка навигации */
+.navButtonActive .navIcon {
+  filter: brightness(0); /* Делает иконку чёрной */
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   АДАПТАЦИЯ
+   ═══════════════════════════════════════════════════════════════ */
+
+@media (min-width: 48rem) {
+  .container {
+    max-width: 25rem; /* 400px */
+    margin: 0 auto;
+    border-left: 1px solid #D4D4D8;
+    border-right: 1px solid #D4D4D8;
+  }
+}
