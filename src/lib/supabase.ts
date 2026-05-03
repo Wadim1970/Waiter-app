@@ -19,6 +19,28 @@ if (!supabaseWaiterUrl || !supabaseWaiterAnonKey) {
   throw new Error('Отсутствуют переменные окружения для Supabase Waiter')
 }
 
+// ═══════════════════════════════════════════════════════════════
+// ФУНКЦИЯ ДЛЯ УСТАНОВКИ ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ
+// ═══════════════════════════════════════════════════════════════
+
+export async function setCurrentUser(userId: string) {
+  try {
+    const { error } = await supabaseWaiter.rpc('set_current_user', {
+      user_id: userId
+    })
+    
+    if (error) {
+      console.error('❌ Ошибка установки current_user:', error)
+      throw error
+    }
+    
+    console.log('✅ Current user установлен:', userId)
+  } catch (error) {
+    console.error('❌ Ошибка вызова set_current_user:', error)
+    throw error
+  }
+}
+
 // Клиент с ANON KEY (для обычных запросов)
 export const supabaseWaiter = createClient(supabaseWaiterUrl, supabaseWaiterAnonKey)
 
