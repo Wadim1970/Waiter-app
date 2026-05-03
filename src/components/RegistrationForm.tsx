@@ -265,11 +265,12 @@ export default function RegistrationForm() {
             
             <p className={styles.photoHint}>сделайте фото паспорта</p>
 
-            <div className={styles.photoRow}>
+           <div className={styles.photoRow}>
   <div className={`${styles.photoBox} ${errors.passportMain ? styles.error : ''}`}>
     <input 
       type="file" 
       accept="image/*"
+      capture="environment"
       onChange={handlePassportMainPhoto}
       id="passport-main"
       style={{ display: 'none' }}
@@ -286,6 +287,7 @@ export default function RegistrationForm() {
     <input 
       type="file" 
       accept="image/*"
+      capture="environment"
       onChange={handlePassportRegistrationPhoto}
       id="passport-registration"
       style={{ display: 'none' }}
@@ -407,11 +409,12 @@ export default function RegistrationForm() {
               аттестация о профессиональной гигиенической подготовке (ГИГ).
             </p>
 
-            <div className={`${styles.medicalPhotos} ${errors.medicalBook ? styles.errorBlock : ''}`}>
+<div className={`${styles.medicalPhotos} ${errors.medicalBook ? styles.errorBlock : ''}`}>
   <div className={styles.medicalPhotoBox}>
     <input 
       type="file" 
       accept="image/*"
+      capture="environment"
       onChange={handleMedicalBookPhoto}
       id="medical-1"
       style={{ display: 'none' }}
@@ -428,6 +431,7 @@ export default function RegistrationForm() {
     <input 
       type="file" 
       accept="image/*"
+      capture="environment"
       onChange={handleMedicalBookPhoto}
       id="medical-2"
       style={{ display: 'none' }}
@@ -444,6 +448,7 @@ export default function RegistrationForm() {
     <input 
       type="file" 
       accept="image/*"
+      capture="environment"
       multiple
       onChange={handleMedicalBookPhoto}
       id="medical-3"
@@ -465,6 +470,7 @@ export default function RegistrationForm() {
 <input 
   type="file" 
   accept="image/*"
+  capture="environment"
   multiple
   onChange={handleMedicalBookPhoto}
   id="medical-more"
@@ -473,23 +479,6 @@ export default function RegistrationForm() {
 <label htmlFor="medical-more" className={styles.addMoreButton}>
   + Добавить ({photos.medicalBook.length} загружено)
 </label>
-            {errors.medicalBook && (
-              <p className={styles.errorMessage}>Загрузите минимум 3 фотографии</p>
-            )}
-
-            <input 
-              type="file" 
-              accept="image/*"
-              capture="environment"
-              multiple
-              onChange={handleMedicalBookPhoto}
-              id="medical-more"
-              style={{ display: 'none' }}
-            />
-            <label htmlFor="medical-more" className={styles.addMoreButton}>
-              + Добавить ({photos.medicalBook.length} загружено)
-            </label>
-          </section>
 
           {/* БЛОК 3: Личная информация */}
           <section className={styles.section}>
