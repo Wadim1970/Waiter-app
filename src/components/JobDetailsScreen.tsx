@@ -4,6 +4,7 @@ import { supabaseRestaurants } from '../lib/supabase'
 import styles from './JobDetailsScreen.module.css'
 import { pluralizeReviews } from '../utils/pluralize'
 import { supabaseWaiter } from '../lib/supabase'
+import { applyForJob } from '../lib/bookings'
 
 interface RestaurantDetails {
   restaurant: {
@@ -45,6 +46,7 @@ export default function JobDetailsScreen({ restaurantId, shiftDate, onClose }: J
   const navigate = useNavigate()
   const [data, setData] = useState<RestaurantDetails | null>(null)
   const [loading, setLoading] = useState(true)
+  const [jobId, setJobId] = useState<string | null>(null)
   const [isClosing, setIsClosing] = useState(false) // НОВОЕ: Для анимации закрытия
   
 
@@ -92,7 +94,8 @@ const minSwipeDistance = 50
     // ИЗМЕНЕНИЕ: Берём первую вакансию из массива
     const jobData = jobsResult.data && jobsResult.data.length > 0 ? jobsResult.data[0] : null
     if (!jobData) throw new Error('Нет вакансий на эту дату')
-
+    setJobId(jobData.id)
+    
     const result: RestaurantDetails = {
       restaurant: {
         id: restaurantResult.data.restaurantId,
@@ -135,7 +138,6 @@ const minSwipeDistance = 50
   }
 
  const handleBooking = async () => {
-  // Получаем ID официанта
   const waiterId = localStorage.getItem('waiter_device_id')
   
   if (!waiterId) {
@@ -144,26 +146,39 @@ const minSwipeDistance = 50
     return
   }
 
+  if (!jobId) {
+    alert('❌ Ошибка: ID вакансии не найден')
+    return
+  }
+
   try {
-    // Проверяем заполнен ли профиль
-    const { data, error } = await supabaseWaiter
+    const { data: waiterData, error: waiterError } = await supabaseWaiter
       .from('waiters')
       .select('profile_completed')
       .eq('id', waiterId)
       .single()
 
-    if (error) throw error
+    if (waiterError) throw waiterError
 
-    if (data?.profile_completed) {
-      // Профиль заполнен → переход на синюю заглушку
+    if (waiterData?.profile_completed) {
+      console.log('📝 Создаю бронирование:', { waiterId, jobId })
+      
+      const { data: bookingData, error: bookingError } = await applyForJob(waiterId, jobId)
+      
+      if (bookingError) {
+        console.error('❌ Ошибка создания бронирования:', bookingError)
+        alert(`❌ ${bookingError.message || 'Не удалось забронировать смену'}`)
+        return
+      }
+
+      console.log('✅ Бронирование создано:', bookingData)
       navigate('/booking-success')
     } else {
-      // Профиль НЕ заполнен → форма с модалкой
       navigate('/registration?showModal=true')
     }
-  } catch (error) {
-    console.error('Ошибка проверки профиля:', error)
-    alert('Ошибка проверки данных. Попробуйте снова.')
+  } catch (error: any) {
+    console.error('❌ Ошибка проверки профиля:', error)
+    alert(`❌ ${error.message || 'Ошибка проверки данных. Попробуйте снова.'}`)
   }
 }
 
