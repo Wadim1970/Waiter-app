@@ -60,7 +60,7 @@ export default function MyShiftsScreen() {
             className={`${styles.subTab} ${subTab === 'waiting' ? styles.subTabActive : ''}`}
             onClick={() => setSubTab('waiting')}
           >
-            ОЖИД��ЮТ
+            ОЖИДАЮТ
           </button>
         </div>
 
