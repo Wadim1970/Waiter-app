@@ -1,6 +1,7 @@
 import { supabaseWaiter, supabaseRestaurants } from './supabase'
+import { setCurrentUser } from './supabase' // ← ДОБАВЬ ИМПОРТ В НАЧАЛО ФАЙЛА
 
-// ═══════════════════════════════════════════════════════════���═══
+// ══════════════════════════════════════════════════════════════
 // ТИПЫ
 // ═══════════════════════════════════════════════════════════════
 
@@ -54,6 +55,9 @@ export interface ShiftWithDetails extends Booking {
 
 export async function applyForJob(waiterId: string, jobId: string) {
   try {
+    // НОВОЕ: Устанавливаем текущего пользователя
+    await setCurrentUser(waiterId)
+
     // Проверяем что вакансия ещё доступна
     const { data: job, error: jobError } = await supabaseRestaurants
       .from('jobs')
@@ -79,8 +83,7 @@ export async function applyForJob(waiterId: string, jobId: string) {
       .single()
 
     if (error) {
-      // Если уже есть заявка на эту вакансию
-      if (error.code === '23505') { // unique_violation
+      if (error.code === '23505') {
         throw new Error('Вы уже откликнулись на эту вакансию')
       }
       throw error
@@ -102,6 +105,9 @@ export async function getMyShifts(
   status: 'applied' | 'approved' | 'confirmed'
 ): Promise<{ data: ShiftWithDetails[] | null; error: any }> {
   try {
+    // НОВОЕ: Устанавливаем текущего пользователя
+    await setCurrentUser(waiterId)
+
     // Получаем бронирования из таблицы официантов
     const { data: bookings, error: bookingsError } = await supabaseWaiter
       .from('bookings')
@@ -150,6 +156,7 @@ export async function getMyShifts(
 
 export async function confirmShift(bookingId: string) {
   try {
+    await setCurrentUser(waiterId)
     const { data, error } = await supabaseWaiter
       .from('bookings')
       .update({ 
@@ -178,6 +185,7 @@ export async function confirmShift(bookingId: string) {
 
 export async function cancelBooking(bookingId: string) {
   try {
+    await setCurrentUser(waiterId)
     // Проверяем что статус не 'confirmed'
     const { data: booking, error: checkError } = await supabaseWaiter
       .from('bookings')
