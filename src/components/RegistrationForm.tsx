@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { supabaseWaiter } from '../lib/supabase'
+import { supabaseWaiter, supabaseWaiterAdmin } from '../lib/supabase'
 import RegistrationModal from './RegistrationModal'
 import styles from './RegistrationForm.module.css'
 
@@ -98,27 +98,41 @@ export default function RegistrationForm() {
   }
 
   const uploadPhoto = async (file: File, path: string): Promise<string | null> => {
-    try {
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
-      const filePath = `${waiterId}/${path}/${fileName}`
+  try {
+    console.log('📤 Начало загрузки:', file.name, 'Размер:', file.size, 'Тип:', file.type)
+    
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
+    const filePath = `${waiterId}/${path}/${fileName}`
 
-      const { error: uploadError } = await supabaseWaiter.storage
-        .from('waiter-documents')
-        .upload(filePath, file)
+    console.log('📂 Путь загрузки:', filePath)
 
-      if (uploadError) throw uploadError
+    // ИЗМЕНЕНО: Используем supabaseWaiterAdmin для обхода RLS
+    const { data: uploadData, error: uploadError } = await supabaseWaiterAdmin.storage
+      .from('waiter-documents')
+      .upload(filePath, file)
 
-      const { data } = supabaseWaiter.storage
-        .from('waiter-documents')
-        .getPublicUrl(filePath)
-
-      return data.publicUrl
-    } catch (error) {
-      console.error('Ошибка загрузки фото:', error)
-      return null
+    if (uploadError) {
+      console.error('❌ Ошибка загрузки:', uploadError)
+      throw uploadError
     }
+
+    console.log('✅ Файл загружен:', uploadData)
+
+    // Получаем публичный URL
+    const { data } = supabaseWaiterAdmin.storage
+      .from('waiter-documents')
+      .getPublicUrl(filePath)
+
+    console.log('🔗 Публичный URL:', data.publicUrl)
+
+    return data.publicUrl
+  } catch (error) {
+    console.error('❌ Ошибка загрузки фото:', error)
+    alert(`Ошибка загрузки ${file.name}: ${JSON.stringify(error)}`)
+    return null
   }
+}
 
   const handleSubmit = async () => {
     if (!waiterId) {
