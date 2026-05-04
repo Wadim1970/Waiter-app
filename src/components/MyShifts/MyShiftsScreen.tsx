@@ -28,40 +28,40 @@ export default function MyShiftsScreen() {
   }, [])
 
   const loadShifts = async () => {
-    if (!waiterId) {
-      console.error('Waiter ID не найден')
-      return
-    }
+  if (!waiterId) {
+    console.error('Waiter ID не найден')
+    return
+  }
 
-    // НОВОЕ: Открываем детали смены
+  setLoading(true)
+
+  try {
+    // Загружаем все статусы параллельно
+    const [waiting, approved, confirmed] = await Promise.all([
+      getMyShifts(waiterId, 'applied'),
+      getMyShifts(waiterId, 'approved'),
+      getMyShifts(waiterId, 'confirmed')
+    ])
+
+    if (waiting.data) setWaitingShifts(waiting.data)
+    if (approved.data) setApprovedShifts(approved.data)
+    if (confirmed.data) setConfirmedShifts(confirmed.data)
+  } catch (error) {
+    console.error('Ошибка загрузки смен:', error)
+  } finally {
+    setLoading(false)
+  }
+}
+
+// НОВОЕ: Открываем детали смены (ПЕРЕНЕСЛИ СЮДА!)
 const handleShiftClick = (shift: ShiftWithDetails) => {
   setSelectedShift(shift)
 }
 
-// НОВОЕ: Закрываем детали
+// НОВОЕ: Закрываем детали (ПЕРЕНЕСЛИ СЮДА!)
 const handleCloseDetails = () => {
   setSelectedShift(null)
 }
-    
-    setLoading(true)
-
-    try {
-      // Загружаем все статусы параллельно
-      const [waiting, approved, confirmed] = await Promise.all([
-        getMyShifts(waiterId, 'applied'),
-        getMyShifts(waiterId, 'approved'),
-        getMyShifts(waiterId, 'confirmed')
-      ])
-
-      if (waiting.data) setWaitingShifts(waiting.data)
-      if (approved.data) setApprovedShifts(approved.data)
-      if (confirmed.data) setConfirmedShifts(confirmed.data)
-    } catch (error) {
-      console.error('Ошибка загрузки смен:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   // Фильтрация по активным/прошедшим
   const filterByDate = (shifts: ShiftWithDetails[]) => {
