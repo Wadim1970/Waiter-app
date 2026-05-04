@@ -20,49 +20,61 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   ДАТА СПРАВА (вертикальное выравнивание по центру)
+   ДАТА СПРАВА (Ср 17 апр) - на одной линии с названием
    ═══════════════════════════════════════════════════════════════ */
 
-/* Контейнер для даты (для центрирования) */
-.dateContainer {
+.dateInfo {
   position: absolute;
-  top: 50%;
-  right: 1.5rem; /* 24px от правого края */
-  transform: translateY(-50%); /* Центрируем по вертикали */
+  top: 1rem; /* 16px - на уровне названия */
+  right: 1rem; /* 16px от правого края */
   display: flex;
-  flex-direction: column;
-  align-items: center; /* ← ВЫРАВНИВАНИЕ ПО ЦЕНТРУ (шампур!) */
-  gap: 0.125rem; /* 2px между элементами */
+  align-items: baseline; /* Выравнивание по нижнему краю */
+  gap: 0.25rem; /* 4px между элементами */
   z-index: 1;
 }
 
-/* День недели (Вс) */
+/* День недели (Ср) - белый */
 .weekday {
-  font-family: 'Inter', sans-serif;
-  font-weight: 400; /* Regular */
-  font-size: 0.875rem; /* 14px */
-  color: white;
-  text-align: center;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700; /* Bold */
+  font-size: 1rem; /* 16px */
+  color: white; /* ← БЕЛЫЙ */
+  line-height: 1.5rem; /* 24px - как у названия */
 }
 
-/* День (17) */
+/* День (17) - голубой */
 .day {
   font-family: 'Montserrat', sans-serif;
   font-weight: 700; /* Bold */
   font-size: 1.5rem; /* 24px */
   color: #0EA5E9; /* Sky-500 */
-  text-align: center;
-  line-height: 1; /* Убираем лишние отступы */
+  line-height: 1.5rem; /* 24px */
 }
 
-/* Месяц (апр) */
+/* Месяц (апр) - голубой */
 .month {
   font-family: 'Montserrat', sans-serif;
   font-weight: 700; /* Bold */
   font-size: 1rem; /* 16px */
   color: #0EA5E9; /* Sky-500 */
-  text-align: center;
-  line-height: 1; /* Убираем лишние отступы */
+  line-height: 1.5rem; /* 24px */
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ВРЕМЯ СМЕНЫ СПРАВА (09:00-23:00) - на одной линии с адресом
+   ═══════════════════════════════════════════════════════════════ */
+
+.timeInfo {
+  position: absolute;
+  top: 2.8125rem; /* 45px - на уровне адреса */
+  right: 1rem; /* 16px от правого края */
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700; /* Bold */
+  font-size: 1rem; /* 16px - как месяц */
+  color: white; /* Белый */
+  z-index: 1;
+  white-space: nowrap;
+  line-height: 0.75rem; /* 12px - как у адреса */
 }
 
 /* ═══════════════════════════════════════════════════════════════
