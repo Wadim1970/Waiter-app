@@ -92,6 +92,15 @@
   z-index: 100; /* ← ДОБАВЛЕНО */
 }
 
+/* Список рабочих смен */
+.workingShiftsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem; /* 8px между карточками */
+  padding: 0;
+  margin-top: 1rem; /* 16px от заголовка */
+}
+
 .sectionTitle {
   font-family: 'Inter', sans-serif;
   font-weight: 500;
