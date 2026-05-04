@@ -83,7 +83,7 @@
   top: 10rem; /* 160px (после хедера) */
   left: 0;
   width: 100%;
-  height: 8.5rem; /* 136px */
+  height: 9.5rem; /* ← ИЗМЕНЕНО: 152px (было 136px) */
   background: white;
   padding: 1.125rem 0; /* ← ИЗМЕНЕНО: убрали боковые отступы (18px 0) */
   border-bottom: 1px solid #D4D4D8; /* Zinc-300 */
@@ -122,10 +122,10 @@
 
 .approvalSection {
   position: fixed; /* ← ИЗМЕНЕНО: фиксируем */
-  top: 18.5rem; /* 296px (160 + 136) */
+  top: 19.5rem; /* ← ИЗМЕНЕНО: 312px (было 296px) */
   left: 0;
   width: 100%;
-  height: calc(100vh - 18.5rem - 4rem); /* От табов до футера (64px) */
+  height: calc(100vh - 19.5rem - 4rem); /* ← ИЗМЕНЕНО */
   height: calc(100dvh - 18.5rem - 4rem);
   background: white;
   padding: 1.75rem 0 0 0; /* ← ИЗМЕНЕНО: убрали боковые отступы */
