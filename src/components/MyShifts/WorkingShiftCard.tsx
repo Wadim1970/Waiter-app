@@ -32,26 +32,24 @@ export default function WorkingShiftCard({
   const { weekday, day, month } = formatDate(shiftDate)
 
   return (
-    <div className={styles.card}>
-      {/* Фон с градиентом */}
-      <div className={styles.gradient} />
-      
-      {/* День недели (Вс) */}
+  <div className={styles.card}>
+    {/* Фон с градиентом */}
+    <div className={styles.gradient} />
+    
+    {/* Название ресторана */}
+    <div className={styles.restaurantName}>
+      {restaurantName.toUpperCase()}
+    </div>
+    
+    {/* Адрес */}
+    <div className={styles.address}>{address}</div>
+    
+    {/* НОВОЕ: Дата справа (на шампуре) */}
+    <div className={styles.dateContainer}>
       <div className={styles.weekday}>{weekday}</div>
-      
-      {/* Название ресторана */}
-      <div className={styles.restaurantName}>
-        {restaurantName.toUpperCase()}
-      </div>
-      
-      {/* Адрес */}
-      <div className={styles.address}>{address}</div>
-      
-      {/* День (17) */}
       <div className={styles.day}>{day}</div>
-      
-      {/* Месяц (апр) */}
       <div className={styles.month}>{month}</div>
     </div>
-  )
+  </div>
+)
 }
