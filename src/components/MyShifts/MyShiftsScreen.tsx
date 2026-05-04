@@ -249,17 +249,13 @@ const handleCloseDetails = () => {
         <div className={styles.pastShiftsList}>
           {allPastShifts.map(shift => (
             <div key={shift.id} className={styles.pastShiftCard}>
-              <ShiftCard
-                bookingId={shift.id}
-                restaurantName={shift.job.restaurant.name}
-                address={shift.job.restaurant.address}
-                shiftDate={shift.job.shift_date}
-                startTime={shift.job.start_time}
-                endTime={shift.job.end_time}
-                payAmount={shift.job.pay_amount}
-                status={shift.status}
-                onCancel={undefined} // ← НЕ АКТИВНАЯ
-              />
+              <WorkingShiftCard
+  restaurantName={shift.job.restaurant.name}
+  address={shift.job.restaurant.address}
+  shiftDate={shift.job.shift_date}
+  startTime={shift.job.start_time}
+  endTime={shift.job.end_time}
+/>
             </div>
           ))}
         </div>
