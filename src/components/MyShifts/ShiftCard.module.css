@@ -1,6 +1,6 @@
 /* Карточка смены */
 .card {
-  width: calc(100% - 36px); /* ← ВЕРНУЛИ calc! */
+  width: 100%;
   margin: 0 auto; /* ← ЦЕНТРОВКА! */
   height: 10rem; /* 160px */
   background: white;
