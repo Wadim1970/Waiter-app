@@ -51,10 +51,11 @@ export default function MyShiftsScreen() {
 
   // Фильтрация по активным/прошедшим
   const filterByDate = (shifts: ShiftWithDetails[]) => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
 
-    return shifts.filter(shift => {
+  return shifts
+    .filter(shift => {
       const shiftDate = new Date(shift.job.shift_date)
       shiftDate.setHours(0, 0, 0, 0)
 
@@ -64,7 +65,17 @@ export default function MyShiftsScreen() {
         return shiftDate < today
       }
     })
-  }
+    .sort((a, b) => {
+      const dateA = new Date(a.job.shift_date).getTime()
+      const dateB = new Date(b.job.shift_date).getTime()
+      
+      if (mainTab === 'active') {
+        return dateA - dateB // Активные: ближайшие сверху
+      } else {
+        return dateB - dateA // Прошедшие: недавние сверху
+      }
+    })
+}
 
   const filteredWaiting = filterByDate(waitingShifts)
   const filteredApproved = filterByDate(approvedShifts)
