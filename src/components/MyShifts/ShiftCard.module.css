@@ -52,7 +52,7 @@
 
 .price {
   position: absolute;
-  top: calc(0.875rem + 1rem + 0.875rem + 1.25rem + 0.25rem); /* ← На уровне адреса */
+  top: 3.95rem; /* ← На уровне адреса */
   right: 1.375rem; /* 22px от правого края */
   font-family: 'Inter', sans-serif;
   font-weight: 700;
