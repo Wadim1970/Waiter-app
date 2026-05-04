@@ -154,9 +154,11 @@ export async function getMyShifts(
 // 3️⃣ ПОДТВЕРДИТЬ ВЫХОД НА СМЕНУ (МЭТЧ!)
 // ═══════════════════════════════════════════════════════════════
 
-export async function confirmShift(bookingId: string) {
+export async function confirmShift(bookingId: string, waiterId: string) {
   try {
+    // Устанавливаем текущего пользователя
     await setCurrentUser(waiterId)
+
     const { data, error } = await supabaseWaiter
       .from('bookings')
       .update({ 
@@ -169,7 +171,7 @@ export async function confirmShift(bookingId: string) {
 
     if (error) throw error
 
-    // Триг��ер автоматически уменьшит slots_available
+    // Триггер автоматически уменьшит slots_available
     console.log('✅ Смена подтверждена:', data)
 
     return { data, error: null }
@@ -178,7 +180,6 @@ export async function confirmShift(bookingId: string) {
     return { data: null, error }
   }
 }
-
 // ═══════════════════════════════════════════════════════════════
 // 4️⃣ ОТМЕНИТЬ ЗАЯВКУ (ДО ПОДТВЕРЖДЕНИЯ)
 // ═══════════════════════════════════════════════════════════════
