@@ -6,8 +6,8 @@
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
-  padding: 0 1.125rem 0.5rem 1.125rem; /* ← ЕДИНАЯ СТРОКА! 18px по бокам, 8px снизу */
-  margin-top: 1rem; /* 16px от заголовка */
+  padding: 0; /* ← УБРАЛИ PADDING! */
+  margin-top: 1rem;
   
   /* Убираем скроллбар */
   scrollbar-width: none;
@@ -17,4 +17,20 @@
 
 .slider::-webkit-scrollbar {
   display: none;
+}
+
+/* НОВОЕ: Отступ слева через псевдоэлемент */
+.slider::before {
+  content: '';
+  display: block;
+  flex-shrink: 0;
+  width: 1.125rem; /* 18px */
+}
+
+/* НОВОЕ: Отступ справа через псевдоэлемент */
+.slider::after {
+  content: '';
+  display: block;
+  flex-shrink: 0;
+  width: 1.125rem; /* 18px */
 }
