@@ -19,19 +19,57 @@
   border-radius: 1rem;
 }
 
-/* День недели (Вс) - справа вверху */
-.weekday {
+/* ═══════════════════════════════════════════════════════════════
+   ДАТА СПРАВА (вертикальное выравнивание по центру)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Контейнер для даты (для центрирования) */
+.dateContainer {
   position: absolute;
-  top: 0.75rem; /* 12px */
-  right: 2.1875rem; /* 35px = 320px - 285px */
+  top: 50%;
+  right: 1.5rem; /* 24px от правого края */
+  transform: translateY(-50%); /* Центрируем по вертикали */
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* ← ВЫРАВНИВАНИЕ ПО ЦЕНТРУ (шампур!) */
+  gap: 0.125rem; /* 2px между элементами */
+  z-index: 1;
+}
+
+/* День недели (Вс) */
+.weekday {
   font-family: 'Inter', sans-serif;
   font-weight: 400; /* Regular */
   font-size: 0.875rem; /* 14px */
   color: white;
-  z-index: 1;
+  text-align: center;
 }
 
-/* Название ресторана - слева вверху */
+/* День (17) */
+.day {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700; /* Bold */
+  font-size: 1.5rem; /* 24px */
+  color: #0EA5E9; /* Sky-500 */
+  text-align: center;
+  line-height: 1; /* Убираем лишние отступы */
+}
+
+/* Месяц (апр) */
+.month {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700; /* Bold */
+  font-size: 1rem; /* 16px */
+  color: #0EA5E9; /* Sky-500 */
+  text-align: center;
+  line-height: 1; /* Убираем лишние отступы */
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   КОНТЕНТ СЛЕВА
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Название рестор��на - слева вверху */
 .restaurantName {
   position: absolute;
   top: 1rem; /* 16px */
@@ -41,7 +79,7 @@
   font-size: 1.5rem; /* 24px */
   color: white;
   z-index: 1;
-  max-width: 60%; /* Не наезжает на дату */
+  max-width: calc(100% - 6rem); /* Не наезжает на дату (справа 96px для даты) */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -57,43 +95,15 @@
   font-size: 0.75rem; /* 12px */
   color: white;
   z-index: 1;
-  max-width: 12rem; /* 192px */
+  max-width: calc(100% - 6rem); /* Не наезжает на дату */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* День (17) - справа в центре */
-.day {
-  position: absolute;
-  top: 1.75rem; /* 28px */
-  right: 2.4375rem; /* 39px = 320px - 281px */
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 700; /* Bold */
-  font-size: 1.5rem; /* 24px */
-  color: #0EA5E9; /* Sky-500 */
-  z-index: 1;
-  width: 1.5rem; /* 24px */
-  text-align: left;
-}
-
-/* Месяц (апр) - справа ниже дня */
-.month {
-  position: absolute;
-  top: 3.25rem; /* 52px */
-  right: 2.625rem; /* 42px = 320px - 278px */
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 700; /* Bold */
-  font-size: 1rem; /* 16px */
-  color: #0EA5E9; /* Sky-500 */
-  z-index: 1;
-  width: 2rem; /* 32px */
-  text-align: left;
-}
-
 /* ═══════════════════════════════════════════════════════════════
    АДАПТИВНОСТЬ
-   ═══════════════════════════════════════════════════════════════ */
+   ════════════════════════════════════════════════════════���══════ */
 
 /* Экраны меньше 375px */
 @media (max-width: 375px) {
@@ -103,6 +113,14 @@
   
   .address {
     font-size: 0.6875rem; /* 11px */
+  }
+  
+  .day {
+    font-size: 1.375rem; /* 22px */
+  }
+  
+  .month {
+    font-size: 0.875rem; /* 14px */
   }
 }
 
@@ -114,6 +132,13 @@
   
   .address {
     font-size: 0.625rem; /* 10px */
-    max-width: 10rem; /* 160px */
+  }
+  
+  .day {
+    font-size: 1.25rem; /* 20px */
+  }
+  
+  .month {
+    font-size: 0.75rem; /* 12px */
   }
 }
