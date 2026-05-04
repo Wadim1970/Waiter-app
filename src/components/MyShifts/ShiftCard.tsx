@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { cancelBooking } from '../../lib/bookings'
+import { cancelBooking, confirmShift } from '../../lib/bookings'
 import styles from './ShiftCard.module.css'
 
 interface ShiftCardProps {
@@ -58,9 +58,9 @@ export default function ShiftCard({
 
     try {
       const waiterId = localStorage.getItem('waiter_device_id')
-if (!waiterId) throw new Error('Waiter ID не найден')
+      if (!waiterId) throw new Error('Waiter ID не найден')
 
-const { error } = await cancelBooking(bookingId, waiterId)
+      const { error } = await cancelBooking(bookingId, waiterId)
 
       if (error) {
         throw error
@@ -80,6 +80,38 @@ const { error } = await cancelBooking(bookingId, waiterId)
     }
   }
 
+  // НОВОЕ: Обработчик подтверждения
+  const handleConfirm = async () => {
+    if (!confirm('Вы подтверждаете участие в этой смене?')) {
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      const waiterId = localStorage.getItem('waiter_device_id')
+      if (!waiterId) throw new Error('Waiter ID не найден')
+
+      const { error } = await confirmShift(bookingId, waiterId)
+
+      if (error) {
+        throw error
+      }
+
+      alert('✅ Смена подтверждена!')
+      
+      // Вызываем колбэк для обновления списка
+      if (onCancel) {
+        onCancel()
+      }
+    } catch (error: any) {
+      console.error('Ошибка подтверждения:', error)
+      alert(`❌ ${error.message || 'Не удалось подтвердить смену'}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div className={styles.card}>
       {/* Дата */}
@@ -87,9 +119,9 @@ const { error } = await cancelBooking(bookingId, waiterId)
         {formatDate(shiftDate)}
       </div>
 
-      {/* Цена */}
-      <div className={styles.price}>
-        {Math.round(payAmount)}
+      {/* Время */}
+      <div className={styles.time}>
+        {formatTime(startTime, endTime)}
       </div>
 
       {/* Название ресторана */}
@@ -102,19 +134,30 @@ const { error } = await cancelBooking(bookingId, waiterId)
         {address}
       </div>
 
-      {/* Время */}
-      <div className={styles.time}>
-        {formatTime(startTime, endTime)}
+      {/* Цена */}
+      <div className={styles.price}>
+        {Math.round(payAmount)}
       </div>
 
-      {/* Кнопка отмены (только для applied и approved) */}
-      {(status === 'applied' || status === 'approved') && (
+      {/* Кнопка отмены (только для applied) */}
+      {status === 'applied' && (
         <button
           className={styles.cancelButton}
           onClick={handleCancel}
           disabled={isLoading}
         >
           {isLoading ? 'Отмена...' : 'Отменить'}
+        </button>
+      )}
+
+      {/* Кнопка подтверждения (только для approved) */}
+      {status === 'approved' && (
+        <button
+          className={styles.confirmButton}
+          onClick={handleConfirm}
+          disabled={isLoading}
+        >
+          {isLoading ? 'Подтверждение...' : 'Подтвердить'}
         </button>
       )}
 
