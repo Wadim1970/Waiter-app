@@ -4,12 +4,16 @@ interface WorkingShiftCardProps {
   restaurantName: string
   address: string
   shiftDate: string // ISO формат: "2026-04-17"
+  startTime: string // "09:00:00"
+  endTime: string   // "23:00:00"
 }
 
 export default function WorkingShiftCard({
   restaurantName,
   address,
-  shiftDate
+  shiftDate,
+  startTime,
+  endTime
 }: WorkingShiftCardProps) {
   
   // Форматируем дату
@@ -31,7 +35,11 @@ export default function WorkingShiftCard({
 
   const { weekday, day, month } = formatDate(shiftDate)
 
-  return (
+  const formatTime = (start: string, end: string): string => {
+  return `${start.slice(0, 5)}-${end.slice(0, 5)}`
+}
+
+ return (
   <div className={styles.card}>
     {/* Фон с градиентом */}
     <div className={styles.gradient} />
@@ -44,11 +52,16 @@ export default function WorkingShiftCard({
     {/* Адрес */}
     <div className={styles.address}>{address}</div>
     
-    {/* НОВОЕ: Дата справа (на шампуре) */}
-    <div className={styles.dateContainer}>
-      <div className={styles.weekday}>{weekday}</div>
-      <div className={styles.day}>{day}</div>
-      <div className={styles.month}>{month}</div>
+    {/* НОВОЕ: Дата справа (Ср 17 апр) */}
+    <div className={styles.dateInfo}>
+      <span className={styles.weekday}>{weekday}</span>
+      <span className={styles.day}>{day}</span>
+      <span className={styles.month}>{month}</span>
+    </div>
+    
+    {/* НОВОЕ: Время смены справа внизу */}
+    <div className={styles.timeInfo}>
+      {formatTime(startTime, endTime)}
     </div>
   </div>
 )
