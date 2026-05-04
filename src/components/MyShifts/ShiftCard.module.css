@@ -152,6 +152,42 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   КНОПКА "ПОДТВЕРДИТЬ" (для approved)
+   ═══════════════════════════════════════════════════════════════ */
+
+.confirmButton {
+  position: absolute;
+  bottom: 1.0625rem; /* 17px от низа */
+  right: 1.375rem; /* 22px от правого края */
+  width: 9rem; /* 144px */
+  height: 2.25rem; /* 36px */
+  background: #E4E4E7; /* Zinc-200 */
+  border: none;
+  border-radius: 3.1875rem; /* 51px */
+  box-shadow: 2px 2px 3.3px 0px rgba(167, 167, 167, 0.52);
+  font-family: 'Inter', sans-serif;
+  font-weight: 400; /* Regular */
+  font-size: 1rem; /* 16px */
+  color: #0096F4; /* ← ЦВЕТ ТЕКСТА ДЛЯ "ПОДТВЕРДИТЬ" */
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.confirmButton:hover {
+  background: #D4D4D8; /* Zinc-300 */
+}
+
+.confirmButton:active {
+  transform: scale(0.98);
+}
+
+.confirmButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
    АДАПТИВНЫЙ ШРИФТ (для узких экранов)
    ═══════════════════════════════════════════════════════════════ */
 
