@@ -1,6 +1,6 @@
 /* Карточка смены */
 .card {
-  width: calc(100% - 36px); /* Ширина экрана минус 18px с каждой стороны */
+  width: 100%; 
   margin: 0 18px; /* Отступы по 18px */
   height: 10rem; /* 160px */
   background: white;
