@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getMyShifts, ShiftWithDetails } from '../../lib/bookings'
 import ShiftCard from './ShiftCard'
+import WorkingShiftCard from './WorkingShiftCard'
 import Footer from '../Footer'
 import styles from './MyShiftsScreen.module.css'
 
@@ -108,32 +109,27 @@ export default function MyShiftsScreen() {
       </div>
 
       {/* РАБОЧИЕ СМЕНЫ */}
-      <div className={styles.workingShiftsSection}>
-        <h2 className={styles.sectionTitle}>РАБОЧИЕ СМЕНЫ</h2>
-        
-        {filteredConfirmed.length === 0 ? (
-          <div className={styles.placeholder}>
-            У Вас пока нет рабочих смен
-          </div>
-        ) : (
-          <div className={styles.shiftsList}>
-            {filteredConfirmed.map(shift => (
-              <ShiftCard
-                key={shift.id}
-                bookingId={shift.id}
-                restaurantName={shift.job.restaurant.name}
-                address={shift.job.restaurant.address}
-                shiftDate={shift.job.shift_date}
-                startTime={shift.job.start_time}
-                endTime={shift.job.end_time}
-                payAmount={shift.job.pay_amount}
-                status="confirmed"
-                onCancel={loadShifts}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      {/* РАБОЧИЕ СМЕНЫ */}
+<div className={styles.workingShiftsSection}>
+  <h2 className={styles.sectionTitle}>РАБОЧИЕ СМЕНЫ</h2>
+  
+  {filteredConfirmed.length === 0 ? (
+    <div className={styles.placeholder}>
+      У Вас пока нет рабочих смен
+    </div>
+  ) : (
+    <div className={styles.workingShiftsList}>
+      {filteredConfirmed.map(shift => (
+        <WorkingShiftCard
+          key={shift.id}
+          restaurantName={shift.job.restaurant.name}
+          address={shift.job.restaurant.address}
+          shiftDate={shift.job.shift_date}
+        />
+      ))}
+    </div>
+  )}
+</div>
 
       {/* ОДОБРЕНЫ / ОЖИДАЮТ */}
       <div className={styles.approvalSection}>
