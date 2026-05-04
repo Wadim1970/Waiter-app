@@ -101,6 +101,11 @@
   margin-top: 0.625rem; /* 16px от заголовка */
 }
 
+.singleShiftContainer {
+  margin-top: 1rem; /* 16px от заголовка */
+  padding: 0; /* Карточка сама управляет отступами */
+}
+
 .sectionTitle {
   font-family: 'Inter', sans-serif;
   font-weight: 500;
