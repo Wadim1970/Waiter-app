@@ -7,16 +7,18 @@
   height: 100vh;
   height: 100dvh;
   background: #F4F4F5; /* Zinc-100 */
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: none; /* ← УБИРАЕТ СИНЮЮ ПОЛОСУ */
+  overflow: hidden; /* ← ИЗМЕНЕНО: запрещаем скролл контейнера */
+  overscroll-behavior: none;
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   ХЕДЕР (0-160px)
+   ХЕДЕР (0-160px) — ФИКС
    ═══════════════════════════════════════════════════════════════ */
 
 .header {
+  position: fixed; /* ← ИЗМЕНЕНО: фиксируем */
+  top: 0;
+  left: 0;
   width: 100%;
   height: 10rem; /* 160px */
   background: white;
@@ -26,6 +28,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  z-index: 100; /* ← ДОБАВЛЕНО: поверх скролла */
 }
 
 .title {
@@ -72,10 +75,13 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   РАБОЧИЕ СМЕНЫ (160-296px)
+   РАБОЧИЕ СМЕНЫ (160-296px) — ФИКС
    ═══════════════════════════════════════════════════════════════ */
 
 .workingShiftsSection {
+  position: fixed; /* ← ИЗМЕНЕНО: фиксируем */
+  top: 10rem; /* 160px (после хедера) */
+  left: 0;
   width: 100%;
   height: 8.5rem; /* 136px */
   background: white;
@@ -83,6 +89,7 @@
   border-bottom: 1px solid #D4D4D8; /* Zinc-300 */
   display: flex;
   flex-direction: column;
+  z-index: 100; /* ← ДОБАВЛЕНО */
 }
 
 .sectionTitle {
@@ -95,22 +102,32 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   ОДОБРЕНЫ / ОЖИДАЮТ (312-852px)
+   ОДОБРЕНЫ / ОЖИДАЮТ (312px от верха) — ФИКС + СКРОЛЛ
    ═══════════════════════════════════════════════════════════════ */
 
 .approvalSection {
+  position: fixed; /* ← ИЗМЕНЕНО: фиксируем */
+  top: 18.5rem; /* 296px (160 + 136) */
+  left: 0;
   width: 100%;
-  min-height: 33.75rem; /* 540px */
+  height: calc(100vh - 18.5rem - 4rem); /* От табов до футера (64px) */
+  height: calc(100dvh - 18.5rem - 4rem);
   background: white;
-  padding: 1.75rem 1.125rem; /* 28px 18px */
-  padding-bottom: 6rem; /* ← ПРОСТО БОЛЬШОЙ ОТСТУП ДЛЯ ФУТЕРА */
+  padding: 1.75rem 0 0 0; /* ← ИЗМЕНЕНО: убрали боковые отступы */
+  overflow: hidden; /* ← ДОБАВЛЕНО: скролл только у контента */
+  z-index: 50; /* ← ДОБАВЛЕНО */
 }
 
-/* Табы: Одобрены / Ожидают */
+/* Табы: Одобрены / Ожидают — ФИКС */
 .subTabs {
   display: flex;
   gap: 0.4375rem; /* 7px */
-  margin-bottom: 2.5rem; /* 40px */
+  margin-bottom: 0; /* ← УБРАЛИ ОТСТУП */
+  padding: 0 1.125rem 1.25rem 1.125rem; /* 18px по бокам, 20px снизу */
+  background: white;
+  position: sticky; /* ← ДОБАВЛЕНО: прилипает к верху */
+  top: 0;
+  z-index: 10;
 }
 
 .subTab {
@@ -132,9 +149,13 @@
   color: #16A34A; /* Green-600 */
 }
 
-/* Контент смен */
+/* Контент смен — СКРОЛЛИТСЯ */
 .shiftsContent {
   width: 100%;
+  height: 100%; /* ← ДОБАВЛЕНО: занимает всё свободное место */
+  overflow-y: auto; /* ← СКРОЛЛ ЗДЕСЬ! */
+  -webkit-overflow-scrolling: touch;
+  padding: 0 0 1rem 0; /* Отступ снизу */
 }
 
 /* Плейсхолдер (когда нет смен) */
@@ -144,23 +165,19 @@
   font-size: 0.875rem; /* 14px */
   color: #A3A3A3; /* Neutral-400 */
   text-align: center;
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 3rem 0;
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   СПИСОК КАРТОЧЕК СМЕН
+   СПИСОК КАРТОЧЕК СМЕН — СКРОЛЛИТСЯ
    ═══════════════════════════════════════════════════════════════ */
 
 .shiftsList {
   display: flex;
   flex-direction: column;
   gap: 1rem; /* 16px между карточками */
-  padding: 0; /* Карточка сама управляет отступами */
+  padding: 0 0 1rem 0; /* ← ИЗМЕНЕНО: только снизу */
   overflow: visible; /* НЕ обрезаем тень */
-  padding-bottom: 1rem; /* Отступ снизу для последней тени */
 }
 
 /* Убираем отступы для секции рабочих смен */
@@ -169,7 +186,7 @@
   overflow: visible;
 }
 
-/* ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════��═══════════════════════════════════════
    АДАПТАЦИЯ
    ═══════════════════════════════════════════════════════════════ */
 
@@ -179,5 +196,13 @@
     margin: 0 auto;
     border-left: 1px solid #D4D4D8;
     border-right: 1px solid #D4D4D8;
+  }
+  
+  .header,
+  .workingShiftsSection,
+  .approvalSection {
+    max-width: 25rem;
+    left: 50%;
+    transform: translateX(-50%);
   }
 }
