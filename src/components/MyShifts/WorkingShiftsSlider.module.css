@@ -1,17 +1,19 @@
 /* Горизонтальный слайдер */
 .slider {
   display: flex;
-  gap: 0.5rem; /* 8px между карточками */
+  gap: 0.5rem;
   overflow-x: auto;
   overflow-y: hidden;
-  scroll-snap-type: x mandatory; /* Прилипание к карточкам */
+  scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
-  padding: 0 1.125rem 0.5rem 1.125rem; /* 18px по бокам, 8px снизу для тени */
-  margin-top: 1rem; /* 16px от заголовка */
+  padding: 0 0 0.5rem 0; /* ← УБРАЛИ БОКОВЫЕ PADDING */
+  margin-top: 1rem;
+  padding-left: 1.125rem; /* ← ДОБАВИЛИ ОТДЕЛЬНО СЛЕВА (18px) */
+  padding-right: 1.125rem; /* ← ДОБАВИЛИ ОТДЕЛЬНО СПРАВА (18px) */
   
-  /* Убираем скроллбар на WebKit */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-behavior: smooth;
 }
 
 .slider::-webkit-scrollbar {
