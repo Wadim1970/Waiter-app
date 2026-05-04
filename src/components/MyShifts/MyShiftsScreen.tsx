@@ -121,109 +121,152 @@ const handleCloseDetails = () => {
         </div>
       </div>
 
-     {/* РАБОЧИЕ СМЕНЫ */}
-<div className={styles.workingShiftsSection}>
-  <h2 className={styles.sectionTitle}>РАБОЧИЕ СМЕНЫ</h2>
-  
-  {filteredConfirmed.length === 0 ? (
-    <div className={styles.placeholder}>
-      У Вас пока нет рабочих смен
-    </div>
-  ) : filteredConfirmed.length === 1 ? (
-    // ОДНА СМЕНА - ПОЛНАЯ КАРТОЧКА
-    <div className={styles.singleShiftContainer}>
-      <WorkingShiftCard
-        restaurantName={filteredConfirmed[0].job.restaurant.name}
-        address={filteredConfirmed[0].job.restaurant.address}
-        shiftDate={filteredConfirmed[0].job.shift_date}
-        startTime={filteredConfirmed[0].job.start_time}
-        endTime={filteredConfirmed[0].job.end_time}
-      />
-    </div>
-  ) : (
-    // 2+ СМЕНЫ - СЛАЙДЕР
-    <WorkingShiftsSlider
-      shifts={filteredConfirmed}
-      onShiftClick={handleShiftClick}
-    />
-  )}
-</div>
-
-      {/* ОДОБРЕНЫ / ОЖИДАЮТ */}
-      <div className={styles.approvalSection}>
-        <div className={styles.subTabs}>
-          <button
-            className={`${styles.subTab} ${subTab === 'approved' ? styles.subTabActive : ''}`}
-            onClick={() => setSubTab('approved')}
-          >
-            ОДОБРЕНЫ
-          </button>
-          
-          <button
-            className={`${styles.subTab} ${subTab === 'waiting' ? styles.subTabActive : ''}`}
-            onClick={() => setSubTab('waiting')}
-          >
-            ОЖИДАЮТ
-          </button>
-        </div>
-
-        <div className={styles.shiftsContent}>
-          {subTab === 'approved' && (
-            <>
-              {filteredApproved.length === 0 ? (
-                <div className={styles.placeholder}>
-                  У Вас пока нет одобренных смен
-                </div>
-              ) : (
-                <div className={styles.shiftsList}>
-                  {filteredApproved.map(shift => (
-                    <ShiftCard
-                      key={shift.id}
-                      bookingId={shift.id}
-                      restaurantName={shift.job.restaurant.name}
-                      address={shift.job.restaurant.address}
-                      shiftDate={shift.job.shift_date}
-                      startTime={shift.job.start_time}
-                      endTime={shift.job.end_time}
-                      payAmount={shift.job.pay_amount}
-                      status="approved"
-                      onCancel={loadShifts}
-                    />
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-          
-          {subTab === 'waiting' && (
-            <>
-              {filteredWaiting.length === 0 ? (
-                <div className={styles.placeholder}>
-                  У Вас пока нет смен, ожидающих одобрения
-                </div>
-              ) : (
-                <div className={styles.shiftsList}>
-                  {filteredWaiting.map(shift => (
-                    <ShiftCard
-                      key={shift.id}
-                      bookingId={shift.id}
-                      restaurantName={shift.job.restaurant.name}
-                      address={shift.job.restaurant.address}
-                      shiftDate={shift.job.shift_date}
-                      startTime={shift.job.start_time}
-                      endTime={shift.job.end_time}
-                      payAmount={shift.job.pay_amount}
-                      status="applied"
-                      onCancel={loadShifts}
-                    />
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </div>
+    {/* РАБОЧИЕ СМЕНЫ (только для активных) */}
+{mainTab === 'active' && (
+  <div className={styles.workingShiftsSection}>
+    <h2 className={styles.sectionTitle}>РАБОЧИЕ СМЕНЫ</h2>
+    
+    {filteredConfirmed.length === 0 ? (
+      <div className={styles.placeholder}>
+        У Вас пока нет рабочих смен
       </div>
+    ) : filteredConfirmed.length === 1 ? (
+      <div className={styles.singleShiftContainer}>
+        <WorkingShiftCard
+          restaurantName={filteredConfirmed[0].job.restaurant.name}
+          address={filteredConfirmed[0].job.restaurant.address}
+          shiftDate={filteredConfirmed[0].job.shift_date}
+          startTime={filteredConfirmed[0].job.start_time}
+          endTime={filteredConfirmed[0].job.end_time}
+        />
+      </div>
+    ) : (
+      <WorkingShiftsSlider
+        shifts={filteredConfirmed}
+        onShiftClick={handleShiftClick}
+      />
+    )}
+  </div>
+)}
 
+{/* ОДОБРЕНЫ / ОЖИДАЮТ (только для активных) */}
+{mainTab === 'active' && (
+  <div className={styles.approvalSection}>
+    <div className={styles.subTabs}>
+      <button
+        className={`${styles.subTab} ${subTab === 'approved' ? styles.subTabActive : ''}`}
+        onClick={() => setSubTab('approved')}
+      >
+        ОДОБРЕНЫ
+      </button>
+      
+      <button
+        className={`${styles.subTab} ${subTab === 'waiting' ? styles.subTabActive : ''}`}
+        onClick={() => setSubTab('waiting')}
+      >
+        ОЖИДАЮТ
+      </button>
+    </div>
+
+    <div className={styles.shiftsContent}>
+      {subTab === 'approved' && (
+        <>
+          {filteredApproved.length === 0 ? (
+            <div className={styles.placeholder}>
+              У Вас пока нет одобренных смен
+            </div>
+          ) : (
+            <div className={styles.shiftsList}>
+              {filteredApproved.map(shift => (
+                <ShiftCard
+                  key={shift.id}
+                  bookingId={shift.id}
+                  restaurantName={shift.job.restaurant.name}
+                  address={shift.job.restaurant.address}
+                  shiftDate={shift.job.shift_date}
+                  startTime={shift.job.start_time}
+                  endTime={shift.job.end_time}
+                  payAmount={shift.job.pay_amount}
+                  status="approved"
+                  onCancel={loadShifts}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+      
+      {subTab === 'waiting' && (
+        <>
+          {filteredWaiting.length === 0 ? (
+            <div className={styles.placeholder}>
+              У Вас пока нет смен, ожидающих одобрения
+            </div>
+          ) : (
+            <div className={styles.shiftsList}>
+              {filteredWaiting.map(shift => (
+                <ShiftCard
+                  key={shift.id}
+                  bookingId={shift.id}
+                  restaurantName={shift.job.restaurant.name}
+                  address={shift.job.restaurant.address}
+                  shiftDate={shift.job.shift_date}
+                  startTime={shift.job.start_time}
+                  endTime={shift.job.end_time}
+                  payAmount={shift.job.pay_amount}
+                  status="applied"
+                  onCancel={loadShifts}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  </div>
+)}
+
+{/* ПРОШЕДШИЕ СМЕНЫ (только для прошедших) */}
+{mainTab === 'past' && (
+  <div className={styles.pastShiftsSection}>
+    {/* Объединяем все прошедшие смены */}
+    {(() => {
+      const allPastShifts = [
+        ...filteredConfirmed,
+        ...filteredApproved,
+        ...filteredWaiting
+      ].sort((a, b) => {
+        const dateA = new Date(a.job.shift_date).getTime()
+        const dateB = new Date(b.job.shift_date).getTime()
+        return dateB - dateA // От недавних к старым
+      })
+
+      return allPastShifts.length === 0 ? (
+        <div className={styles.placeholder}>
+          У Вас пока нет прошедших смен
+        </div>
+      ) : (
+        <div className={styles.pastShiftsList}>
+          {allPastShifts.map(shift => (
+            <div key={shift.id} className={styles.pastShiftCard}>
+              <ShiftCard
+                bookingId={shift.id}
+                restaurantName={shift.job.restaurant.name}
+                address={shift.job.restaurant.address}
+                shiftDate={shift.job.shift_date}
+                startTime={shift.job.start_time}
+                endTime={shift.job.end_time}
+                payAmount={shift.job.pay_amount}
+                status={shift.status}
+                onCancel={undefined} // ← НЕ АКТИВНАЯ
+              />
+            </div>
+          ))}
+        </div>
+      )
+    })()}
+  </div>
+)}
       {/* МОДАЛЬНОЕ ОКНО С ДЕТАЛЯМИ СМЕНЫ */}
 {selectedShift && (
   <JobDetailsScreen
