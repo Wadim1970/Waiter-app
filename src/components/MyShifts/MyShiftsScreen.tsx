@@ -125,8 +125,10 @@ export default function MyShiftsScreen() {
           restaurantName={shift.job.restaurant.name}
           address={shift.job.restaurant.address}
           shiftDate={shift.job.shift_date}
-        />
-      ))}
+          startTime={shift.job.start_time}
+          endTime={shift.job.end_time}
+             />
+        ))}
     </div>
   )}
 </div>
