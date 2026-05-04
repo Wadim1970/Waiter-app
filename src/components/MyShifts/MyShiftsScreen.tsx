@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { getMyShifts, ShiftWithDetails } from '../../lib/bookings'
 import ShiftCard from './ShiftCard'
 import WorkingShiftCard from './WorkingShiftCard'
+import WorkingShiftsSlider from './WorkingShiftsSlider' 
+import JobDetailsScreen from '../JobDetailsScreen'
 import Footer from '../Footer'
 import styles from './MyShiftsScreen.module.css'
 
@@ -16,6 +18,7 @@ export default function MyShiftsScreen() {
   const [approvedShifts, setApprovedShifts] = useState<ShiftWithDetails[]>([])
   const [confirmedShifts, setConfirmedShifts] = useState<ShiftWithDetails[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedShift, setSelectedShift] = useState<ShiftWithDetails | null>(null)
 
   const waiterId = localStorage.getItem('waiter_device_id')
 
@@ -30,6 +33,16 @@ export default function MyShiftsScreen() {
       return
     }
 
+    // НОВОЕ: Открываем детали смены
+const handleShiftClick = (shift: ShiftWithDetails) => {
+  setSelectedShift(shift)
+}
+
+// НОВОЕ: Закрываем детали
+const handleCloseDetails = () => {
+  setSelectedShift(null)
+}
+    
     setLoading(true)
 
     try {
@@ -108,8 +121,7 @@ export default function MyShiftsScreen() {
         </div>
       </div>
 
-      {/* РАБОЧИЕ СМЕНЫ */}
-      {/* РАБОЧИЕ СМЕНЫ */}
+     {/* РАБОЧИЕ СМЕНЫ */}
 <div className={styles.workingShiftsSection}>
   <h2 className={styles.sectionTitle}>РАБОЧИЕ СМЕНЫ</h2>
   
@@ -117,19 +129,23 @@ export default function MyShiftsScreen() {
     <div className={styles.placeholder}>
       У Вас пока нет рабочих смен
     </div>
-  ) : (
-    <div className={styles.workingShiftsList}>
-      {filteredConfirmed.map(shift => (
-        <WorkingShiftCard
-          key={shift.id}
-          restaurantName={shift.job.restaurant.name}
-          address={shift.job.restaurant.address}
-          shiftDate={shift.job.shift_date}
-          startTime={shift.job.start_time}
-          endTime={shift.job.end_time}
-             />
-        ))}
+  ) : filteredConfirmed.length === 1 ? (
+    // ОДНА СМЕНА - ПОЛНАЯ КАРТОЧКА
+    <div className={styles.singleShiftContainer}>
+      <WorkingShiftCard
+        restaurantName={filteredConfirmed[0].job.restaurant.name}
+        address={filteredConfirmed[0].job.restaurant.address}
+        shiftDate={filteredConfirmed[0].job.shift_date}
+        startTime={filteredConfirmed[0].job.start_time}
+        endTime={filteredConfirmed[0].job.end_time}
+      />
     </div>
+  ) : (
+    // 2+ СМЕНЫ - СЛАЙДЕР
+    <WorkingShiftsSlider
+      shifts={filteredConfirmed}
+      onShiftClick={handleShiftClick}
+    />
   )}
 </div>
 
@@ -208,6 +224,14 @@ export default function MyShiftsScreen() {
         </div>
       </div>
 
+      {/* МОДАЛЬНОЕ ОКНО С ДЕТАЛЯМИ СМЕНЫ */}
+{selectedShift && (
+  <JobDetailsScreen
+    jobId={selectedShift.job.id}
+    onClose={handleCloseDetails}
+  />
+)}
+      
       <Footer />
     </div>
   )
