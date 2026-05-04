@@ -134,8 +134,8 @@
   width: 7rem; /* 112px */
   height: 1.75rem; /* 28px */
   background: transparent;
-  border: none;
-  border-radius: 0.75rem; /* 12px */
+  border: 1px solid #A7A7A7;
+  border-radius: 1.75rem; /* 12px */
   font-family: 'Inter', sans-serif;
   font-weight: 500;
   font-size: 0.875rem; /* 14px */
