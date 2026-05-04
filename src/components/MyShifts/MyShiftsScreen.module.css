@@ -9,8 +9,10 @@
   background: #F4F4F5; /* Zinc-100 */
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: env(safe-area-inset-bottom); /* Учитываем safe area */
-  padding-bottom: constant(safe-area-inset-bottom); /* Для старых версий iOS */
+  
+  /* ← УБИРАЕМ ЭТИ СТРОКИ (они не нужны для container) */
+  /* padding-bottom: env(safe-area-inset-bottom); */
+  /* padding-bottom: constant(safe-area-inset-bottom); */
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -76,15 +78,14 @@
    РАБОЧИЕ СМЕНЫ (160-296px)
    ═══════════════════════════════════════════════════════════════ */
 
-/* Рабочие смены */
 .workingShiftsSection {
   width: 100%;
   height: 8.5rem; /* 136px */
   background: white;
   padding: 1.125rem 1.5rem; /* 18px 24px */
   border-bottom: 1px solid #D4D4D8; /* Zinc-300 */
-  display: flex; /* ← ДОБАВЛЕНО */
-  flex-direction: column; /* ← ДОБАВЛЕНО */
+  display: flex;
+  flex-direction: column;
 }
 
 .sectionTitle {
@@ -92,21 +93,10 @@
   font-weight: 500;
   font-size: 0.875rem; /* 14px */
   color: #A3A3A3; /* Neutral-400 */
-  margin: 0; /* ← УБРАЛИ НИЖНИЙ ОТСТУП */
+  margin: 0;
   text-transform: uppercase;
 }
 
-.placeholder {
-  font-family: 'Inter', sans-serif;
-  font-weight: 700;
-  font-size: 0.875rem; /* 14px */
-  color: #A3A3A3; /* Neutral-400 */
-  text-align: center;
-  flex: 1; /* ← ДОБАВЛЕНО: ЗАНИМАЕТ ВСЁ СВОБОДНОЕ ПРОСТРАНСТВО */
-  display: flex; /* ← ДОБАВЛЕНО */
-  align-items: center; /* ← ДОБАВЛЕНО: ВЕРТИКАЛЬНОЕ ЦЕНТРИРОВАНИЕ */
-  justify-content: center; /* ← ДОБАВЛЕНО: ГОРИЗОНТАЛЬНОЕ ЦЕНТРИРОВАНИЕ */
-}
 /* ═══════════════════════════════════════════════════════════════
    ОДОБРЕНЫ / ОЖИДАЮТ (312-852px)
    ═══════════════════════════════════════════════════════════════ */
@@ -116,6 +106,7 @@
   min-height: 33.75rem; /* 540px */
   background: white;
   padding: 1.75rem 1.125rem; /* 28px 18px */
+  padding-bottom: calc(1.75rem + env(safe-area-inset-bottom)); /* ← ДОБАВЛЕНО ДЛЯ iPHONE */
 }
 
 /* Табы: Одобрены / Ожидают */
@@ -156,69 +147,34 @@
   font-size: 0.875rem; /* 14px */
   color: #A3A3A3; /* Neutral-400 */
   text-align: center;
-  padding: 2rem 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   ФУТЕР (НАВИГАЦИЯ) 784-852px
+   СПИСОК КАРТОЧЕК СМЕН
    ═══════════════════════════════════════════════════════════════ */
 
-.footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 4rem; /* 64px */
-  background: rgba(228, 228, 231, 0.2); /* Zinc-300/20 */
-  backdrop-filter: blur(10px);
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  padding: 0 1.5rem;
-  border-top: 1px solid rgba(228, 228, 231, 0.3);
-  padding-bottom: env(safe-area-inset-bottom);
-  padding-bottom: constant(safe-area-inset-bottom);
-}
-
-.navButton {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0.5rem;
-  transition: opacity 0.2s;
-}
-
-.navButton:hover {
-  opacity: 0.7;
-}
-
-.navIcon {
-  width: 1.75rem; /* 28px */
-  height: 1.75rem; /* 28px */
-  object-fit: contain;
-}
-
-/* Активная кнопка навигации */
-.navButtonActive .navIcon {
-  filter: brightness(0); /* Делает иконку чёрной */
-}
-
-/* Список карточек смен */
 .shiftsList {
   display: flex;
   flex-direction: column;
   gap: 1rem; /* 16px между карточками */
-  padding: 0; /* ← УБРАЛИ ДВОЙНЫЕ ОТСТУПЫ */
-  max-height: 30rem; /* Ограничение высоты для скролла */
-  overflow-y: auto;
+  padding: 0; /* ← УБРАЛИ padding (карточка сама управляет отступами) */
+  max-height: none; /* ← УБРАЛИ max-height (пусть растёт свободно) */
+  overflow: visible; /* ← ИЗМЕНЕНО: НЕ ОБРЕЗАЕМ ТЕНЬ! */
   -webkit-overflow-scrolling: touch;
+  padding-bottom: 1rem; /* ← ДОБАВИЛИ отступ снизу для последней тени */
 }
 
 /* Убираем отступы для секции рабочих смен */
 .workingShiftsSection .shiftsList {
   padding: 0;
-  max-height: 12rem;
+  max-height: none; /* ← УБРАЛИ ограничение */
+  overflow: visible; /* ← НЕ ОБРЕЗАЕМ */
 }
+
 /* ═══════════════════════════════════════════════════════════════
    АДАПТАЦИЯ
    ═══════════════════════════════════════════════════════════════ */
