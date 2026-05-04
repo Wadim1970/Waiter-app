@@ -201,6 +201,40 @@
   overflow: visible;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   ПРОШЕДШИЕ СМЕНЫ — СКРОЛЛЯЩИЙСЯ СПИСОК
+   ═══════════════════════════════════════════════════════════════ */
+
+.pastShiftsSection {
+  position: fixed;
+  top: 10rem; /* 160px — сразу под хедером */
+  left: 0;
+  width: 100%;
+  height: calc(100vh - 10rem - 4rem); /* От хедера до футера */
+  height: calc(100dvh - 10rem - 4rem);
+  background: #F4F4F5; /* Zinc-100 */
+  overflow-y: auto; /* ← СКРОЛЛ ЗДЕСЬ */
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 1.5rem 0 1rem 0; /* 24px сверху, 16px снизу */
+  z-index: 50;
+}
+
+/* Список прошедших смен */
+.pastShiftsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem; /* 8px между карточками */
+  padding: 0;
+}
+
+/* Обёртка для каждой карточки */
+.pastShiftCard {
+  width: 100%;
+  pointer-events: none; /* ← КАРТОЧКА НЕАКТИВНАЯ */
+  opacity: 0.85; /* Немного блеклая */
+}
+
 /* ═══════════════════════��═══════════════════════════════════════
    АДАПТАЦИЯ
    ═══════════════════════════════════════════════════════════════ */
