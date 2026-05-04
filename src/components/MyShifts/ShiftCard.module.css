@@ -52,7 +52,7 @@
 
 .price {
   position: absolute;
-  top: calc(0.875rem + 1rem + 0.875rem); /* Выравниваем по baseline с названием */
+  top: calc(0.875rem + 1rem + 0.875rem + 1.25rem + 0.25rem); /* ← На уровне адреса */
   right: 1.375rem; /* 22px от правого края */
   font-family: 'Inter', sans-serif;
   font-weight: 700;
@@ -93,7 +93,7 @@
 
 .time {
   position: absolute;
-  top: calc(0.875rem + 1rem + 0.875rem + 1.25rem + 0.25rem); /* Выравниваем с адресом */
+  top: 0.875rem; /* ← На уровне даты (14px от верха) */
   right: 1.375rem; /* 22px от правого края */
   font-family: 'Inter', sans-serif;
   font-weight: 400;
