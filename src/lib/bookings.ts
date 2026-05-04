@@ -184,7 +184,7 @@ export async function confirmShift(bookingId: string, waiterId: string) {
 // 4️⃣ ОТМЕНИТЬ ЗАЯВКУ (ДО ПОДТВЕРЖДЕНИЯ)
 // ═══════════════════════════════════════════════════════════════
 
-export async function cancelBooking(bookingId: string) {
+export async function cancelBooking(bookingId: string, waiterId: string) {
   try {
     await setCurrentUser(waiterId)
     // Проверяем что статус не 'confirmed'
