@@ -1,0 +1,93 @@
+/* Узкая карточка рабочей смены */
+.card {
+  min-width: 11rem; /* 176px минимум */
+  height: 5rem; /* 80px */
+  position: relative;
+  border-radius: 1rem; /* 16px */
+  overflow: hidden;
+  flex-shrink: 0; /* Не сжимается в слайдере */
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  scroll-snap-align: start; /* Прилипание при скролле */
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card:active {
+  transform: translateY(0);
+}
+
+/* Градиентный фон */
+.gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to left, #082F49, #0E7490); /* sky-950 → cyan-700 */
+  border-radius: 1rem;
+}
+
+/* Название ресторана - сверху по центру */
+.restaurantName {
+  position: absolute;
+  top: 0.625rem; /* 10px */
+  left: 50%;
+  transform: translateX(-50%); /* Центрирование */
+  font-family: 'Inter', sans-serif;
+  font-weight: 700; /* Bold */
+  font-size: 1rem; /* 16px */
+  color: white;
+  z-index: 1;
+  white-space: nowrap; /* Не переносим текст */
+  padding: 0 1.5rem; /* 24px слева и справа (для расчёта ширины) */
+}
+
+/* Число (17) - по центру */
+.day {
+  position: absolute;
+  top: 2rem; /* 32px */
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700; /* Bold */
+  font-size: 1.5rem; /* 24px */
+  color: #0EA5E9; /* Sky-500 */
+  z-index: 1;
+  line-height: 1;
+}
+
+/* Месяц (апр) - по центру под числом */
+.month {
+  position: absolute;
+  top: 3.5rem; /* 56px */
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700; /* Bold */
+  font-size: 1rem; /* 16px */
+  color: #0EA5E9; /* Sky-500 */
+  z-index: 1;
+  line-height: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   АДАПТИВНОСТЬ
+   ═══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 375px) {
+  .restaurantName {
+    font-size: 0.875rem; /* 14px */
+  }
+  
+  .day {
+    font-size: 1.25rem; /* 20px */
+  }
+  
+  .month {
+    font-size: 0.875rem; /* 14px */
+  }
+}
