@@ -1,0 +1,24 @@
+/* Горизонтальный слайдер */
+.slider {
+  display: flex;
+  gap: 0.5rem; /* 8px между карточками */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory; /* Прилипание к карточкам */
+  -webkit-overflow-scrolling: touch;
+  padding: 0 1.125rem 0.5rem 1.125rem; /* 18px по бокам, 8px снизу для тени */
+  margin-top: 1rem; /* 16px от заголовка */
+  
+  /* Убираем скроллбар на WebKit */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.slider::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+/* Плавный скролл */
+.slider {
+  scroll-behavior: smooth;
+}
