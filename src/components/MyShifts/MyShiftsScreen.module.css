@@ -5,14 +5,11 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  height: 100svh;
+  height: 100dvh;
   background: #F4F4F5; /* Zinc-100 */
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  
-  /* ← УБИРАЕМ ЭТИ СТРОКИ (они не нужны для container) */
-  /* padding-bottom: env(safe-area-inset-bottom); */
-  /* padding-bottom: constant(safe-area-inset-bottom); */
+  overscroll-behavior: none; /* ← УБИРАЕТ СИНЮЮ ПОЛОСУ */
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -106,7 +103,7 @@
   min-height: 33.75rem; /* 540px */
   background: white;
   padding: 1.75rem 1.125rem; /* 28px 18px */
-  padding-bottom: calc(1.75rem + env(safe-area-inset-bottom)); /* ← ДОБАВЛЕНО ДЛЯ iPHONE */
+  padding-bottom: 6rem; /* ← ПРОСТО БОЛЬШОЙ ОТСТУП ДЛЯ ФУТЕРА */
 }
 
 /* Табы: Одобрены / Ожидают */
@@ -161,18 +158,15 @@
   display: flex;
   flex-direction: column;
   gap: 1rem; /* 16px между карточками */
-  padding: 0; /* ← УБРАЛИ padding (карточка сама управляет отступами) */
-  max-height: none; /* ← УБРАЛИ max-height (пусть растёт свободно) */
-  overflow: visible; /* ← ИЗМЕНЕНО: НЕ ОБРЕЗАЕМ ТЕНЬ! */
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 1rem; /* ← ДОБАВИЛИ отступ снизу для последней тени */
+  padding: 0; /* Карточка сама управляет отступами */
+  overflow: visible; /* НЕ обрезаем тень */
+  padding-bottom: 1rem; /* Отступ снизу для последней тени */
 }
 
 /* Убираем отступы для секции рабочих смен */
 .workingShiftsSection .shiftsList {
   padding: 0;
-  max-height: none; /* ← УБРАЛИ ограничение */
-  overflow: visible; /* ← НЕ ОБРЕЗАЕМ */
+  overflow: visible;
 }
 
 /* ═══════════════════════════════════════════════════════════════
