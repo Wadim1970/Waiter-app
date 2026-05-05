@@ -2,10 +2,26 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabaseWaiter, supabaseWaiterAdmin } from '../lib/supabase'
 import RegistrationModal from './RegistrationModal'
+import ImagePreview from './ImagePreview'
 import styles from './RegistrationForm.module.css'
 
 interface ValidationErrors {
   [key: string]: boolean
+}
+
+// Валидация паспортных данных
+const validatePassportSeries = (value: string) => /^\d{4}$/.test(value)
+const validatePassportNumber = (value: string) => /^\d{6}$/.test(value)
+const validateDepartmentCode = (value: string) => /^\d{3}-\d{3}$/.test(value)
+const validateINN = (value: string) => /^\d{12}$/.test(value)
+
+// Автоформат кода подразделения: 123456 → 123-456
+const formatDepartmentCode = (raw: string): string => {
+  const digits = raw.replace(/\D/g, '').slice(0, 6)
+  if (digits.length > 3) {
+    return `${digits.slice(0, 3)}-${digits.slice(3)}`
+  }
+  return digits
 }
 
 export default function RegistrationForm() {
@@ -15,7 +31,7 @@ export default function RegistrationForm() {
   // Получаем UUID официанта из localStorage
   const waiterId = localStorage.getItem('waiter_device_id')
   
-  // НОВОЕ: Проверяем нужно ли показать модалку
+  // Проверяем нужно ли показать модалку
   const shouldShowModal = searchParams.get('showModal') === 'true'
   const [isModalVisible, setIsModalVisible] = useState(shouldShowModal)
   
@@ -26,6 +42,8 @@ export default function RegistrationForm() {
     birthDate: '',
     gender: '',
     passportSeries: '',
+    passportNumber: '',
+    passportDepartmentCode: '',
     passportIssueDate: '',
     passportIssuedBy: '',
     inn: '',
@@ -39,16 +57,18 @@ export default function RegistrationForm() {
   const [photos, setPhotos] = useState({
     passportMain: null as File | null,
     passportRegistration: null as File | null,
-    medicalBook: [] as File[]
+    medicalBook: [] as File[],
+    personalPhoto1: null as File | null,
+    personalPhoto2: null as File | null,
+    personalPhoto3: null as File | null
   })
 
   const [errors, setErrors] = useState<ValidationErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // НОВОЕ: Убираем параметр showModal из URL после монтирования
+  // Убираем параметр showModal из URL после монтирования
   useEffect(() => {
     if (shouldShowModal) {
-      // Убираем параметр из URL (но модалка уже открыта в state)
       navigate('/registration', { replace: true })
     }
   }, [shouldShowModal, navigate])
@@ -56,25 +76,45 @@ export default function RegistrationForm() {
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {}
 
-    const requiredFields = [
+    // Обязательные текстовые поля
+    const requiredTextFields = [
       'lastName',
       'firstName',
       'patronymic',
       'birthDate',
       'gender',
-      'passportSeries',
       'passportIssueDate',
       'passportIssuedBy',
-      'inn',
       'address'
     ]
 
-    requiredFields.forEach(field => {
+    requiredTextFields.forEach(field => {
       if (!formData[field as keyof typeof formData]) {
         newErrors[field] = true
       }
     })
 
+    // Серия паспорта — ровно 4 цифры
+    if (!validatePassportSeries(formData.passportSeries)) {
+      newErrors.passportSeries = true
+    }
+
+    // Номер паспорта — ровно 6 цифр
+    if (!validatePassportNumber(formData.passportNumber)) {
+      newErrors.passportNumber = true
+    }
+
+    // Код подразделения — формат XXX-XXX
+    if (!validateDepartmentCode(formData.passportDepartmentCode)) {
+      newErrors.passportDepartmentCode = true
+    }
+
+    // ИНН — ровно 12 цифр
+    if (!validateINN(formData.inn)) {
+      newErrors.inn = true
+    }
+
+    // Фото паспорта (обязательно)
     if (!photos.passportMain) {
       newErrors.passportMain = true
     }
@@ -82,7 +122,8 @@ export default function RegistrationForm() {
       newErrors.passportRegistration = true
     }
 
-    if (photos.medicalBook.length < 3) {
+    // Медкнижка — минимум 2 фото
+    if (photos.medicalBook.length < 2) {
       newErrors.medicalBook = true
     }
 
@@ -98,41 +139,39 @@ export default function RegistrationForm() {
   }
 
   const uploadPhoto = async (file: File, path: string): Promise<string | null> => {
-  try {
-    console.log('📤 Начало загрузки:', file.name, 'Размер:', file.size, 'Тип:', file.type)
-    
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
-    const filePath = `${waiterId}/${path}/${fileName}`
+    try {
+      console.log('📤 Начало загрузки:', file.name, 'Размер:', file.size, 'Тип:', file.type)
+      
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
+      const filePath = `${waiterId}/${path}/${fileName}`
 
-    console.log('📂 Путь загрузки:', filePath)
+      console.log('📂 Путь загрузки:', filePath)
 
-    // ИЗМЕНЕНО: Используем supabaseWaiterAdmin для обхода RLS
-    const { data: uploadData, error: uploadError } = await supabaseWaiterAdmin.storage
-      .from('waiter-documents')
-      .upload(filePath, file)
+      const { data: uploadData, error: uploadError } = await supabaseWaiterAdmin.storage
+        .from('waiter-documents')
+        .upload(filePath, file)
 
-    if (uploadError) {
-      console.error('❌ Ошибка загрузки:', uploadError)
-      throw uploadError
+      if (uploadError) {
+        console.error('❌ Ошибка загрузки:', uploadError)
+        throw uploadError
+      }
+
+      console.log('✅ Файл загружен:', uploadData)
+
+      const { data } = supabaseWaiterAdmin.storage
+        .from('waiter-documents')
+        .getPublicUrl(filePath)
+
+      console.log('🔗 Публичный URL:', data.publicUrl)
+
+      return data.publicUrl
+    } catch (error) {
+      console.error('❌ Ошибка загрузки фото:', error)
+      alert(`Ошибка загрузки ${file.name}: ${JSON.stringify(error)}`)
+      return null
     }
-
-    console.log('✅ Файл загружен:', uploadData)
-
-    // Получаем публичный URL
-    const { data } = supabaseWaiterAdmin.storage
-      .from('waiter-documents')
-      .getPublicUrl(filePath)
-
-    console.log('🔗 Публичный URL:', data.publicUrl)
-
-    return data.publicUrl
-  } catch (error) {
-    console.error('❌ Ошибка загрузки фото:', error)
-    alert(`Ошибка загрузки ${file.name}: ${JSON.stringify(error)}`)
-    return null
   }
-}
 
   const handleSubmit = async () => {
     if (!waiterId) {
@@ -156,19 +195,27 @@ export default function RegistrationForm() {
         throw new Error('Не удалось загрузить фото паспорта')
       }
 
+      // Загружаем медкнижку (до 3 страниц, минимум 2)
       const medicalUrls: string[] = []
       for (let i = 0; i < Math.min(photos.medicalBook.length, 3); i++) {
         const url = await uploadPhoto(photos.medicalBook[i], `medical-book/page-${i + 1}`)
         if (url) medicalUrls.push(url)
       }
 
-      if (medicalUrls.length < 3) {
-        throw new Error('Не удалось загрузить все фото мед.книжки')
+      if (medicalUrls.length < 2) {
+        throw new Error('Не удалось загрузить фото мед.книжки')
       }
 
-      const passportParts = formData.passportSeries.trim().split(/\s+/)
-      const passportSeries = passportParts[0] || ''
-      const passportNumber = passportParts.slice(1).join('') || ''
+      // Загружаем личные фото (опционально)
+      const personal1Url = photos.personalPhoto1
+        ? await uploadPhoto(photos.personalPhoto1, 'personal_photos/foto1')
+        : null
+      const personal2Url = photos.personalPhoto2
+        ? await uploadPhoto(photos.personalPhoto2, 'personal_photos/foto2')
+        : null
+      const personal3Url = photos.personalPhoto3
+        ? await uploadPhoto(photos.personalPhoto3, 'personal_photos/foto3')
+        : null
 
       const { data, error } = await supabaseWaiter
         .from('waiters')
@@ -178,24 +225,29 @@ export default function RegistrationForm() {
           first_name: formData.firstName.trim(),
           date_of_birth: formData.birthDate,
           gender: formData.gender,
-          passport_series: passportSeries,
-          passport_number: passportNumber,
+          passport_series: formData.passportSeries.trim(),
+          passport_number: formData.passportNumber.trim(),
+          passport_department_code: formData.passportDepartmentCode.trim(),
           passport_issued_by: formData.passportIssuedBy.trim(),
           passport_issue_date: formData.passportIssueDate,
           passport_photo_main_url: passportMainUrl,
           passport_photo_registration_url: passportRegUrl,
-          medical_book_photo_1_url: medicalUrls[0],
-          medical_book_photo_2_url: medicalUrls[1],
-          medical_book_photo_3_url: medicalUrls[2],
+          medical_book_photo_1_url: medicalUrls[0] || null,
+          medical_book_photo_2_url: medicalUrls[1] || null,
+          medical_book_photo_3_url: medicalUrls[2] || null,
           inn: formData.inn.trim(),
           address_registration: formData.address.trim(),
           bio: formData.about.trim() || null,
           cloudtips_link: formData.cloudTipsLink.trim() || null,
+          personal_photo_1_url: personal1Url,
+          personal_photo_2_url: personal2Url,
+          personal_photo_3_url: personal3Url,
           gdpr_consent: formData.personalDataConsent,
           gdpr_consent_date: new Date().toISOString(),
           terms_accepted: formData.termsConsent,
           terms_accepted_date: new Date().toISOString(),
           profile_completed: true,
+          status: 'pending',
           updated_at: new Date().toISOString()
         })
         .eq('id', waiterId)
@@ -206,7 +258,6 @@ export default function RegistrationForm() {
 
       console.log('✅ Профиль официанта обновлён:', data)
       
-      // НОВОЕ: Переход на синюю заглушку
       navigate('/booking-success')
 
     } catch (error: any) {
@@ -221,45 +272,37 @@ export default function RegistrationForm() {
     navigate(-1)
   }
 
-  // НОВОЕ: Обработчики модалки
+  // Обработчики модалки
   const handleModalContinue = () => {
     setIsModalVisible(false)
   }
 
   const handleModalCancel = () => {
-    navigate(-1) // Возврат на JobDetailsScreen
+    navigate(-1)
   }
 
-  const handlePassportMainPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setPhotos(prev => ({ ...prev, passportMain: file }))
-      setErrors(prev => ({ ...prev, passportMain: false }))
-    }
+  // Добавление страницы медкнижки по индексу
+  const setMedicalPage = (index: number, file: File) => {
+    setPhotos(prev => {
+      const updated = [...prev.medicalBook]
+      updated[index] = file
+      return { ...prev, medicalBook: updated }
+    })
+    setErrors(prev => ({ ...prev, medicalBook: false }))
   }
 
-  const handlePassportRegistrationPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setPhotos(prev => ({ ...prev, passportRegistration: file }))
-      setErrors(prev => ({ ...prev, passportRegistration: false }))
-    }
-  }
-
-  const handleMedicalBookPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    if (files.length > 0) {
-      setPhotos(prev => ({ 
-        ...prev, 
-        medicalBook: [...prev.medicalBook, ...files] 
-      }))
-      setErrors(prev => ({ ...prev, medicalBook: false }))
-    }
+  // Удаление страницы медкнижки по индексу
+  const removeMedicalPage = (index: number) => {
+    setPhotos(prev => {
+      const updated = [...prev.medicalBook]
+      updated.splice(index, 1)
+      return { ...prev, medicalBook: updated }
+    })
   }
 
   return (
     <div className={styles.container}>
-      {/* НОВОЕ: Модалка поверх формы */}
+      {/* Модалка поверх формы */}
       {isModalVisible && (
         <RegistrationModal 
           onContinue={handleModalContinue}
@@ -267,7 +310,7 @@ export default function RegistrationForm() {
         />
       )}
 
-      {/* НОВОЕ: Затемнение и размытие контента если модалка открыта */}
+      {/* Затемнение и размытие контента если модалка открыта */}
       <div className={`${styles.formContent} ${isModalVisible ? styles.blurred : ''}`}>
         <button className={styles.closeButton} onClick={handleClose}>✕</button>
 
@@ -279,41 +322,34 @@ export default function RegistrationForm() {
             
             <p className={styles.photoHint}>сделайте фото паспорта</p>
 
-           <div className={styles.photoRow}>
-  <div className={`${styles.photoBox} ${errors.passportMain ? styles.error : ''}`}>
-    <input 
-      type="file" 
-      accept="image/*"
-      capture="environment"
-      onChange={handlePassportMainPhoto}
-      id="passport-main"
-      style={{ display: 'none' }}
-    />
-    <label htmlFor="passport-main" className={styles.photoBoxLabel}>
-      <p className={styles.photoLabel}>основной разворот</p>
-      <span className={styles.addPhotoButton}>
-        {photos.passportMain ? '✓ Загружено' : '+ Добавить'}
-      </span>
-    </label>
-  </div>
+            <div className={styles.photoRow}>
+              <div className={`${styles.photoBox} ${errors.passportMain ? styles.errorBorder : ''}`}>
+                <ImagePreview
+                  file={photos.passportMain}
+                  onAdd={(f) => {
+                    setPhotos(prev => ({ ...prev, passportMain: f }))
+                    setErrors(prev => ({ ...prev, passportMain: false }))
+                  }}
+                  onRemove={() => setPhotos(prev => ({ ...prev, passportMain: null }))}
+                  alt="Основной разворот паспорта"
+                  label="основной разворот"
+                />
+              </div>
   
-  <div className={`${styles.photoBox} ${errors.passportRegistration ? styles.error : ''}`}>
-    <input 
-      type="file" 
-      accept="image/*"
-      capture="environment"
-      onChange={handlePassportRegistrationPhoto}
-      id="passport-registration"
-      style={{ display: 'none' }}
-    />
-    <label htmlFor="passport-registration" className={styles.photoBoxLabel}>
-      <p className={styles.photoLabel}>регистрация</p>
-      <span className={styles.addPhotoButton}>
-        {photos.passportRegistration ? '✓ Загружено' : '+ Добавить'}
-      </span>
-    </label>
-  </div>
-</div>
+              <div className={`${styles.photoBox} ${errors.passportRegistration ? styles.errorBorder : ''}`}>
+                <ImagePreview
+                  file={photos.passportRegistration}
+                  onAdd={(f) => {
+                    setPhotos(prev => ({ ...prev, passportRegistration: f }))
+                    setErrors(prev => ({ ...prev, passportRegistration: false }))
+                  }}
+                  onRemove={() => setPhotos(prev => ({ ...prev, passportRegistration: null }))}
+                  alt="Страница регистрации паспорта"
+                  label="регистрация"
+                />
+              </div>
+            </div>
+
             <div className={styles.divider}>
               <span>проверьте данные*</span>
             </div>
@@ -355,7 +391,6 @@ export default function RegistrationForm() {
               <input 
                 type="date" 
                 className={`${styles.inputHalf} ${errors.birthDate ? styles.error : ''}`}
-                placeholder="Дата рождения"
                 value={formData.birthDate}
                 onChange={(e) => {
                   setFormData({...formData, birthDate: e.target.value})
@@ -376,25 +411,53 @@ export default function RegistrationForm() {
               </select>
             </div>
 
+            {/* Серия + Номер паспорта */}
             <div className={styles.row}>
               <input 
                 type="text" 
-                className={`${styles.inputHalf} ${errors.passportSeries ? styles.error : ''}`}
-                placeholder="Серия и номер"
+                className={`${styles.inputThird} ${errors.passportSeries ? styles.error : ''}`}
+                placeholder="Серия"
                 value={formData.passportSeries}
                 onChange={(e) => {
-                  setFormData({...formData, passportSeries: e.target.value})
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 4)
+                  setFormData({...formData, passportSeries: val})
                   setErrors(prev => ({ ...prev, passportSeries: false }))
                 }}
               />
               <input 
+                type="text" 
+                className={`${styles.inputTwoThirds} ${errors.passportNumber ? styles.error : ''}`}
+                placeholder="Номер"
+                value={formData.passportNumber}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 6)
+                  setFormData({...formData, passportNumber: val})
+                  setErrors(prev => ({ ...prev, passportNumber: false }))
+                }}
+              />
+            </div>
+
+            {/* Дата выдачи + Код подразделения */}
+            <div className={styles.row}>
+              <input 
                 type="date" 
                 className={`${styles.inputHalf} ${errors.passportIssueDate ? styles.error : ''}`}
-                placeholder="Дата выдачи"
                 value={formData.passportIssueDate}
                 onChange={(e) => {
                   setFormData({...formData, passportIssueDate: e.target.value})
                   setErrors(prev => ({ ...prev, passportIssueDate: false }))
+                }}
+              />
+              <input 
+                type="text" 
+                className={`${styles.inputHalf} ${errors.passportDepartmentCode ? styles.error : ''}`}
+                placeholder="Код подразделения"
+                maxLength={7}
+                value={formData.passportDepartmentCode}
+                onChange={(e) => {
+                  const formatted = formatDepartmentCode(e.target.value)
+                  setFormData({...formData, passportDepartmentCode: formatted})
+                  setErrors(prev => ({ ...prev, passportDepartmentCode: false }))
                 }}
               />
             </div>
@@ -419,83 +482,48 @@ export default function RegistrationForm() {
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>МЕДИЦИНСКАЯ КНИЖКА</h2>
             <p className={styles.hint}>
-              Необходимо минимум 3 фото: личные данные, врачи/допуск, 
-              аттестация о профессиональной гигиенической подготовке (ГИГ).
+              Необходимо минимум 2 фото: личные данные, врачи/допуск. 
+              Также можно добавить аттестацию о профессиональной гигиенической подготовке (ГИГ).
             </p>
 
             <div className={`${styles.medicalPhotos} ${errors.medicalBook ? styles.errorBlock : ''}`}>
               <div className={styles.medicalPhotoBox}>
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handleMedicalBookPhoto}
-                  id="medical-1"
-                  style={{ display: 'none' }}
+                <ImagePreview
+                  file={photos.medicalBook[0] ?? null}
+                  onAdd={(f) => setMedicalPage(0, f)}
+                  onRemove={() => removeMedicalPage(0)}
+                  alt="Медкнижка стр. 1"
+                  label="стр. 1"
                 />
-                <label htmlFor="medical-1" className={styles.medicalPhotoLabel}>
-                  <span className={styles.addIcon}>
-                    {photos.medicalBook[0] ? '✓' : '+'}
-                  </span>
-                  <p className={styles.medicalLabel}>стр. 1</p>
-                </label>
               </div>
               
               <div className={styles.medicalPhotoBox}>
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handleMedicalBookPhoto}
-                  id="medical-2"
-                  style={{ display: 'none' }}
+                <ImagePreview
+                  file={photos.medicalBook[1] ?? null}
+                  onAdd={(f) => setMedicalPage(1, f)}
+                  onRemove={() => removeMedicalPage(1)}
+                  alt="Медкнижка стр. 2"
+                  label="стр. 2"
                 />
-                <label htmlFor="medical-2" className={styles.medicalPhotoLabel}>
-                  <span className={styles.addIcon}>
-                    {photos.medicalBook[1] ? '✓' : '+'}
-                  </span>
-                  <p className={styles.medicalLabel}>стр. 2</p>
-                </label>
               </div>
               
               <div className={styles.medicalPhotoBox}>
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  capture="environment"
-                  multiple
-                  onChange={handleMedicalBookPhoto}
-                  id="medical-3"
-                  style={{ display: 'none' }}
+                <ImagePreview
+                  file={photos.medicalBook[2] ?? null}
+                  onAdd={(f) => setMedicalPage(2, f)}
+                  onRemove={() => removeMedicalPage(2)}
+                  alt="Медкнижка стр. 3"
+                  label="стр. 3"
                 />
-                <label htmlFor="medical-3" className={styles.medicalPhotoLabel}>
-                  <span className={styles.addIcon}>
-                    {photos.medicalBook[2] ? '✓' : '+'}
-                  </span>
-                  <p className={styles.medicalLabel}>стр. 3+</p>
-                </label>
               </div>
             </div>
 
             {errors.medicalBook && (
-              <p className={styles.errorMessage}>Загрузите минимум 3 фотографии</p>
+              <p className={styles.errorMessage}>Загрузите минимум 2 фотографии</p>
             )}
-
-            <input 
-              type="file" 
-              accept="image/*"
-              capture="environment"
-              multiple
-              onChange={handleMedicalBookPhoto}
-              id="medical-more"
-              style={{ display: 'none' }}
-            />
-            <label htmlFor="medical-more" className={styles.addMoreButton}>
-              + Добавить ({photos.medicalBook.length} загружено)
-            </label>
           </section>
 
-         {/* БЛОК 3: Личная информация */}
+          {/* БЛОК 3: Личная информация */}
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>ЛИЧНАЯ ИНФОРМАЦИЯ</h2>
             
@@ -505,7 +533,8 @@ export default function RegistrationForm() {
               placeholder="ИНН"
               value={formData.inn}
               onChange={(e) => {
-                setFormData({...formData, inn: e.target.value})
+                const val = e.target.value.replace(/\D/g, '').slice(0, 12)
+                setFormData({...formData, inn: val})
                 setErrors(prev => ({ ...prev, inn: false }))
               }}
             />
@@ -527,6 +556,38 @@ export default function RegistrationForm() {
               value={formData.about}
               onChange={(e) => setFormData({...formData, about: e.target.value})}
             />
+
+            {/* Личные фото */}
+            <p className={styles.photoHintPersonal}>
+              Добавьте свое фото, так ресторанам будет легче сделать выбор в вашу пользу
+            </p>
+
+            <div className={styles.personalPhotosRow}>
+              <div className={styles.personalPhotoSlot}>
+                <ImagePreview
+                  file={photos.personalPhoto1}
+                  onAdd={(f) => setPhotos(prev => ({ ...prev, personalPhoto1: f }))}
+                  onRemove={() => setPhotos(prev => ({ ...prev, personalPhoto1: null }))}
+                  alt="Личное фото 1"
+                />
+              </div>
+              <div className={styles.personalPhotoSlot}>
+                <ImagePreview
+                  file={photos.personalPhoto2}
+                  onAdd={(f) => setPhotos(prev => ({ ...prev, personalPhoto2: f }))}
+                  onRemove={() => setPhotos(prev => ({ ...prev, personalPhoto2: null }))}
+                  alt="Личное фото 2"
+                />
+              </div>
+              <div className={styles.personalPhotoSlot}>
+                <ImagePreview
+                  file={photos.personalPhoto3}
+                  onAdd={(f) => setPhotos(prev => ({ ...prev, personalPhoto3: f }))}
+                  onRemove={() => setPhotos(prev => ({ ...prev, personalPhoto3: null }))}
+                  alt="Личное фото 3"
+                />
+              </div>
+            </div>
           </section>
 
           {/* БЛОК 4: Выплата чаевых */}

@@ -98,14 +98,18 @@
   border-radius: 1rem;
   border: none;
   padding: 0 1.25rem;
-  font-family: 'Inter', sans-serif;
-  font-size: 0.875rem;
-  color: #A3A3A3;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.25rem; /* 20px */
+  font-weight: 400;
+  color: #000000;
   margin-bottom: 1rem;
+  box-sizing: border-box;
 }
 
 .input::placeholder {
   color: #A3A3A3;
+  font-size: 0.875rem;
+  font-weight: 400;
 }
 
 /* Половинные инпуты (в ряд) */
@@ -122,9 +126,59 @@
   border-radius: 1rem;
   border: none;
   padding: 0 1.25rem;
-  font-family: 'Inter', sans-serif;
-  font-size: 0.875rem;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.25rem; /* 20px */
+  font-weight: 400;
+  color: #000000;
+  box-sizing: border-box;
+}
+
+.inputHalf::placeholder {
   color: #A3A3A3;
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+/* Треть строки (для серии паспорта) */
+.inputThird {
+  flex: 1;
+  height: 3rem;
+  background: #E4E4E7;
+  border-radius: 1rem;
+  border: none;
+  padding: 0 1.25rem;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.25rem; /* 20px */
+  font-weight: 400;
+  color: #000000;
+  box-sizing: border-box;
+}
+
+.inputThird::placeholder {
+  color: #A3A3A3;
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+/* Две трети строки (для номера паспорта) */
+.inputTwoThirds {
+  flex: 2;
+  height: 3rem;
+  background: #E4E4E7;
+  border-radius: 1rem;
+  border: none;
+  padding: 0 1.25rem;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.25rem; /* 20px */
+  font-weight: 400;
+  color: #000000;
+  box-sizing: border-box;
+}
+
+.inputTwoThirds::placeholder {
+  color: #A3A3A3;
+  font-size: 0.875rem;
+  font-weight: 400;
 }
 
 /* Textarea */
@@ -135,14 +189,19 @@
   border-radius: 1rem;
   border: none;
   padding: 1rem 1.25rem;
-  font-family: 'Inter', sans-serif;
-  font-size: 0.75rem;
-  color: #A3A3A3;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.25rem; /* 20px */
+  font-weight: 400;
+  color: #000000;
   resize: none;
+  box-sizing: border-box;
+  margin-bottom: 1rem;
 }
 
 .textarea::placeholder {
   color: #A3A3A3;
+  font-size: 0.75rem;
+  font-weight: 400;
 }
 
 /* НОВОЕ: Подсказка "если данные автоматически не заполнились..." */
@@ -170,30 +229,8 @@
   overflow: hidden;
 }
 
-/* НОВОЕ: Обёртка для label внутри photoBox */
-.photoBoxLabel {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem;
-  cursor: pointer;
-}
-
-.photoLabel {
-  font-family: 'Inter', sans-serif;
-  font-size: 0.875rem;
-  color: #A3A3A3;
-  margin: 0;
-}
-
-.addPhotoButton {
-  font-family: 'Inter', sans-serif;
-  font-size: 0.875rem;
-  color: #1E40AF;
-}
+/* ← УДАЛЕНО: photoBoxLabel, photoLabel, addPhotoButton
+   (используется ImagePreview) */
 
 /* Медицинская книжка */
 .hint {
@@ -212,51 +249,37 @@
 
 .medicalPhotoBox {
   flex: 1;
-  height: 3.5rem;
+  height: 5rem;
   background: white;
   border-radius: 1rem;
   border: 1px solid #A1A1AA;
   overflow: hidden;
 }
 
-/* НОВОЕ: Обёртка для label внутри medicalPhotoBox */
-.medicalPhotoLabel {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.25rem;
-  cursor: pointer;
-}
+/* ← УДАЛЕНО: medicalPhotoLabel, addIcon, medicalLabel, addMoreButton
+   (используется ImagePreview) */
 
-.addIcon {
-  font-size: 0.875rem;
-  color: #1E40AF;
-  font-weight: 600;
-}
-
-.medicalLabel {
+/* Личные фото */
+.photoHintPersonal {
   font-family: 'Inter', sans-serif;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   color: #A3A3A3;
-  margin: 0;
+  margin: 0 0 0.75rem 0;
+  line-height: 1.4;
 }
 
-.addMoreButton {
-  width: 100%;
-  height: 2.25rem;
-  background: white;
-  border-radius: 1rem;
-  border: 1px solid #A1A1AA;
-  font-family: 'Inter', sans-serif;
-  font-size: 0.875rem;
-  color: #1E40AF;
-  cursor: pointer;
-  display: block;
-  text-align: center;
-  line-height: 2.25rem;
+.personalPhotosRow {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.personalPhotoSlot {
+  flex: 1;
+  aspect-ratio: 1 / 1;
+  background: #E4E4E7;
+  border-radius: 0.75rem;
+  border: 1px dashed #A3A3A3;
+  overflow: hidden;
 }
 
 /* CloudTips */
@@ -340,39 +363,8 @@
   border: 2px solid #EF4444 !important;
 }
 
-.errorBlock {
-  outline: 2px solid #EF4444;
-  outline-offset: 2px;
-  border-radius: 1rem;
-}
-
-.errorCheckbox {
-  color: #EF4444;
-}
-
-.errorMessage {
-  font-family: 'Inter', sans-serif;
-  font-size: 0.75rem;
-  color: #EF4444;
-  margin: 0.5rem 0 0 0;
-}
-
-/* НОВОЕ: Обёртка для контента */
-.formContent {
-  width: 100%;
-  height: 100%;
-  transition: filter 0.3s ease, opacity 0.3s ease;
-}
-
-/* НОВОЕ: Затемнение и размытие когда модалка открыта */
-.formContent.blurred {
-  filter: blur(3px);
-  
-  pointer-events: none;
-}
-
-/* Стили ошибок валидации */
-.error {
+/* Красная граница для photoBox при ошибке */
+.errorBorder {
   border: 2px solid #EF4444 !important;
 }
 
@@ -393,6 +385,19 @@
   margin: 0.5rem 0 0 0;
 }
 
+/* Обёртка для контента */
+.formContent {
+  width: 100%;
+  height: 100%;
+  transition: filter 0.3s ease, opacity 0.3s ease;
+}
+
+/* Затемнение и размытие когда модалка открыта */
+.formContent.blurred {
+  filter: blur(3px);
+  pointer-events: none;
+}
+
 /* Адаптация */
 @media (min-width: 48rem) {
   .container {
@@ -405,3 +410,5 @@
     max-width: 25rem;
   }
 }
+
+

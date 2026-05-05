@@ -249,7 +249,8 @@
   
   .header,
   .workingShiftsSection,
-  .approvalSection {
+  .approvalSection,
+  .pastShiftsSection {
     max-width: 25rem;
     left: 50%;
     transform: translateX(-50%);

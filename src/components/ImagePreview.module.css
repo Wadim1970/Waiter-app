@@ -1,0 +1,175 @@
+/* Слот (пустой или с миниатюрой) */
+.slot {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  position: relative;
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+/* Текст-метка (например, "основной разворот") */
+.slotLabel {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.75rem;
+  color: #A3A3A3;
+  margin: 0;
+  text-align: center;
+}
+
+/* "+ Добавить" */
+.addText {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  color: #1E40AF;
+}
+
+/* Миниатюра */
+.thumbnailImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Крестик ✕ в углу миниатюры */
+.removeBtn {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  width: 1.375rem;
+  height: 1.375rem;
+  background: rgba(0, 0, 0, 0.65);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  font-size: 0.625rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  z-index: 2;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ПОЛНОЭКРАННАЯ МОДАЛКА
+   ═══════════════════════════════════════════════════════════════ */
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modalContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  max-width: 90vw;
+}
+
+.closeBtn {
+  align-self: flex-end;
+  background: none;
+  border: 1px solid white;
+  border-radius: 1rem;
+  color: white;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.875rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+.fullImg {
+  max-width: 90vw;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: 0.5rem;
+}
+
+.deleteBtn {
+  background: #EF4444;
+  border: none;
+  border-radius: 1rem;
+  color: white;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.75rem 2rem;
+  cursor: pointer;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ДИАЛОГ ПОДТВЕРЖДЕНИЯ УДАЛЕНИЯ
+   ═══════════════════════════════════════════════════════════════ */
+
+.confirmOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.confirmBox {
+  background: white;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  max-width: 20rem;
+  width: 90%;
+  text-align: center;
+}
+
+.confirmText {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1rem;
+  color: #1F2937;
+  margin: 0 0 1.5rem 0;
+}
+
+.confirmButtons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.confirmYes {
+  background: #EF4444;
+  border: none;
+  border-radius: 1rem;
+  color: white;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  padding: 0.75rem 2rem;
+  cursor: pointer;
+}
+
+.confirmNo {
+  background: #E4E4E7;
+  border: none;
+  border-radius: 1rem;
+  color: #374151;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  padding: 0.75rem 2rem;
+  cursor: pointer;
+}
