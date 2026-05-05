@@ -78,7 +78,12 @@ export default function RegistrationForm() {
 
   const [errors, setErrors] = useState<ValidationErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [focusedField, setFocusedField] = useState<string | null>(null)
   const [visibleMedicalSlots, setVisibleMedicalSlots] = useState(3)
+
+  const getPlaceholder = (fieldName: string, maskPlaceholder: string, textPlaceholder: string): string => {
+    return focusedField === fieldName ? maskPlaceholder : textPlaceholder
+  }
 
   // Убираем параметр showModal из URL после монтирования
   useEffect(() => {
@@ -419,9 +424,11 @@ export default function RegistrationForm() {
               <input 
                 type="text" 
                 className={`${styles.inputWide} ${errors.birthDate ? styles.error : ''}`}
-                placeholder="__.__.____"
+                placeholder={getPlaceholder('birthDate', '__.__.____', 'Дата рождения')}
                 value={formData.birthDate}
                 maxLength={10}
+                onFocus={() => setFocusedField('birthDate')}
+                onBlur={() => setFocusedField(null)}
                 onChange={(e) => handleDateChange(e, 'birthDate')}
               />
               <input
@@ -469,17 +476,21 @@ export default function RegistrationForm() {
               <input 
                 type="text" 
                 className={`${styles.inputMedium} ${errors.passportIssueDate ? styles.error : ''}`}
-                placeholder="__.__.____"
+                placeholder={getPlaceholder('passportIssueDate', '__.__.____', 'Дата выдачи')}
                 value={formData.passportIssueDate}
                 maxLength={10}
+                onFocus={() => setFocusedField('passportIssueDate')}
+                onBlur={() => setFocusedField(null)}
                 onChange={(e) => handleDateChange(e, 'passportIssueDate')}
               />
               <input 
                 type="text" 
                 className={`${styles.inputMedium} ${errors.passportDepartmentCode ? styles.error : ''}`}
-                placeholder="___-___"
+                placeholder={getPlaceholder('passportDepartmentCode', '___-___', 'Код подразделения')}
                 maxLength={7}
                 value={formData.passportDepartmentCode}
+                onFocus={() => setFocusedField('passportDepartmentCode')}
+                onBlur={() => setFocusedField(null)}
                 onChange={(e) => {
                   const formatted = formatDepartmentCode(e.target.value)
                   setFormData({...formData, passportDepartmentCode: formatted})
