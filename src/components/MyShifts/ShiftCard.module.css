@@ -3,7 +3,7 @@
   width: 100%;
   margin: 0 auto; /* ← ЦЕНТРОВКА! */
   height: 10rem; /* 160px */
-  background: white;
+  background: #FEFEFF;
   border-radius: 1rem;
   box-shadow: 2px 2px 4.5px 0px rgba(0, 0, 0, 0.13);
   border: 1px solid #F2F2F2; /* ← ИЗМЕНЕНО: более тёмная обводка */
