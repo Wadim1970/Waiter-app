@@ -108,7 +108,7 @@
 
 .sectionTitle {
   font-family: 'Montserrat', sans-serif;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 0.875rem; /* 14px */
   color: #A3A3A3; /* Neutral-400 */
   margin: 0;
@@ -152,7 +152,7 @@
   border: 1px solid #A7A7A7;
   border-radius: 1.75rem; /* 12px */
   font-family: 'Montserrat', sans-serif;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 0.875rem; /* 14px */
   color: #A3A3A3; /* Neutral-400 */
   cursor: pointer;
