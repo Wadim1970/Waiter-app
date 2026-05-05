@@ -24,6 +24,19 @@ const formatDepartmentCode = (raw: string): string => {
   return digits
 }
 
+// Маска ввода для дат: ДД.ММ.ГГГГ
+const formatDate = (value: string): string => {
+  const cleaned = value.replace(/\D/g, '')
+  let formatted = cleaned
+  if (cleaned.length >= 2) {
+    formatted = cleaned.slice(0, 2) + '.' + cleaned.slice(2)
+  }
+  if (cleaned.length >= 4) {
+    formatted = cleaned.slice(0, 2) + '.' + cleaned.slice(2, 4) + '.' + cleaned.slice(4, 8)
+  }
+  return formatted.slice(0, 10)
+}
+
 export default function RegistrationForm() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -65,6 +78,7 @@ export default function RegistrationForm() {
 
   const [errors, setErrors] = useState<ValidationErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [visibleMedicalSlots, setVisibleMedicalSlots] = useState(3)
 
   // Убираем параметр showModal из URL после монтирования
   useEffect(() => {
@@ -300,6 +314,20 @@ export default function RegistrationForm() {
     })
   }
 
+  const addMoreMedicalSlots = () => {
+    if (visibleMedicalSlots < 9) {
+      setVisibleMedicalSlots(prev => prev + 3)
+    }
+  }
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
+    const formatted = formatDate(e.target.value)
+    setFormData({...formData, [field]: formatted})
+    setErrors(prev => ({ ...prev, [field]: false }))
+  }
+
+  const isFormDisabled = !formData.personalDataConsent || !formData.termsConsent
+
   return (
     <div className={styles.container}>
       {/* Модалка поверх формы */}
@@ -389,33 +417,32 @@ export default function RegistrationForm() {
 
             <div className={styles.row}>
               <input 
-                type="date" 
-                className={`${styles.inputHalf} ${errors.birthDate ? styles.error : ''}`}
+                type="text" 
+                className={`${styles.inputWide} ${errors.birthDate ? styles.error : ''}`}
+                placeholder="__.__.____"
                 value={formData.birthDate}
-                onChange={(e) => {
-                  setFormData({...formData, birthDate: e.target.value})
-                  setErrors(prev => ({ ...prev, birthDate: false }))
-                }}
+                maxLength={10}
+                onChange={(e) => handleDateChange(e, 'birthDate')}
               />
-              <select 
-                className={`${styles.inputHalf} ${errors.gender ? styles.error : ''}`}
+              <input
+                type="text"
+                className={`${styles.inputNarrow} ${errors.gender ? styles.error : ''}`}
+                placeholder="Пол"
                 value={formData.gender}
+                maxLength={3}
                 onChange={(e) => {
-                  setFormData({...formData, gender: e.target.value})
+                  const value = e.target.value.replace(/[^а-яА-Яa-zA-Z]/g, '')
+                  setFormData({...formData, gender: value.slice(0, 3)})
                   setErrors(prev => ({ ...prev, gender: false }))
                 }}
-              >
-                <option value="">Пол</option>
-                <option value="male">Мужской</option>
-                <option value="female">Женский</option>
-              </select>
+              />
             </div>
 
             {/* Серия + Номер паспорта */}
             <div className={styles.row}>
               <input 
                 type="text" 
-                className={`${styles.inputThird} ${errors.passportSeries ? styles.error : ''}`}
+                className={`${styles.inputNarrow} ${errors.passportSeries ? styles.error : ''}`}
                 placeholder="Серия"
                 value={formData.passportSeries}
                 onChange={(e) => {
@@ -426,7 +453,7 @@ export default function RegistrationForm() {
               />
               <input 
                 type="text" 
-                className={`${styles.inputTwoThirds} ${errors.passportNumber ? styles.error : ''}`}
+                className={`${styles.inputWide} ${errors.passportNumber ? styles.error : ''}`}
                 placeholder="Номер"
                 value={formData.passportNumber}
                 onChange={(e) => {
@@ -440,18 +467,17 @@ export default function RegistrationForm() {
             {/* Дата выдачи + Код подразделения */}
             <div className={styles.row}>
               <input 
-                type="date" 
-                className={`${styles.inputHalf} ${errors.passportIssueDate ? styles.error : ''}`}
+                type="text" 
+                className={`${styles.inputMedium} ${errors.passportIssueDate ? styles.error : ''}`}
+                placeholder="__.__.____"
                 value={formData.passportIssueDate}
-                onChange={(e) => {
-                  setFormData({...formData, passportIssueDate: e.target.value})
-                  setErrors(prev => ({ ...prev, passportIssueDate: false }))
-                }}
+                maxLength={10}
+                onChange={(e) => handleDateChange(e, 'passportIssueDate')}
               />
               <input 
                 type="text" 
-                className={`${styles.inputHalf} ${errors.passportDepartmentCode ? styles.error : ''}`}
-                placeholder="Код подразделения"
+                className={`${styles.inputMedium} ${errors.passportDepartmentCode ? styles.error : ''}`}
+                placeholder="___-___"
                 maxLength={7}
                 value={formData.passportDepartmentCode}
                 onChange={(e) => {
@@ -487,36 +513,34 @@ export default function RegistrationForm() {
             </p>
 
             <div className={`${styles.medicalPhotos} ${errors.medicalBook ? styles.errorBlock : ''}`}>
-              <div className={styles.medicalPhotoBox}>
-                <ImagePreview
-                  file={photos.medicalBook[0] ?? null}
-                  onAdd={(f) => setMedicalPage(0, f)}
-                  onRemove={() => removeMedicalPage(0)}
-                  alt="Медкнижка стр. 1"
-                  label="стр. 1"
-                />
-              </div>
-              
-              <div className={styles.medicalPhotoBox}>
-                <ImagePreview
-                  file={photos.medicalBook[1] ?? null}
-                  onAdd={(f) => setMedicalPage(1, f)}
-                  onRemove={() => removeMedicalPage(1)}
-                  alt="Медкнижка стр. 2"
-                  label="стр. 2"
-                />
-              </div>
-              
-              <div className={styles.medicalPhotoBox}>
-                <ImagePreview
-                  file={photos.medicalBook[2] ?? null}
-                  onAdd={(f) => setMedicalPage(2, f)}
-                  onRemove={() => removeMedicalPage(2)}
-                  alt="Медкнижка стр. 3"
-                  label="стр. 3"
-                />
-              </div>
+              {Array.from({ length: visibleMedicalSlots }).map((_, index) => (
+                <div key={index} className={styles.medicalPhotoBox}>
+                  <ImagePreview
+                    file={photos.medicalBook[index] ?? null}
+                    onAdd={(f) => {
+                      setMedicalPage(index, f)
+                    }}
+                    onRemove={() => removeMedicalPage(index)}
+                    alt={`Медкнижка стр. ${index + 1}`}
+                    label={`стр. ${index + 1}${index === 2 ? '+' : ''}`}
+                  />
+                </div>
+              ))}
             </div>
+
+            {visibleMedicalSlots < 9 && (
+              <button
+                type="button"
+                className={styles.addMoreButton}
+                onClick={addMoreMedicalSlots}
+              >
+                + Добавить ({photos.medicalBook.length} {
+                  photos.medicalBook.length === 1 ? 'загружена' :
+                  photos.medicalBook.length >= 2 && photos.medicalBook.length <= 4 ? 'загружены' :
+                  'загружено'
+                })
+              </button>
+            )}
 
             {errors.medicalBook && (
               <p className={styles.errorMessage}>Загрузите минимум 2 фотографии</p>
@@ -645,7 +669,7 @@ export default function RegistrationForm() {
           <button 
             className={styles.submitButton}
             onClick={handleSubmit}
-            disabled={isSubmitting}
+            disabled={isFormDisabled || isSubmitting}
           >
             {isSubmitting ? 'СОХРАНЕНИЕ...' : 'ОТПРАВИТЬ НА ПРОВЕРКУ'}
           </button>
