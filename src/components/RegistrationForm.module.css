@@ -123,6 +123,8 @@
 /* Широкий инпут — дата рождения, номер паспорта */
 .inputWide {
   flex-grow: 2;
+  flex-shrink: 1;
+  min-width: 0;
   height: 3rem;
   background: #E4E4E7;
   border-radius: 1rem;
@@ -145,6 +147,7 @@
 /* Средний инпут — дата выдачи, код подразделения */
 .inputMedium {
   flex: 1;
+  min-width: 0;
   height: 3rem;
   background: #E4E4E7;
   border-radius: 1rem;
@@ -167,6 +170,8 @@
 /* Узкий инпут — пол, серия паспорта */
 .inputNarrow {
   flex-grow: 1;
+  flex-shrink: 1;
+  min-width: 0;
   height: 3rem;
   background: #E4E4E7;
   border-radius: 1rem;
