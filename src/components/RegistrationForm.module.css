@@ -92,7 +92,7 @@
 
 /* Инпуты */
 .input {
-  width: 21.5625rem; /* 345px */
+  width: 100%;
   height: 3rem;
   background: #E4E4E7;
   border-radius: 1rem;
@@ -120,9 +120,9 @@
   margin-bottom: 1rem;
 }
 
-/* Широкий инпут (208px) — дата рождения, номер паспорта */
+/* Широкий инпут — дата рождения, номер паспорта */
 .inputWide {
-  width: 13rem; /* 208px */
+  flex-grow: 2;
   height: 3rem;
   background: #E4E4E7;
   border-radius: 1rem;
@@ -142,9 +142,9 @@
   font-family: 'Inter', sans-serif;
 }
 
-/* Средний инпут (166px) — дата выдачи, код подразделения */
+/* Средний инпут — дата выдачи, код подразделения */
 .inputMedium {
-  width: 10.375rem; /* 166px */
+  flex: 1;
   height: 3rem;
   background: #E4E4E7;
   border-radius: 1rem;
@@ -164,9 +164,9 @@
   font-family: 'Inter', sans-serif;
 }
 
-/* Узкий инпут (123px) — пол, серия паспорта */
+/* Узкий инпут — пол, серия паспорта */
 .inputNarrow {
-  width: 7.6875rem; /* 123px */
+  flex-grow: 1;
   height: 3rem;
   background: #E4E4E7;
   border-radius: 1rem;
