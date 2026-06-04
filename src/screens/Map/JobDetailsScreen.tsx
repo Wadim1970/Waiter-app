@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabaseRestaurants } from '../lib/supabase'
+import { supabaseRestaurants } from '../../lib/supabase'
 import styles from './JobDetailsScreen.module.css'
-import { pluralizeReviews } from '../utils/pluralize'
-import { supabaseWaiter } from '../lib/supabase'
-import { applyForJob } from '../lib/bookings'
+import { pluralizeReviews } from '../../utils/pluralize'
+import { supabaseWaiter } from '../../lib/supabase'
+import { applyForJob } from '../../lib/bookings'
 
 interface RestaurantDetails {
   restaurant: {
