@@ -3,10 +3,36 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../../lib/supabase'
 import styles from './QRScannerScreen.module.css'
 
+const SHIFT_KEY = 'waiter_shift'
+const SHIFT_DURATION_MS = 12 * 60 * 60 * 1000 // 12 часов
+
+export function getActiveShift(): { restaurantId: string; scannedAt: number } | null {
+  try {
+    const raw = localStorage.getItem(SHIFT_KEY)
+    if (!raw) return null
+    const shift = JSON.parse(raw)
+    if (Date.now() - shift.scannedAt > SHIFT_DURATION_MS) {
+      localStorage.removeItem(SHIFT_KEY)
+      return null
+    }
+    return shift
+  } catch {
+    return null
+  }
+}
+
 export default function QRScannerScreen() {
   const navigate = useNavigate()
   const videoRef = useRef<HTMLVideoElement>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // Если смена уже активна — сразу на столы
+  useEffect(() => {
+    const shift = getActiveShift()
+    if (shift) {
+      navigate(`/restaurant/tables?restaurant=${shift.restaurantId}`, { replace: true })
+    }
+  }, [])
 
   useEffect(() => {
     let stopped = false
@@ -19,36 +45,29 @@ export default function QRScannerScreen() {
         const codeReader = new BrowserQRCodeReader()
 
         const videoInputDevices = await BrowserCodeReader.listVideoInputDevices()
-        // Выбираем заднюю камеру
         const backCamera = videoInputDevices.find(d =>
           d.label.toLowerCase().includes('back') ||
           d.label.toLowerCase().includes('rear') ||
           d.label.toLowerCase().includes('environment')
         ) ?? videoInputDevices[videoInputDevices.length - 1]
 
-        const deviceId = backCamera?.deviceId
-
         controls = await codeReader.decodeFromVideoDevice(
-          deviceId,
+          backCamera?.deviceId,
           videoRef.current!,
-          async (result, err) => {
+          async (result) => {
             if (stopped || !result) return
             stopped = true
             controls?.stop()
             await handleScan(result.getText())
           }
         )
-      } catch (e: any) {
+      } catch {
         setError('Не удалось запустить камеру. Проверьте разрешения.')
       }
     }
 
     startScanner()
-
-    return () => {
-      stopped = true
-      controls?.stop()
-    }
+    return () => { stopped = true; controls?.stop() }
   }, [])
 
   const handleScan = async (decodedText: string) => {
@@ -58,9 +77,7 @@ export default function QRScannerScreen() {
     try {
       const url = new URL(decodedText)
       token = url.searchParams.get('token') ?? decodedText
-    } catch {
-      // не URL — используем как есть
-    }
+    } catch {}
 
     const today = new Date().toISOString().split('T')[0]
     const { data } = await supabase
@@ -74,6 +91,12 @@ export default function QRScannerScreen() {
       setError('QR-код недействителен или устарел.')
       return
     }
+
+    // Сохраняем смену на 12 часов
+    localStorage.setItem(SHIFT_KEY, JSON.stringify({
+      restaurantId: data.restaurant_id,
+      scannedAt: Date.now(),
+    }))
 
     navigate(`/restaurant/tables?restaurant=${data.restaurant_id}`)
   }
