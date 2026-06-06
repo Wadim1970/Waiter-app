@@ -2,10 +2,10 @@ import { useEffect, useState, useCallback, useMemo, memo } from 'react'
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
 import L, { DivIcon } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { supabaseRestaurants } from '../lib/supabase'
-import { useMapStore } from '../store/mapStore' // НОВОЕ: Подключение Zustand
-import Header from './Header'
-import Footer from './Footer'
+import { supabaseRestaurants } from '../../lib/supabase'
+import { useMapStore } from '../../store/mapStore' // НОВОЕ: Подключение Zustand
+import Header from '../shared/Header'
+import Footer from '../shared/Footer'
 import styles from './MapScreen.module.css'
 
 interface Restaurant {

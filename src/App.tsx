@@ -1,16 +1,18 @@
 import { lazy, Suspense, useState } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import WelcomeScreen from './components/WelcomeScreen'
-import AuthCheck from './components/AuthCheck'
-import JobDetailsScreen from './components/JobDetailsScreen'
+import WelcomeScreen from './screens/Welcome/WelcomeScreen'
+import AuthCheck from './screens/Auth/AuthCheck'
+import JobDetailsScreen from './screens/Map/JobDetailsScreen'
 import './App.css'
-import RegistrationForm from './components/RegistrationForm'
-import BookingSuccessScreen from './components/BookingSuccessScreen'
-import MyShiftsScreen from './components/MyShifts/MyShiftsScreen'
+import RegistrationForm from './screens/Auth/RegistrationForm'
+import BookingSuccessScreen from './screens/Booking/BookingSuccessScreen'
+import MyShiftsScreen from './screens/MyShifts/MyShiftsScreen'
 
-const RegisterScreen = lazy(() => import('./components/RegisterScreen'))
-const VerificationScreen = lazy(() => import('./components/VerificationScreen'))
-const MapScreen = lazy(() => import('./components/MapScreen'))
+const RegisterScreen = lazy(() => import('./screens/Auth/RegisterScreen'))
+const VerificationScreen = lazy(() => import('./screens/Auth/VerificationScreen'))
+const MapScreen = lazy(() => import('./screens/Map/MapScreen'))
+const QRScannerScreen = lazy(() => import('./screens/Restaurant/QRScanner/QRScannerScreen'))
+const TablesScreen = lazy(() => import('./screens/Restaurant/Tables/TablesScreen'))
 
 const Loader = () => (
   <div style={{ 
@@ -93,7 +95,9 @@ function App() {
           <Route path="/profile" element={<MapScreenWithDetails />} />
           <Route path="/booking-success" element={<BookingSuccessScreen />} />
           <Route path="/my-shifts" element={<MyShiftsScreen />} />
-          
+          <Route path="/restaurant/scan" element={<QRScannerScreen />} />
+          <Route path="/restaurant/tables" element={<TablesScreen />} />
+
           <Route path="/search" element={<PlaceholderScreen title="🔍 Поиск" />} />
           <Route path="/orders" element={<PlaceholderScreen title="📋 Заказы" />} />
           <Route path="/finance" element={<PlaceholderScreen title="💰 Финансы" />} />

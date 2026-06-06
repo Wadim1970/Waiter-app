@@ -27,11 +27,11 @@ export default function Footer() {
         <img src="/icons/orders.png" alt="Заказы" className={styles.icon} />
       </button>
 
-      {/* ГЛАВНАЯ → ДОМАШНЯЯ СТРАНИЦА (ЛОГОТИП КОМПАНИИ) */}
-      <button 
-        className={`${styles.iconButton} ${isActive('/home') ? styles.active : ''}`}
-        onClick={() => navigate('/home')}
-        aria-label="Главная"
+      {/* СКАНЕР QR → СТОЛЫ РЕСТОРАНА */}
+      <button
+        className={`${styles.iconButton} ${isActive('/restaurant/scan') || isActive('/restaurant/tables') ? styles.active : ''}`}
+        onClick={() => navigate('/restaurant/scan')}
+        aria-label="Столы ресторана"
       >
         <img src="/icons/Home-logo.png" alt="Главная" className={styles.homeIcon} />
       </button>

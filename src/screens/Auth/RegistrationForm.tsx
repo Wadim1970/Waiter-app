@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { supabaseWaiter, supabaseWaiterAdmin } from '../lib/supabase'
+import { supabaseWaiter, supabaseWaiterAdmin } from '../../lib/supabase'
 import RegistrationModal from './RegistrationModal'
-import ImagePreview from './ImagePreview'
+import ImagePreview from '../shared/ImagePreview'
 import styles from './RegistrationForm.module.css'
 
 interface ValidationErrors {
