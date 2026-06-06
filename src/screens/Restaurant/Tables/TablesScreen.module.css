@@ -45,13 +45,13 @@
 
 .content {
   flex: 1;
-  padding: 100px 24px 100px;
+  padding: 100px clamp(10px, 3vw, 24px) 100px;
 }
 
 .grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: clamp(10px, 3vw, 16px);
 }
 
 .centered {
