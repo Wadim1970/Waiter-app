@@ -20,7 +20,7 @@
   top: clamp(6px, 2vw, 9px);
   font-family: 'Montserrat', sans-serif;
   font-weight: 700;
-  font-size: clamp(26px, 8vw, 40px);
+  font-size: clamp(32px, 8vw, 40px);
   color: white;
   line-height: 1;
 }
@@ -38,7 +38,7 @@
 .info {
   font-family: 'Montserrat', sans-serif;
   font-weight: 400;
-  font-size: clamp(10px, 3vw, 14px);
+  font-size: clamp(12px, 3vw, 14px);
   color: white;
   white-space: nowrap;
 }
@@ -55,14 +55,14 @@
 .zone {
   font-family: 'Montserrat', sans-serif;
   font-weight: 400;
-  font-size: clamp(10px, 3vw, 14px);
+  font-size: clamp(12px, 3vw, 14px);
   color: white;
 }
 
 .status {
   font-family: 'Montserrat', sans-serif;
   font-weight: 600;
-  font-size: clamp(14px, 4.2vw, 20px);
+  font-size: clamp(16px, 4.2vw, 20px);
   color: white;
   line-height: 1.1;
 }
