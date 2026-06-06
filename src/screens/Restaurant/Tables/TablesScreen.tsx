@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { getMyTables, getAllTables } from '../../../lib/tables'
-import { getOrGenerateQR } from '../../../lib/qrcode'
 import type { TableWithSession } from '../../../lib/tables'
 import { supabase } from '../../../lib/supabase'
 import TableCard from './TableCard'
@@ -23,12 +22,6 @@ export default function TablesScreen() {
     setWaiterId(id)
   }, [])
 
-  // Автогенерация QR при открытии экрана
-  useEffect(() => {
-    if (restaurantId) {
-      getOrGenerateQR(restaurantId).catch(console.error)
-    }
-  }, [restaurantId])
 
   const loadTables = useCallback(async () => {
     if (!restaurantId) return
