@@ -7,42 +7,53 @@ export default function QRScannerScreen() {
   const navigate = useNavigate()
   const scannerRef = useRef<any>(null)
   const [error, setError] = useState<string | null>(null)
+  const [scanning, setScanning] = useState(false)
 
   useEffect(() => {
-    let html5QrcodeScanner: any = null
+    let qrScanner: any = null
+    let stopped = false
 
     const startScanner = async () => {
       try {
-        const { Html5QrcodeScanner } = await import('html5-qrcode')
+        const { Html5Qrcode } = await import('html5-qrcode')
 
-        html5QrcodeScanner = new Html5QrcodeScanner(
-          'qr-reader',
+        qrScanner = new Html5Qrcode('qr-video')
+        scannerRef.current = qrScanner
+
+        await qrScanner.start(
+          { facingMode: 'environment' }, // задняя камера
           { fps: 10, qrbox: { width: 250, height: 250 } },
-          false
-        )
-
-        html5QrcodeScanner.render(
           async (decodedText: string) => {
-            html5QrcodeScanner?.clear()
+            if (stopped) return
+            stopped = true
+            await qrScanner.stop()
             await handleScan(decodedText)
           },
-          () => {} // игнорируем ошибки "нет QR в кадре"
+          () => {} // игнорируем "нет QR в кадре"
         )
 
-        scannerRef.current = html5QrcodeScanner
-      } catch {
-        setError('Не удалось запустить камеру. Проверьте разрешения.')
+        setScanning(true)
+      } catch (e: any) {
+        if (e?.message?.includes('Permission')) {
+          setError('Нет доступа к камере. Разрешите доступ в настройках браузера.')
+        } else {
+          setError('Не удалось запустить камеру.')
+        }
       }
     }
 
     startScanner()
-    return () => { scannerRef.current?.clear().catch(() => {}) }
+
+    return () => {
+      if (scannerRef.current) {
+        scannerRef.current.stop().catch(() => {})
+      }
+    }
   }, [])
 
   const handleScan = async (decodedText: string) => {
     setError(null)
 
-    // Извлекаем токен из URL или используем как есть
     let token = decodedText.trim()
     try {
       const url = new URL(decodedText)
@@ -51,7 +62,6 @@ export default function QRScannerScreen() {
       // не URL — используем как есть
     }
 
-    // Валидируем токен
     const today = new Date().toISOString().split('T')[0]
     const { data, error } = await supabase
       .from('restaurant_daily_tokens')
@@ -61,7 +71,8 @@ export default function QRScannerScreen() {
       .maybeSingle()
 
     if (error || !data) {
-      setError('QR-код недействителен или устарел. Попросите администратора обновить QR.')
+      setError('QR-код недействителен или устарел.')
+      setScanning(false)
       return
     }
 
@@ -76,9 +87,24 @@ export default function QRScannerScreen() {
       </div>
 
       <div className={styles.body}>
-        <p className={styles.hint}>Наведите камеру на QR-код ресторана</p>
-        <div id="qr-reader" className={styles.reader} />
-        {error && <p className={styles.error}>{error}</p>}
+        <div className={styles.viewfinder}>
+          <div id="qr-video" className={styles.video} />
+          {scanning && (
+            <div className={styles.overlay}>
+              <div className={styles.corner} />
+              <p className={styles.hint}>Наведите на QR-код ресторана</p>
+            </div>
+          )}
+        </div>
+
+        {error && (
+          <div className={styles.errorBox}>
+            <p className={styles.errorText}>{error}</p>
+            <button className={styles.retryBtn} onClick={() => window.location.reload()}>
+              Попробовать снова
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
