@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { getActiveShift } from '../QRScanner/QRScannerScreen'
 import { getMyTables, getAllTables } from '../../../lib/tables'
 import type { TableWithSession } from '../../../lib/tables'
 import { supabase } from '../../../lib/supabase'
@@ -9,7 +10,7 @@ import styles from './TablesScreen.module.css'
 
 export default function TablesScreen() {
   const [searchParams] = useSearchParams()
-  const restaurantId = searchParams.get('restaurant') ?? ''
+  const restaurantId = searchParams.get('restaurant') ?? getActiveShift()?.restaurantId ?? ''
 
   const [waiterId, setWaiterId] = useState<string | null>(null)
   const [tables, setTables] = useState<TableWithSession[]>([])
