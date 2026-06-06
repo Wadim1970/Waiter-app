@@ -5,49 +5,49 @@ import styles from './QRScannerScreen.module.css'
 
 export default function QRScannerScreen() {
   const navigate = useNavigate()
-  const scannerRef = useRef<any>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
   const [error, setError] = useState<string | null>(null)
-  const [scanning, setScanning] = useState(false)
 
   useEffect(() => {
-    let qrScanner: any = null
     let stopped = false
+    let controls: { stop: () => void } | null = null
 
     const startScanner = async () => {
       try {
-        const { Html5Qrcode } = await import('html5-qrcode')
+        const { BrowserQRCodeReader, BrowserCodeReader } = await import('@zxing/browser')
 
-        qrScanner = new Html5Qrcode('qr-video')
-        scannerRef.current = qrScanner
+        const codeReader = new BrowserQRCodeReader()
 
-        await qrScanner.start(
-          { facingMode: 'environment' }, // задняя камера
-          { fps: 10, qrbox: { width: 250, height: 250 } },
-          async (decodedText: string) => {
-            if (stopped) return
+        const videoInputDevices = await BrowserCodeReader.listVideoInputDevices()
+        // Выбираем заднюю камеру
+        const backCamera = videoInputDevices.find(d =>
+          d.label.toLowerCase().includes('back') ||
+          d.label.toLowerCase().includes('rear') ||
+          d.label.toLowerCase().includes('environment')
+        ) ?? videoInputDevices[videoInputDevices.length - 1]
+
+        const deviceId = backCamera?.deviceId
+
+        controls = await codeReader.decodeFromVideoDevice(
+          deviceId,
+          videoRef.current!,
+          async (result, err) => {
+            if (stopped || !result) return
             stopped = true
-            await qrScanner.stop()
-            await handleScan(decodedText)
-          },
-          () => {} // игнорируем "нет QR в кадре"
+            controls?.stop()
+            await handleScan(result.getText())
+          }
         )
-
-        setScanning(true)
       } catch (e: any) {
-        if (e?.message?.includes('Permission')) {
-          setError('Нет доступа к камере. Разрешите доступ в настройках браузера.')
-        } else {
-          setError('Не удалось запустить камеру.')
-        }
+        setError('Не удалось запустить камеру. Проверьте разрешения.')
       }
     }
 
     startScanner()
 
     return () => {
-      if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => {})
-      }
+      stopped = true
+      controls?.stop()
     }
   }, [])
 
@@ -63,16 +63,15 @@ export default function QRScannerScreen() {
     }
 
     const today = new Date().toISOString().split('T')[0]
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('restaurant_daily_tokens')
       .select('restaurant_id')
       .eq('token', token)
       .eq('valid_date', today)
       .maybeSingle()
 
-    if (error || !data) {
+    if (!data) {
       setError('QR-код недействителен или устарел.')
-      setScanning(false)
       return
     }
 
@@ -88,13 +87,11 @@ export default function QRScannerScreen() {
 
       <div className={styles.body}>
         <div className={styles.viewfinder}>
-          <div id="qr-video" className={styles.video} />
-          {scanning && (
-            <div className={styles.overlay}>
-              <div className={styles.corner} />
-              <p className={styles.hint}>Наведите на QR-код ресторана</p>
-            </div>
-          )}
+          <video ref={videoRef} className={styles.video} />
+          <div className={styles.overlay}>
+            <div className={styles.corner} />
+            <p className={styles.hint}>Наведите на QR-код ресторана</p>
+          </div>
         </div>
 
         {error && (
