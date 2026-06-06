@@ -1,0 +1,103 @@
+.screen {
+  min-height: 100vh;
+  background: white;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  z-index: 100;
+}
+
+.tabs {
+  display: flex;
+  align-items: flex-end;
+  padding: 52px 24px 0;
+  gap: 32px;
+}
+
+.tab {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  color: #a7a7a7;
+  padding: 0 0 12px;
+  transition: color 0.2s ease;
+}
+
+.tabActive {
+  color: #000;
+}
+
+.divider {
+  height: 1px;
+  background: #d9d9d9;
+  margin-top: 0;
+}
+
+.content {
+  flex: 1;
+  padding: 100px 24px 100px;
+}
+
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: 16px;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-top-color: #3d6afa;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.errorText {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  color: #d30000;
+  text-align: center;
+}
+
+.retryBtn {
+  background: #3d6afa;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 24px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.emptyText {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  color: #a7a7a7;
+  text-align: center;
+}

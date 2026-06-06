@@ -12,6 +12,7 @@
     "@supabase/supabase-js": "^2.87.1",
     "axios": "^1.13.2",
     "cheerio": "^1.1.2",
+    "html5-qrcode": "^2.3.8",
     "leaflet": "^1.9.4",
     "puppeteer": "^24.33.0",
     "react": "^18.3.1",

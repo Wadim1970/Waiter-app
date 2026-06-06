@@ -11,6 +11,8 @@ import MyShiftsScreen from './screens/MyShifts/MyShiftsScreen'
 const RegisterScreen = lazy(() => import('./screens/Auth/RegisterScreen'))
 const VerificationScreen = lazy(() => import('./screens/Auth/VerificationScreen'))
 const MapScreen = lazy(() => import('./screens/Map/MapScreen'))
+const QRScannerScreen = lazy(() => import('./screens/Restaurant/QRScanner/QRScannerScreen'))
+const TablesScreen = lazy(() => import('./screens/Restaurant/Tables/TablesScreen'))
 
 const Loader = () => (
   <div style={{ 
@@ -93,7 +95,9 @@ function App() {
           <Route path="/profile" element={<MapScreenWithDetails />} />
           <Route path="/booking-success" element={<BookingSuccessScreen />} />
           <Route path="/my-shifts" element={<MyShiftsScreen />} />
-          
+          <Route path="/restaurant/scan" element={<QRScannerScreen />} />
+          <Route path="/restaurant/tables" element={<TablesScreen />} />
+
           <Route path="/search" element={<PlaceholderScreen title="🔍 Поиск" />} />
           <Route path="/orders" element={<PlaceholderScreen title="📋 Заказы" />} />
           <Route path="/finance" element={<PlaceholderScreen title="💰 Финансы" />} />
