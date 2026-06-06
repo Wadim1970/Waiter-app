@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { supabase } from '../../../lib/supabase'
 import styles from './QRScannerScreen.module.css'
 
 export default function QRScannerScreen() {
   const navigate = useNavigate()
   const scannerRef = useRef<any>(null)
   const [error, setError] = useState<string | null>(null)
-  const [scanning, setScanning] = useState(false)
 
   useEffect(() => {
     let html5QrcodeScanner: any = null
@@ -22,40 +22,51 @@ export default function QRScannerScreen() {
         )
 
         html5QrcodeScanner.render(
-          (decodedText: string) => {
-            // QR должен содержать restaurant_id
-            // Формат: https://waiter-app.com/restaurant?id=UUID
-            // или просто UUID
-            let restaurantId = decodedText.trim()
-
-            try {
-              const url = new URL(decodedText)
-              restaurantId = url.searchParams.get('id') ?? decodedText
-            } catch {
-              // не URL — используем как есть
-            }
-
+          async (decodedText: string) => {
             html5QrcodeScanner?.clear()
-            navigate(`/restaurant/tables?restaurant=${restaurantId}`)
+            await handleScan(decodedText)
           },
-          (err: any) => {
-            // игнорируем ошибки сканирования (нет QR в кадре)
-          }
+          () => {} // игнорируем ошибки "нет QR в кадре"
         )
 
-        setScanning(true)
         scannerRef.current = html5QrcodeScanner
-      } catch (e) {
+      } catch {
         setError('Не удалось запустить камеру. Проверьте разрешения.')
       }
     }
 
     startScanner()
+    return () => { scannerRef.current?.clear().catch(() => {}) }
+  }, [])
 
-    return () => {
-      scannerRef.current?.clear().catch(() => {})
+  const handleScan = async (decodedText: string) => {
+    setError(null)
+
+    // Извлекаем токен из URL или используем как есть
+    let token = decodedText.trim()
+    try {
+      const url = new URL(decodedText)
+      token = url.searchParams.get('token') ?? decodedText
+    } catch {
+      // не URL — используем как есть
     }
-  }, [navigate])
+
+    // Валидируем токен
+    const today = new Date().toISOString().split('T')[0]
+    const { data, error } = await supabase
+      .from('restaurant_daily_tokens')
+      .select('restaurant_id')
+      .eq('token', token)
+      .eq('valid_date', today)
+      .maybeSingle()
+
+    if (error || !data) {
+      setError('QR-код недействителен или устарел. Попросите администратора обновить QR.')
+      return
+    }
+
+    navigate(`/restaurant/tables?restaurant=${data.restaurant_id}`)
+  }
 
   return (
     <div className={styles.screen}>
