@@ -14,7 +14,7 @@
   height: 154px;
   background: #fff;
   z-index: 100;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: none;
 }
 
 /* ── Header area: top 83px ── */
@@ -61,6 +61,7 @@
 
 /* ── Guest bar: 70px zone below header, circles centered vertically ── */
 .guestBar {
+  background: #eaeaea;
   position: absolute;
   top: 83px;
   left: 0;
