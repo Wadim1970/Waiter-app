@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { getActiveShift } from '../QRScanner/QRScannerScreen'
 import { getMyTables, getAllTables } from '../../../lib/tables'
 import type { TableWithSession } from '../../../lib/tables'
@@ -9,6 +9,7 @@ import Footer from '../../shared/Footer'
 import styles from './TablesScreen.module.css'
 
 export default function TablesScreen() {
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const restaurantId = searchParams.get('restaurant') ?? getActiveShift()?.restaurantId ?? ''
 
@@ -63,8 +64,9 @@ export default function TablesScreen() {
   }, [restaurantId, loadTables])
 
   const handleTableClick = (table: TableWithSession) => {
-    // TODO: открыть карточку стола с деталями
-    console.log('Открыть стол:', table)
+    if (table.status === 'free') {
+      navigate(`/restaurant/table/${table.id}/guests`, { state: { table } })
+    }
   }
 
   return (

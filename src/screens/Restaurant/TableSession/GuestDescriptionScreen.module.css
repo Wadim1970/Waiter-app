@@ -1,0 +1,189 @@
+.screen {
+  min-height: 100vh;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 52px 20px 12px;
+  background: #fff;
+  z-index: 100;
+  border-bottom: 1px solid #d9d9d9;
+}
+
+.backBtn {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: #000;
+  padding: 0;
+  line-height: 1;
+}
+
+.tableLabel {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  color: #000;
+}
+
+/* Guest selector bar */
+.guestBar {
+  position: fixed;
+  top: 110px;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: #102a45;
+  z-index: 99;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.guestBar::-webkit-scrollbar {
+  display: none;
+}
+
+.guestBtn {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.guestBtnActiveAll {
+  background-color: #fff !important;
+  border-color: #fff !important;
+}
+
+.allIcon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+/* Content */
+.content {
+  flex: 1;
+  padding: 180px 20px 100px;
+  overflow-y: auto;
+}
+
+.allView {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  padding: 0 24px;
+}
+
+.hintText {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  color: #a7a7a7;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* Form */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sectionIcon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.sectionLabel {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  color: #000;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag {
+  background: none;
+  border: 1.5px solid #d9d9d9;
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: #555;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+/* Footer */
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px 20px 32px;
+  background: #fff;
+  border-top: 1px solid #f0f0f0;
+}
+
+.menuBtn {
+  width: 100%;
+  background: #ff9500;
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  padding: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.menuBtn:active {
+  opacity: 0.85;
+}
