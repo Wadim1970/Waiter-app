@@ -14,7 +14,7 @@
   height: 154px;
   background: #fff;
   z-index: 100;
-  border-bottom: none;
+  border-bottom: 1px solid #fff;
 }
 
 /* ── Header area: top 83px ── */
