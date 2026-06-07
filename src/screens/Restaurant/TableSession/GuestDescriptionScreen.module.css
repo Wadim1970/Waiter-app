@@ -1,54 +1,104 @@
 .screen {
   min-height: 100vh;
-  background: #fff;
+  background: #eaeaea;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
-/* Header */
+/* ── Header ── */
 .header {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 52px 20px 12px;
+  height: 83px;
   background: #fff;
   z-index: 100;
-  border-bottom: 1px solid #d9d9d9;
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 12px;
+  overflow: hidden;
 }
 
 .backBtn {
+  position: absolute;
+  left: 24px;
+  bottom: 12px;
   background: none;
   border: none;
-  font-size: 28px;
   cursor: pointer;
-  color: #000;
   padding: 0;
-  line-height: 1;
-}
-
-.tableLabel {
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 700;
-  font-size: 20px;
-  color: #000;
-}
-
-/* Guest selector bar */
-.guestBar {
-  position: fixed;
-  top: 110px;
-  left: 0;
-  right: 0;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 16px;
-  background: #102a45;
+  justify-content: center;
+}
+
+/* Custom back arrow matching Figma */
+.backArrow {
+  position: relative;
+  display: block;
+  width: 22px;
+  height: 20px;
+}
+
+.backArrow::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  width: 18px;
+  height: 3px;
+  background: #8e9096;
+  border-radius: 3px;
+  transform: translateY(-50%);
+}
+
+.backArrow::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 12px;
+  height: 12px;
+  border-left: 3px solid #8e9096;
+  border-bottom: 3px solid #8e9096;
+  border-radius: 2px;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+/* Decorative table number — large light text behind header */
+.tableDecor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 800;
+  font-size: 64px;
+  color: #ededed;
+  white-space: nowrap;
+  pointer-events: none;
+  line-height: 83px;
+  top: 0;
+}
+
+/* ── Guest selector bar ── */
+.guestBar {
+  position: fixed;
+  top: 83px;
+  left: 0;
+  right: 0;
+  height: 54px;
+  background: #fff;
+  border-bottom: 1px solid #ededed;
   z-index: 99;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  gap: 11px;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -57,67 +107,107 @@
   display: none;
 }
 
-.guestBtn {
+.guestCircle {
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   border: 2px solid transparent;
   cursor: pointer;
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 700;
-  font-size: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  padding: 0;
+  transition: background-color 0.15s, border-color 0.15s;
 }
 
-.guestBtnActiveAll {
-  background-color: #fff !important;
-  border-color: #fff !important;
+.guestCircleInactive {
+  background: #d1d3d8;
+}
+
+.guestCircleActive {
+  background: #fff;
+  /* border-color set inline per guest */
+}
+
+.guestCircleActiveAll {
+  background: #fff;
+  border-color: #8e9096;
 }
 
 .allIcon {
-  width: 24px;
-  height: 24px;
+  width: 27px;
+  height: 19px;
   object-fit: contain;
 }
 
-/* Content */
+.guestLabel {
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+}
+
+.guestLabelG {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 300;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.guestLabelN {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* ── Scrollable content ── */
 .content {
   flex: 1;
-  padding: 180px 20px 100px;
+  margin-top: 137px; /* 83px header + 54px bar */
+  padding: 16px 16px 120px;
   overflow-y: auto;
 }
 
-.allView {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 300px;
-  padding: 0 24px;
+/* ── Instructions (screen 1a) ── */
+.instructions {
+  padding: 8px 8px 0;
 }
 
-.hintText {
+.instructionText {
   font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
   font-size: 16px;
-  color: #a7a7a7;
-  text-align: center;
+  color: #000;
   line-height: 1.5;
+  margin: 0 0 8px;
 }
 
-/* Form */
+.instructionList {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  color: #000;
+  line-height: 1.7;
+  padding-left: 24px;
+  margin: 0 0 8px;
+}
+
+.instructionList li {
+  margin-bottom: 4px;
+}
+
+/* ── Guest form (screen 1b) ── */
 .form {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .sectionHeader {
@@ -127,16 +217,16 @@
 }
 
 .sectionIcon {
-  width: 28px;
-  height: 28px;
+  width: 18px;
+  height: 18px;
   object-fit: contain;
 }
 
 .sectionLabel {
   font-family: 'Montserrat', sans-serif;
-  font-weight: 600;
-  font-size: 16px;
-  color: #000;
+  font-weight: 500;
+  font-size: 14px;
+  color: #8e9096;
 }
 
 .tags {
@@ -146,42 +236,66 @@
 }
 
 .tag {
-  background: none;
-  border: 1.5px solid #d9d9d9;
-  border-radius: 20px;
+  border: 1px solid;
+  border-radius: 16px;
   padding: 6px 16px;
   font-family: 'Montserrat', sans-serif;
   font-weight: 500;
   font-size: 14px;
-  color: #555;
   cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease;
+  transition: background-color 0.12s, color 0.12s;
 }
 
-/* Footer */
+/* ── Right-edge menu tab ── */
+.menuTab {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #03e067;
+  width: 25px;
+  border-radius: 12px 0 0 12px;
+  padding: 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 98;
+}
+
+.menuTabText {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 800;
+  font-size: 11px;
+  color: #fff;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  letter-spacing: 0.5px;
+}
+
+/* ── Footer button ── */
 .footer {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 16px 20px 32px;
-  background: #fff;
-  border-top: 1px solid #f0f0f0;
+  padding: 16px 96px 32px;
+  background: transparent;
+  display: flex;
+  justify-content: center;
 }
 
 .menuBtn {
-  width: 100%;
-  background: #ff9500;
+  background: #eb651a;
   color: #fff;
   border: none;
-  border-radius: 14px;
-  padding: 16px;
+  border-radius: 30px;
+  padding: 13px 47px;
   font-family: 'Montserrat', sans-serif;
   font-weight: 700;
-  font-size: 18px;
-  letter-spacing: 0.5px;
+  font-size: 20px;
   cursor: pointer;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.15s;
 }
 
 .menuBtn:active {
