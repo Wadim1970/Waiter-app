@@ -6,7 +6,7 @@
   position: relative;
 }
 
-/* ── Header ── */
+/* ── Header: exactly 83px, white ── */
 .header {
   position: fixed;
   top: 0;
@@ -15,65 +15,15 @@
   height: 83px;
   background: #fff;
   z-index: 100;
-  display: flex;
-  align-items: flex-end;
-  padding-bottom: 12px;
   overflow: hidden;
 }
 
-.backBtn {
-  position: absolute;
-  left: 24px;
-  bottom: 12px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  width: 38px;
-  height: 38px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Custom back arrow matching Figma */
-.backArrow {
-  position: relative;
-  display: block;
-  width: 22px;
-  height: 20px;
-}
-
-.backArrow::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 4px;
-  width: 18px;
-  height: 3px;
-  background: #8e9096;
-  border-radius: 3px;
-  transform: translateY(-50%);
-}
-
-.backArrow::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 0;
-  width: 12px;
-  height: 12px;
-  border-left: 3px solid #8e9096;
-  border-bottom: 3px solid #8e9096;
-  border-radius: 2px;
-  transform: translateY(-50%) rotate(45deg);
-}
-
-/* Decorative table number — large light text behind header */
+/* Large decorative table number — top:21px inside header, 64px font */
 .tableDecor {
   position: absolute;
   left: 0;
   right: 0;
+  top: 21px;
   text-align: center;
   font-family: 'Montserrat', sans-serif;
   font-weight: 800;
@@ -81,23 +31,69 @@
   color: #ededed;
   white-space: nowrap;
   pointer-events: none;
-  line-height: 83px;
-  top: 0;
+  line-height: 1;
 }
 
-/* ── Guest selector bar ── */
+/* Back arrow: left:31px, top:51px inside header */
+.backBtn {
+  position: absolute;
+  left: 31px;
+  top: 51px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  width: 22px;
+  height: 21px;
+  display: flex;
+  align-items: center;
+}
+
+.backArrow {
+  position: relative;
+  display: block;
+  width: 22px;
+  height: 21px;
+}
+
+/* Horizontal bar of the arrow */
+.backArrow::before {
+  content: '';
+  position: absolute;
+  top: 9px;
+  left: 3px;
+  width: 18px;
+  height: 3px;
+  background: #717f98;
+  border-radius: 3px;
+}
+
+/* Chevron point */
+.backArrow::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  border-left: 3px solid #717f98;
+  border-bottom: 3px solid #717f98;
+  border-radius: 1px 0 1px 1px;
+  transform: rotate(45deg);
+}
+
+/* ── Guest bar: starts at top:83px, circles at top:100px = 17px padding-top ── */
 .guestBar {
   position: fixed;
   top: 83px;
   left: 0;
   right: 0;
-  height: 54px;
+  height: 55px;
   background: #fff;
-  border-bottom: 1px solid #ededed;
   z-index: 99;
   display: flex;
-  align-items: center;
-  padding: 0 8px;
+  align-items: flex-start;
+  padding: 9px 8px 8px;
   gap: 11px;
   overflow-x: auto;
   scrollbar-width: none;
@@ -107,12 +103,14 @@
   display: none;
 }
 
+/* All circles get a gray border by default */
 .guestCircle {
   flex-shrink: 0;
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  border: 2px solid transparent;
+  border: 1.5px solid #b8bac0;
+  background: #d9dadf;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -121,15 +119,13 @@
   transition: background-color 0.15s, border-color 0.15s;
 }
 
-.guestCircleInactive {
-  background: #d1d3d8;
-}
-
+/* Active guest: white bg, border = guest color (set inline) */
 .guestCircleActive {
   background: #fff;
-  /* border-color set inline per guest */
+  border-width: 2px;
 }
 
+/* Active All: white bg, gray border */
 .guestCircleActiveAll {
   background: #fff;
   border-color: #8e9096;
@@ -144,7 +140,6 @@
 .guestLabel {
   display: flex;
   align-items: baseline;
-  gap: 0;
 }
 
 .guestLabelG {
@@ -161,17 +156,17 @@
   line-height: 1;
 }
 
-/* ── Scrollable content ── */
+/* ── Scrollable content: starts at top:138px (83+55) ── */
 .content {
   flex: 1;
-  margin-top: 137px; /* 83px header + 54px bar */
-  padding: 16px 16px 120px;
+  margin-top: 138px;
+  padding: 16px 24px 140px;
   overflow-y: auto;
 }
 
-/* ── Instructions (screen 1a) ── */
+/* ── Instructions (screen 1a) — exact text from Figma, top:232px from screen = 94px from content top ── */
 .instructions {
-  padding: 8px 8px 0;
+  margin-top: 78px; /* 232 - 138 - 16(content padding) */
 }
 
 .instructionText {
@@ -194,26 +189,26 @@
 }
 
 .instructionList li {
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 /* ── Guest form (screen 1b) ── */
 .form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
 .section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .sectionHeader {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
 }
 
 .sectionIcon {
@@ -229,10 +224,11 @@
   color: #8e9096;
 }
 
+/* Tags: flex-wrap with proper row spacing */
 .tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px 8px;
 }
 
 .tag {
@@ -244,9 +240,10 @@
   font-size: 14px;
   cursor: pointer;
   transition: background-color 0.12s, color 0.12s;
+  white-space: nowrap;
 }
 
-/* ── Right-edge menu tab ── */
+/* ── Right-edge green МЕНЮ tab ── */
 .menuTab {
   position: fixed;
   right: 0;
@@ -255,7 +252,7 @@
   background: #03e067;
   width: 25px;
   border-radius: 12px 0 0 12px;
-  padding: 10px 0;
+  padding: 12px 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -273,16 +270,16 @@
   letter-spacing: 0.5px;
 }
 
-/* ── Footer button ── */
+/* ── В МЕНЮ button ── */
 .footer {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 16px 96px 32px;
-  background: transparent;
+  padding: 16px 0 36px;
   display: flex;
   justify-content: center;
+  background: transparent;
 }
 
 .menuBtn {

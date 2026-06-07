@@ -14,16 +14,16 @@ const GUEST_COLORS = [
   '#979200', // г8
 ]
 
-const GENDER_OPTIONS = ['Муж', 'Жен']
-const AGE_OPTIONS = ['3-5', '6-9', '10-14', '15-18', '19-30', '30-40', '40-50', '50-60', '60+']
-const BODY_OPTIONS = ['Худое', 'Спортивное', 'Полное']
-const HAIR_OPTIONS = ['Темные', 'Светлые', 'Длинные', 'Рыжие', 'Кучерявые', 'Короткие', 'Лысый', 'Хвост', 'Каре', 'Седые']
+const GENDER_OPTIONS  = ['Муж', 'Жен']
+const AGE_OPTIONS     = ['3-5', '6-9', '10-14', '15-18', '19-30', '30-40', '40-50', '50-60', '60+']
+const BODY_OPTIONS    = ['Худое', 'Спортивное', 'Полное']
+const HAIR_OPTIONS    = ['Темные', 'Светлые', 'Длинные', 'Рыжие', 'Кучерявые', 'Короткие', 'Лысый', 'Хвост', 'Каре', 'Седые']
 
 type GuestData = {
   gender: string | null
-  age: string | null
-  body: string | null
-  hair: string | null
+  age:    string | null
+  body:   string | null
+  hair:   string | null
 }
 
 const emptyGuest = (): GuestData => ({ gender: null, age: null, body: null, hair: null })
@@ -36,8 +36,8 @@ export default function GuestDescriptionScreen() {
   const [activeGuest, setActiveGuest] = useState<number | 'all'>('all')
   const [guests, setGuests] = useState<GuestData[]>(Array.from({ length: 8 }, emptyGuest))
 
-  const guestColor = activeGuest !== 'all' ? GUEST_COLORS[activeGuest] : null
-  const currentGuest = activeGuest !== 'all' ? guests[activeGuest] : null
+  const guestColor    = activeGuest !== 'all' ? GUEST_COLORS[activeGuest] : null
+  const currentGuest  = activeGuest !== 'all' ? guests[activeGuest] : null
 
   const updateGuest = (field: keyof GuestData, value: string) => {
     if (activeGuest === 'all') return
@@ -51,21 +51,25 @@ export default function GuestDescriptionScreen() {
     })
   }
 
+  const goToMenu = () => navigate('/restaurant/menu', { state: { table, guests } })
+
   return (
     <div className={styles.screen}>
-      {/* Header */}
+
+      {/* ── Header 83px ── */}
       <div className={styles.header}>
+        <span className={styles.tableDecor}>СТОЛ №{table?.number ?? '—'}</span>
         <button className={styles.backBtn} onClick={() => navigate('/restaurant/tables')}>
           <span className={styles.backArrow} />
         </button>
-        <span className={styles.tableDecor}>СТОЛ №{table?.number ?? '—'}</span>
       </div>
 
-      {/* Guest selector bar */}
+      {/* ── Guest selector bar (top:83px, circles at top:100px) ── */}
       <div className={styles.guestBar}>
-        {/* All guests */}
+
+        {/* All guests button */}
         <button
-          className={`${styles.guestCircle} ${activeGuest === 'all' ? styles.guestCircleActiveAll : styles.guestCircleInactive}`}
+          className={`${styles.guestCircle} ${activeGuest === 'all' ? styles.guestCircleActiveAll : ''}`}
           onClick={() => setActiveGuest('all')}
         >
           <img src="/icons/All.png" alt="все" className={styles.allIcon} />
@@ -75,7 +79,7 @@ export default function GuestDescriptionScreen() {
         {GUEST_COLORS.map((color, i) => (
           <button
             key={i}
-            className={`${styles.guestCircle} ${activeGuest === i ? styles.guestCircleActive : styles.guestCircleInactive}`}
+            className={`${styles.guestCircle} ${activeGuest === i ? styles.guestCircleActive : ''}`}
             style={activeGuest === i ? { borderColor: color } : undefined}
             onClick={() => setActiveGuest(i)}
           >
@@ -87,28 +91,31 @@ export default function GuestDescriptionScreen() {
         ))}
       </div>
 
-      {/* Content */}
+      {/* ── Content ── */}
       <div className={styles.content}>
         {activeGuest === 'all' ? (
-          /* Screen 1a — instructions */
+
+          /* Screen 1a — instruction text */
           <div className={styles.instructions}>
             <p className={styles.instructionText}>
               Чтобы не перепутать заказы, кратко опишите каждого гостя.
             </p>
-            <p />
+            <p className={styles.instructionText}>&nbsp;</p>
             <ol className={styles.instructionList}>
               <li>Нажмите на кнопку гостя — г1, г2, г3…</li>
               <li>Выберите подходящие признаки: пол, возраст и другие характеристики.</li>
               <li>Если одного признака достаточно для идентификации — сразу переходите в меню.</li>
               <li>Повторите для каждого гостя за столом.</li>
             </ol>
-            <p />
+            <p className={styles.instructionText}>&nbsp;</p>
             <p className={styles.instructionText}>
               Чем точнее описание — тем проще будет принять и подать заказ!
             </p>
           </div>
+
         ) : (
-          /* Screen 1b — guest form */
+
+          /* Screen 1b — guest appearance form */
           <div className={styles.form}>
             <Section
               icon="/icons/Gender.png"
@@ -146,16 +153,14 @@ export default function GuestDescriptionScreen() {
         )}
       </div>
 
-      {/* Quick menu tab on right edge */}
-      <div className={styles.menuTab} onClick={() => navigate('/restaurant/menu', { state: { table, guests } })}>
+      {/* Right-edge green МЕНЮ tab */}
+      <div className={styles.menuTab} onClick={goToMenu}>
         <span className={styles.menuTabText}>МЕНЮ</span>
       </div>
 
       {/* В МЕНЮ button */}
       <div className={styles.footer}>
-        <button className={styles.menuBtn} onClick={() => navigate('/restaurant/menu', { state: { table, guests } })}>
-          В МЕНЮ
-        </button>
+        <button className={styles.menuBtn} onClick={goToMenu}>В МЕНЮ</button>
       </div>
     </div>
   )
