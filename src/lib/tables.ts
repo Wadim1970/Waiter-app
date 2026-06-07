@@ -52,7 +52,7 @@ export async function getMyTables(waiterId: string, restaurantId: string): Promi
       )
     `)
     .eq('waiter_id', waiterId)
-    .eq('assigned_date', today)
+    .or(`assigned_date.eq.${today},is_permanent.eq.true`)
 
   if (error) throw error
 
