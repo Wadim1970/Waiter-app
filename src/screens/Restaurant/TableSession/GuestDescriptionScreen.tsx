@@ -14,10 +14,10 @@ const GUEST_COLORS = [
   '#979200', // г8
 ]
 
-const GENDER_OPTIONS = ['Мужской', 'Женский']
-const AGE_OPTIONS = ['Ребёнок', 'Молодой', 'Средний', 'Старший']
-const BODY_OPTIONS = ['Стройный', 'Средний', 'Крупный']
-const HAIR_OPTIONS = ['Короткие', 'Средние', 'Длинные', 'Лысый']
+const GENDER_OPTIONS = ['Муж', 'Жен']
+const AGE_OPTIONS = ['3-5', '6-9', '10-14', '15-18', '19-30', '30-40', '40-50', '50-60', '60+']
+const BODY_OPTIONS = ['Худое', 'Спортивное', 'Полное']
+const HAIR_OPTIONS = ['Темные', 'Светлые', 'Длинные', 'Рыжие', 'Кучерявые', 'Короткие', 'Лысый', 'Хвост', 'Каре', 'Седые']
 
 type GuestData = {
   gender: string | null
@@ -34,30 +34,21 @@ export default function GuestDescriptionScreen() {
   const table = location.state?.table as TableWithSession | undefined
 
   const [activeGuest, setActiveGuest] = useState<number | 'all'>('all')
-  const [guests, setGuests] = useState<GuestData[]>(
-    Array.from({ length: 8 }, emptyGuest)
-  )
+  const [guests, setGuests] = useState<GuestData[]>(Array.from({ length: 8 }, emptyGuest))
 
   const guestColor = activeGuest !== 'all' ? GUEST_COLORS[activeGuest] : null
+  const currentGuest = activeGuest !== 'all' ? guests[activeGuest] : null
 
   const updateGuest = (field: keyof GuestData, value: string) => {
     if (activeGuest === 'all') return
     setGuests(prev => {
       const next = [...prev]
-      const current = next[activeGuest]
       next[activeGuest] = {
-        ...current,
-        [field]: current[field] === value ? null : value,
+        ...next[activeGuest],
+        [field]: next[activeGuest][field] === value ? null : value,
       }
       return next
     })
-  }
-
-  const currentGuest = activeGuest !== 'all' ? guests[activeGuest] : null
-
-  const handleMenu = () => {
-    // TODO: navigate to menu screen
-    navigate('/restaurant/menu', { state: { table, guests } })
   }
 
   return (
@@ -65,49 +56,59 @@ export default function GuestDescriptionScreen() {
       {/* Header */}
       <div className={styles.header}>
         <button className={styles.backBtn} onClick={() => navigate('/restaurant/tables')}>
-          ←
+          <span className={styles.backArrow} />
         </button>
-        <span className={styles.tableLabel}>
-          Стол {table?.number ?? '—'}
-        </span>
+        <span className={styles.tableDecor}>СТОЛ №{table?.number ?? '—'}</span>
       </div>
 
-      {/* Guest selector */}
+      {/* Guest selector bar */}
       <div className={styles.guestBar}>
-        {/* All guests button */}
+        {/* All guests */}
         <button
-          className={`${styles.guestBtn} ${activeGuest === 'all' ? styles.guestBtnActiveAll : ''}`}
+          className={`${styles.guestCircle} ${activeGuest === 'all' ? styles.guestCircleActiveAll : styles.guestCircleInactive}`}
           onClick={() => setActiveGuest('all')}
         >
-          <img src="/icons/All.png" alt="Все" className={styles.allIcon} />
+          <img src="/icons/All.png" alt="все" className={styles.allIcon} />
         </button>
 
-        {/* Guest 1–8 */}
+        {/* Guests 1–8 */}
         {GUEST_COLORS.map((color, i) => (
           <button
             key={i}
-            className={styles.guestBtn}
-            style={activeGuest === i
-              ? { backgroundColor: '#fff', borderColor: color, color }
-              : { backgroundColor: 'transparent', borderColor: 'transparent', color: '#fff' }
-            }
+            className={`${styles.guestCircle} ${activeGuest === i ? styles.guestCircleActive : styles.guestCircleInactive}`}
+            style={activeGuest === i ? { borderColor: color } : undefined}
             onClick={() => setActiveGuest(i)}
           >
-            {i + 1}
+            <span className={styles.guestLabel} style={{ color }}>
+              <span className={styles.guestLabelG}>г</span>
+              <span className={styles.guestLabelN}>{i + 1}</span>
+            </span>
           </button>
         ))}
       </div>
 
+      {/* Content */}
       <div className={styles.content}>
         {activeGuest === 'all' ? (
-          /* Пояснительный экран */
-          <div className={styles.allView}>
-            <p className={styles.hintText}>
-              Выберите гостя, чтобы описать его внешность, или нажмите на номер стола, чтобы перейти к заказу
+          /* Screen 1a — instructions */
+          <div className={styles.instructions}>
+            <p className={styles.instructionText}>
+              Чтобы не перепутать заказы, кратко опишите каждого гостя.
+            </p>
+            <p />
+            <ol className={styles.instructionList}>
+              <li>Нажмите на кнопку гостя — г1, г2, г3…</li>
+              <li>Выберите подходящие признаки: пол, возраст и другие характеристики.</li>
+              <li>Если одного признака достаточно для идентификации — сразу переходите в меню.</li>
+              <li>Повторите для каждого гостя за столом.</li>
+            </ol>
+            <p />
+            <p className={styles.instructionText}>
+              Чем точнее описание — тем проще будет принять и подать заказ!
             </p>
           </div>
         ) : (
-          /* Форма описания гостя */
+          /* Screen 1b — guest form */
           <div className={styles.form}>
             <Section
               icon="/icons/Gender.png"
@@ -145,9 +146,14 @@ export default function GuestDescriptionScreen() {
         )}
       </div>
 
-      {/* В меню button */}
+      {/* Quick menu tab on right edge */}
+      <div className={styles.menuTab} onClick={() => navigate('/restaurant/menu', { state: { table, guests } })}>
+        <span className={styles.menuTabText}>МЕНЮ</span>
+      </div>
+
+      {/* В МЕНЮ button */}
       <div className={styles.footer}>
-        <button className={styles.menuBtn} onClick={handleMenu}>
+        <button className={styles.menuBtn} onClick={() => navigate('/restaurant/menu', { state: { table, guests } })}>
           В МЕНЮ
         </button>
       </div>
@@ -176,10 +182,11 @@ function Section({
           <button
             key={opt}
             className={styles.tag}
-            style={selected === opt
-              ? { borderColor: color, color }
-              : undefined
-            }
+            style={{
+              borderColor: color,
+              backgroundColor: selected === opt ? '#fff' : '#d1d3d8',
+              color: selected === opt ? color : '#8e9096',
+            }}
             onClick={() => onSelect(opt)}
           >
             {opt}
