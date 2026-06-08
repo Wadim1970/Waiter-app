@@ -89,16 +89,15 @@
   top: 82px;
   left: 0;
   right: 0;
-  height: 40px;
-  background: #fff;
+  height: 82px;
+  background: rgba(31, 116, 177, 0.3);
   z-index: 98;
   display: flex;
   align-items: center;
-  padding: 0 12px;
+  padding: 0 18px;
   gap: 8px;
   overflow-x: auto;
   scrollbar-width: none;
-  border-bottom: 1px solid #eee;
 }
 
 .subsectionsBar::-webkit-scrollbar {
@@ -107,29 +106,29 @@
 
 .subBtn {
   flex-shrink: 0;
-  background: transparent;
-  border: 1px solid #ccc;
-  border-radius: 20px;
-  padding: 4px 14px;
+  background: #d1d3d8;
+  border: 1px solid #8e9096;
+  border-radius: 36px;
+  padding: 7px 16px;
   font-family: 'Montserrat', sans-serif;
-  font-weight: 500;
-  font-size: 13px;
-  color: #666;
+  font-weight: 600;
+  font-size: 16px;
+  color: #000;
   cursor: pointer;
   transition: all 0.15s;
   white-space: nowrap;
 }
 
 .subBtnActive {
-  background: #ff6b00;
+  background: #eb651a;
   color: #fff;
-  border-color: #ff6b00;
+  border-color: #eb651a;
 }
 
 /* ── Dishes list ── */
 .content {
   flex: 1;
-  margin-top: 130px;
+  margin-top: 164px;
   padding: 8px 16px 140px;
 }
 
