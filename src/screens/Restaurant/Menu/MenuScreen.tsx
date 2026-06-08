@@ -1,204 +1,200 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../../../lib/supabase'
+import { getActiveShift } from '../QRScanner/QRScannerScreen'
 import type { TableWithSession } from '../../../lib/tables'
 import styles from './MenuScreen.module.css'
 
+type MenuSection = { id: string; name: string; sort_order: number }
+type MenuSubsection = { id: string; section_id: string; name: string; sort_order: number }
+
 type MenuItem = {
   id: string
-  name: string
+  dish_name: string
   description: string
-  price: number
-  time: number
-  subcategory_id: string
-  image_url?: string
+  cost_rub: number
+  cook_time_min: number
+  weight_g: number
+  nutritional_info: { calories?: number; proteins?: number; fats?: number; carbs?: number } | null
+  ingredients: string
+  image_url: string | null
+  section_id: string
+  subsection_id: string | null
+  is_available: boolean
 }
 
-type MenuCategory = {
-  id: string
-  name: string
-  slug: string
-}
+type ModifierGroup = { id: string; name: string; type: string; required: boolean }
+type Modifier = { id: string; group_id: string; name: string; price_delta: number }
 
-type MenuSubcategory = {
-  id: string
-  category_id: string
-  name: string
-}
-
-type CartItem = {
-  dishId: string
-  quantity: number
-  modifiers: Record<string, string[]>
-}
-
-const GUEST_COLORS = [
-  '#02a826', '#ce00b9', '#ff9500', '#003daf',
-  '#6c03ed', '#0f929c', '#700061', '#979200',
-]
+type CartItem = { itemId: string; quantity: number; selectedModifiers: Record<string, string> }
 
 export default function MenuScreen() {
   const navigate = useNavigate()
   const location = useLocation()
   const table = location.state?.table as TableWithSession | undefined
-  const initialGuests = location.state?.guests || []
+  const restaurantId = getActiveShift()?.restaurantId ?? ''
 
-  const [activeGuest, setActiveGuest] = useState(0)
-  const [activeCategory, setActiveCategory] = useState<string>('')
-  const [activeSubcategory, setActiveSubcategory] = useState<string>('')
-
-  const [categories, setCategories] = useState<MenuCategory[]>([])
-  const [subcategories, setSubcategories] = useState<MenuSubcategory[]>([])
+  const [sections, setSections] = useState<MenuSection[]>([])
+  const [subsections, setSubsections] = useState<MenuSubsection[]>([])
   const [dishes, setDishes] = useState<MenuItem[]>([])
 
-  const [cart, setCart] = useState<Record<number, CartItem[]>>({})
-  const [selectedDishForModifier, setSelectedDishForModifier] = useState<MenuItem | null>(null)
-  const [selectedDishForInfo, setSelectedDishForInfo] = useState<MenuItem | null>(null)
+  const [activeSectionId, setActiveSectionId] = useState<string>('')
+  const [activeSubsectionId, setActiveSubsectionId] = useState<string>('all')
 
-  const touchStartRef = useRef(0)
+  const [modifierGroups, setModifierGroups] = useState<ModifierGroup[]>([])
+  const [modifiers, setModifiers] = useState<Modifier[]>([])
+  const [pendingDish, setPendingDish] = useState<MenuItem | null>(null)
+  const [selectedModifiers, setSelectedModifiers] = useState<Record<string, string>>({})
+  const [modifierComment, setModifierComment] = useState('')
 
-  // Load menu data on mount
+  const [infoDish, setInfoDish] = useState<MenuItem | null>(null)
+  const [cart, setCart] = useState<CartItem[]>([])
+
+  const touchStartY = useRef(0)
+
+  // Load sections
   useEffect(() => {
-    const loadMenu = async () => {
-      const { data: cats } = await supabase.from('menu_categories').select('*')
-      if (cats) {
-        setCategories(cats)
-        setActiveCategory(cats[0]?.id || '')
-      }
+    if (!restaurantId) return
+    supabase
+      .from('menu_sections')
+      .select('*')
+      .eq('restaurant_id', restaurantId)
+      .order('sort_order')
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setSections(data)
+          setActiveSectionId(data[0].id)
+        }
+      })
+  }, [restaurantId])
+
+  // Load subsections when section changes
+  useEffect(() => {
+    if (!activeSectionId) return
+    supabase
+      .from('menu_subsections')
+      .select('*')
+      .eq('section_id', activeSectionId)
+      .order('sort_order')
+      .then(({ data }) => {
+        setSubsections(data || [])
+        setActiveSubsectionId('all')
+      })
+  }, [activeSectionId])
+
+  // Load dishes
+  useEffect(() => {
+    if (!activeSectionId) return
+    let query = supabase
+      .from('menu_items')
+      .select('*')
+      .eq('section_id', activeSectionId)
+      .eq('is_available', true)
+      .order('sort_order')
+
+    if (activeSubsectionId !== 'all') {
+      query = query.eq('subsection_id', activeSubsectionId)
     }
-    loadMenu()
-  }, [])
 
-  // Load subcategories when category changes
-  useEffect(() => {
-    const loadSubcategories = async () => {
-      if (!activeCategory) return
-      const { data: subs } = await supabase
-        .from('menu_subcategories')
+    query.then(({ data }) => setDishes(data || []))
+  }, [activeSectionId, activeSubsectionId])
+
+  // When user taps +, check modifiers
+  const handleAdd = async (dish: MenuItem) => {
+    const { data: groups } = await supabase
+      .from('modifier_groups')
+      .select('*')
+      .eq('item_id', dish.id)
+      .order('sort_order')
+
+    if (groups && groups.length > 0) {
+      const { data: mods } = await supabase
+        .from('modifiers')
         .select('*')
-        .eq('category_id', activeCategory)
-      if (subs && subs.length > 0) {
-        setSubcategories(subs)
-        setActiveSubcategory(subs[0].id)
-      } else {
-        setSubcategories([])
-        setActiveSubcategory('')
-      }
-    }
-    loadSubcategories()
-  }, [activeCategory])
+        .in('group_id', groups.map((g: ModifierGroup) => g.id))
+        .eq('is_available', true)
+        .order('sort_order')
 
-  // Load dishes when subcategory changes
-  useEffect(() => {
-    const loadDishes = async () => {
-      if (!activeCategory) return
-      let query = supabase.from('menu_items').select('*').eq('category_id', activeCategory)
-      if (activeSubcategory) {
-        query = query.eq('subcategory_id', activeSubcategory)
-      }
-      const { data } = await query
-      setDishes(data || [])
-    }
-    loadDishes()
-  }, [activeCategory, activeSubcategory])
-
-  const addToCart = (dish: MenuItem) => {
-    // TODO: Check if dish has modifiers, if yes show modal
-    const newCart = { ...cart }
-    if (!newCart[activeGuest]) newCart[activeGuest] = []
-    const existing = newCart[activeGuest].find(item => item.dishId === dish.id)
-    if (existing) {
-      existing.quantity += 1
+      setModifierGroups(groups)
+      setModifiers(mods || [])
+      setSelectedModifiers({})
+      setModifierComment('')
+      setPendingDish(dish)
     } else {
-      newCart[activeGuest].push({ dishId: dish.id, quantity: 1, modifiers: {} })
+      addToCart(dish, {}, '')
     }
-    setCart(newCart)
+  }
+
+  const addToCart = (dish: MenuItem, mods: Record<string, string>, comment: string) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.itemId === dish.id)
+      if (existing && Object.keys(mods).length === 0) {
+        return prev.map(item =>
+          item.itemId === dish.id ? { ...item, quantity: item.quantity + 1 } : item
+        )
+      }
+      return [...prev, { itemId: dish.id, quantity: 1, selectedModifiers: mods }]
+    })
+    setPendingDish(null)
   }
 
   const removeFromCart = (dishId: string) => {
-    const newCart = { ...cart }
-    if (!newCart[activeGuest]) return
-    const idx = newCart[activeGuest].findIndex(item => item.dishId === dishId)
-    if (idx !== -1) {
-      newCart[activeGuest][idx].quantity -= 1
-      if (newCart[activeGuest][idx].quantity === 0) {
-        newCart[activeGuest].splice(idx, 1)
-      }
-    }
-    setCart(newCart)
+    setCart(prev => {
+      const idx = prev.findIndex(item => item.itemId === dishId)
+      if (idx === -1) return prev
+      const next = [...prev]
+      next[idx] = { ...next[idx], quantity: next[idx].quantity - 1 }
+      return next.filter(item => item.quantity > 0)
+    })
   }
 
-  const getQuantity = (dishId: string): number => {
-    return cart[activeGuest]?.find(item => item.dishId === dishId)?.quantity || 0
-  }
+  const getQuantity = (dishId: string) =>
+    cart.filter(item => item.itemId === dishId).reduce((sum, item) => sum + item.quantity, 0)
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartRef.current = e.touches[0].clientY
-  }
-
-  const handleTouchEnd = (e: React.TouchEvent, closeModal: () => void) => {
-    const touchEnd = e.changedTouches[0].clientY
-    if (touchEnd - touchStartRef.current > 100) {
-      closeModal()
-    }
+  const handleModalSwipe = (e: React.TouchEvent, close: () => void) => {
+    if (e.changedTouches[0].clientY - touchStartY.current > 80) close()
   }
 
   return (
     <div className={styles.screen}>
 
-      {/* ── Header + Guest bar (same as GuestDescriptionScreen) ── */}
-      <div className={styles.headerZone}>
-        <div className={styles.header}>
-          <span className={styles.menuDecor}>МЕНЮ</span>
-        </div>
-        <div className={styles.guestBar}>
-          {GUEST_COLORS.map((color, i) => {
-            const qty = cart[i]?.reduce((sum, item) => sum + item.quantity, 0) || 0
-            return (
-              <button
-                key={i}
-                className={`${styles.guestCircle} ${activeGuest === i ? styles.guestCircleActive : ''}`}
-                style={activeGuest === i ? { borderColor: color } : undefined}
-                onClick={() => setActiveGuest(i)}
-              >
-                <span className={styles.guestLabel} style={{ color: activeGuest === i ? color : '#8e9096' }}>
-                  <span className={styles.guestLabelG}>г</span>
-                  <span className={styles.guestLabelN}>{i + 1}</span>
-                </span>
-                {qty > 0 && <span className={styles.cartBadge}>{qty}</span>}
-              </button>
-            )
-          })}
-        </div>
+      {/* ── Header: decorative МЕНЮ ── */}
+      <div className={styles.header}>
+        <span className={styles.menuDecor}>МЕНЮ</span>
+        <button className={styles.backBtn} onClick={() => navigate(-1)}>
+          <svg width="22" height="16" viewBox="0 0 22 16" fill="none">
+            <path d="M21 8H1M1 8L8 1M1 8L8 15" stroke="#717f98" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
       </div>
 
-      {/* ── Main categories (Еда, Напитки, Алкоголь) ── */}
-      <div className={styles.mainCategories}>
-        {categories.map(cat => (
+      {/* ── Main sections (Еда / Напитки / Алкоголь) ── */}
+      <div className={styles.sectionsBar}>
+        {sections.map(sec => (
           <button
-            key={cat.id}
-            className={`${styles.mainCatBtn} ${activeCategory === cat.id ? styles.mainCatBtnActive : ''}`}
-            onClick={() => setActiveCategory(cat.id)}
+            key={sec.id}
+            className={`${styles.sectionBtn} ${activeSectionId === sec.id ? styles.sectionBtnActive : ''}`}
+            onClick={() => setActiveSectionId(sec.id)}
           >
-            {cat.name}
+            {sec.name}
           </button>
         ))}
-        <div
-          className={styles.mainCatBg}
-          style={{
-            opacity: activeCategory ? 0.3 : 0,
-          }}
-        />
       </div>
 
-      {/* ── Subcategories (horizontal scroll) ── */}
-      {subcategories.length > 0 && (
-        <div className={styles.subcategoriesBar}>
-          {subcategories.map(sub => (
+      {/* ── Subsections (horizontal scroll) ── */}
+      {subsections.length > 0 && (
+        <div className={styles.subsectionsBar}>
+          <button
+            className={`${styles.subBtn} ${activeSubsectionId === 'all' ? styles.subBtnActive : ''}`}
+            onClick={() => setActiveSubsectionId('all')}
+          >
+            Популярные
+          </button>
+          {subsections.map(sub => (
             <button
               key={sub.id}
-              className={`${styles.subCatBtn} ${activeSubcategory === sub.id ? styles.subCatBtnActive : ''}`}
-              onClick={() => setActiveSubcategory(sub.id)}
+              className={`${styles.subBtn} ${activeSubsectionId === sub.id ? styles.subBtnActive : ''}`}
+              onClick={() => setActiveSubsectionId(sub.id)}
             >
               {sub.name}
             </button>
@@ -206,29 +202,32 @@ export default function MenuScreen() {
         </div>
       )}
 
-      {/* ── Dishes list ── */}
+      {/* ── Dishes ── */}
       <div className={styles.content}>
+        {dishes.length === 0 && (
+          <p className={styles.empty}>Блюда не найдены</p>
+        )}
         {dishes.map(dish => {
           const qty = getQuantity(dish.id)
           return (
-            <div key={dish.id} className={styles.dishCard}>
+            <div key={dish.id} className={styles.dishRow}>
               <div className={styles.dishLeft}>
-                <h3 className={styles.dishName} onClick={() => setSelectedDishForInfo(dish)}>
-                  {dish.name}
-                </h3>
-                <p className={styles.dishTime}>{dish.time} мин</p>
+                <p className={styles.dishName} onClick={() => setInfoDish(dish)}>
+                  {dish.dish_name}
+                </p>
+                <p className={styles.dishTime}>{dish.cook_time_min} мин</p>
               </div>
               <div className={styles.dishRight}>
-                <span className={styles.dishPrice}>{dish.price} руб</span>
+                <span className={styles.dishPrice}>{dish.cost_rub} руб</span>
                 <div className={styles.dishActions}>
                   {qty === 0 ? (
-                    <button className={styles.addBtn} onClick={() => addToCart(dish)}>+</button>
+                    <button className={styles.addBtn} onClick={() => handleAdd(dish)}>+</button>
                   ) : (
-                    <>
+                    <div className={styles.counter}>
                       <button className={styles.minusBtn} onClick={() => removeFromCart(dish.id)}>−</button>
                       <span className={styles.qty}>{qty}</span>
-                      <button className={styles.addBtn} onClick={() => addToCart(dish)}>+</button>
-                    </>
+                      <button className={styles.addBtn} onClick={() => handleAdd(dish)}>+</button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -237,8 +236,8 @@ export default function MenuScreen() {
         })}
       </div>
 
-      {/* ── Right-edge СТОЛ tab ── */}
-      <div className={styles.stolTab}>
+      {/* ── Left СТОЛ tab ── */}
+      <div className={styles.stolTab} onClick={() => navigate('/restaurant/tables')}>
         <span className={styles.stolTabText}>СТОЛ</span>
       </div>
 
@@ -249,37 +248,109 @@ export default function MenuScreen() {
         </button>
       </div>
 
-      {/* ── Modifier modal (swipe down to close) ── */}
-      {selectedDishForModifier && (
+      {/* ── Modifier modal ── */}
+      {pendingDish && (
         <div
-          className={styles.modalOverlay}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={e => handleTouchEnd(e, () => setSelectedDishForModifier(null))}
+          className={styles.overlay}
+          onTouchStart={e => { touchStartY.current = e.touches[0].clientY }}
+          onTouchEnd={e => handleModalSwipe(e, () => setPendingDish(null))}
+          onClick={e => e.target === e.currentTarget && setPendingDish(null)}
         >
           <div className={styles.modal}>
-            <h3>{selectedDishForModifier.name}</h3>
-            {/* TODO: Render modifiers here */}
-            <button onClick={() => setSelectedDishForModifier(null)}>Ок</button>
+            <div className={styles.modalHandle} />
+            {modifierGroups.map(group => (
+              <div key={group.id} className={styles.modGroup}>
+                <div className={styles.modGroupHeader}>
+                  <div className={styles.modGroupLine} />
+                  <span className={styles.modGroupName}>{group.name}</span>
+                  <div className={styles.modGroupLine} />
+                </div>
+                <div className={styles.modTags}>
+                  {modifiers.filter(m => m.group_id === group.id).map(mod => (
+                    <button
+                      key={mod.id}
+                      className={`${styles.modTag} ${selectedModifiers[group.id] === mod.id ? styles.modTagActive : ''}`}
+                      onClick={() => setSelectedModifiers(prev => ({
+                        ...prev,
+                        [group.id]: prev[group.id] === mod.id ? '' : mod.id
+                      }))}
+                    >
+                      {mod.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <textarea
+              className={styles.commentInput}
+              placeholder="Комментарий (не обязательно)"
+              value={modifierComment}
+              onChange={e => setModifierComment(e.target.value)}
+            />
+            <button
+              className={styles.okBtn}
+              onClick={() => addToCart(pendingDish, selectedModifiers, modifierComment)}
+            >
+              Ок
+            </button>
           </div>
         </div>
       )}
 
-      {/* ── Dish info modal (swipe down to close) ── */}
-      {selectedDishForInfo && (
+      {/* ── Dish info modal ── */}
+      {infoDish && (
         <div
-          className={styles.modalOverlay}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={e => handleTouchEnd(e, () => setSelectedDishForInfo(null))}
+          className={styles.overlay}
+          onTouchStart={e => { touchStartY.current = e.touches[0].clientY }}
+          onTouchEnd={e => handleModalSwipe(e, () => setInfoDish(null))}
+          onClick={e => e.target === e.currentTarget && setInfoDish(null)}
         >
           <div className={styles.modal}>
-            <h3>{selectedDishForInfo.name}</h3>
-            <p><strong>Описание:</strong></p>
-            <p>{selectedDishForInfo.description}</p>
-            {/* TODO: Состав, пищевая ценность */}
-            <button onClick={() => setSelectedDishForInfo(null)}>Закрыть</button>
+            <div className={styles.modalHandle} />
+            <InfoSection title="Описание">
+              <p className={styles.infoText}>{infoDish.description}</p>
+            </InfoSection>
+            {infoDish.ingredients && (
+              <InfoSection title="Состав">
+                <p className={styles.infoText}>{infoDish.ingredients}</p>
+              </InfoSection>
+            )}
+            {infoDish.nutritional_info && (
+              <InfoSection title="Пищевая ценность">
+                <div className={styles.nutrition}>
+                  <NutrCell value={infoDish.nutritional_info.calories} label="ккал" />
+                  <NutrCell value={infoDish.nutritional_info.proteins} label="белки" />
+                  <NutrCell value={infoDish.nutritional_info.fats} label="жиры" />
+                  <NutrCell value={infoDish.nutritional_info.carbs} label="углеводы" />
+                </div>
+              </InfoSection>
+            )}
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function InfoSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <div style={{ flex: 1, height: 1, background: '#e0e0e0' }} />
+        <span style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600, fontSize: 14, color: '#000' }}>{title}</span>
+        <div style={{ flex: 1, height: 1, background: '#e0e0e0' }} />
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function NutrCell({ value, label }: { value?: number; label: string }) {
+  if (value == null) return null
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: 16 }}>{value.toFixed(2)}</div>
+      <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 12, color: '#999' }}>{label}</div>
     </div>
   )
 }
