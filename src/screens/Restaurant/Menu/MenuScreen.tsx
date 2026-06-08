@@ -158,7 +158,7 @@ export default function MenuScreen() {
   return (
     <div className={styles.screen}>
 
-      {/* ── Header: decorative МЕНЮ ── */}
+      {/* ── Header: decorative МЕНЮ + sections ── */}
       <div className={styles.header}>
         <span className={styles.menuDecor}>МЕНЮ</span>
         <button className={styles.backBtn} onClick={() => navigate(-1)}>
@@ -166,19 +166,17 @@ export default function MenuScreen() {
             <path d="M21 8H1M1 8L8 1M1 8L8 15" stroke="#717f98" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
-      </div>
-
-      {/* ── Main sections (Еда / Напитки / Алкоголь) ── */}
-      <div className={styles.sectionsBar}>
-        {sections.map(sec => (
-          <button
-            key={sec.id}
-            className={`${styles.sectionBtn} ${activeSectionId === sec.id ? styles.sectionBtnActive : ''}`}
-            onClick={() => setActiveSectionId(sec.id)}
-          >
-            {sec.name}
-          </button>
-        ))}
+        <div className={styles.sectionsRow}>
+          {sections.map(sec => (
+            <button
+              key={sec.id}
+              className={`${styles.sectionBtn} ${activeSectionId === sec.id ? styles.sectionBtnActive : ''}`}
+              onClick={() => setActiveSectionId(sec.id)}
+            >
+              {sec.name}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── Subsections (horizontal scroll) ── */}
