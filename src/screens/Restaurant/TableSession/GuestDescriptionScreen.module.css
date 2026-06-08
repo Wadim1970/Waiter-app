@@ -32,7 +32,7 @@
   position: absolute;
   left: 0;
   right: 0;
-  top: 21px;
+  top: 28px;
   text-align: center;
   font-family: 'Montserrat', sans-serif;
   font-weight: 800;
@@ -46,8 +46,8 @@
 /* Back arrow: bottom-left of header */
 .backBtn {
   position: absolute;
-  left: 24px;
-  top: 50%;
+  left: 8px;
+  top: 72%;
   transform: translateY(-50%);
   background: none;
   border: none;
