@@ -129,7 +129,7 @@
 .content {
   flex: 1;
   margin-top: 164px;
-  padding: 8px 16px 140px;
+  padding: 4px 0 140px;
 }
 
 .empty {
@@ -141,45 +141,50 @@
 }
 
 .dishRow {
+  background: #eaeaea;
+  min-height: 97px;
+  margin-bottom: 4px;
+  padding: 8px 12px 8px 19px;
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid #eee;
 }
 
 .dishLeft {
   flex: 1;
-  padding-right: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-right: 8px;
 }
 
 .dishName {
   margin: 0;
   font-family: 'Montserrat', sans-serif;
   font-weight: 600;
-  font-size: 15px;
+  font-size: 16px;
   color: #000;
   cursor: pointer;
 }
 
 .dishTime {
-  margin: 3px 0 0;
+  margin: 0;
   font-family: 'Montserrat', sans-serif;
-  font-size: 12px;
-  color: #999;
+  font-weight: 600;
+  font-size: 16px;
+  color: #8e9096;
 }
 
 .dishRight {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 6px;
+  justify-content: space-between;
 }
 
 .dishPrice {
   font-family: 'Montserrat', sans-serif;
   font-weight: 600;
-  font-size: 15px;
+  font-size: 16px;
   color: #000;
   white-space: nowrap;
 }
@@ -192,17 +197,17 @@
 .counter {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .addBtn,
 .minusBtn {
-  width: 30px;
-  height: 30px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  border: none;
+  border: 1px solid #8e9096;
   cursor: pointer;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   line-height: 1;
   display: flex;
@@ -212,25 +217,27 @@
 }
 
 .addBtn {
-  background: #ff6b00;
+  background: #eb651a;
   color: #fff;
 }
 
 .addBtn:active { opacity: 0.8; }
 
 .minusBtn {
-  background: #ebebeb;
-  color: #555;
+  background: #fff;
+  color: #8e9096;
 }
 
 .minusBtn:active { opacity: 0.8; }
 
 .qty {
-  min-width: 20px;
+  min-width: 24px;
   text-align: center;
   font-family: 'Montserrat', sans-serif;
-  font-weight: 600;
-  font-size: 15px;
+  font-weight: 500;
+  font-size: 32px;
+  color: #000;
+  line-height: 1;
 }
 
 /* ── Right-edge СТОЛ tab ── */
