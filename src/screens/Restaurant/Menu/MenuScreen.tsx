@@ -263,7 +263,7 @@ export default function MenuScreen() {
                   {dish.dish_name}
                 </p>
                 <p className={styles.dishTime}>
-                  {showVolume ? `${dish.weight_g} мл` : `${dish.cook_time_min} мин`}
+                  {showVolume ? dish.weight_g : `${dish.cook_time_min} мин`}
                 </p>
               </div>
               <div className={styles.dishRight}>
