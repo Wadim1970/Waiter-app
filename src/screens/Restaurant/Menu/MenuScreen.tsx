@@ -182,6 +182,9 @@ export default function MenuScreen() {
     if (e.changedTouches[0].clientY - touchStartY.current > 80) close()
   }
 
+  const activeSection = sections.find(s => s.id === activeSectionId)
+  const showVolume = activeSection?.name === 'Напитки' || activeSection?.name === 'Алкоголь'
+
   const hasSubSubsections = subSubsections.length > 0
   const contentTop = 164 + (hasSubSubsections ? 52 + 4 : 0)
 
@@ -259,7 +262,9 @@ export default function MenuScreen() {
                 <p className={styles.dishName} onClick={() => setInfoDish(dish)}>
                   {dish.dish_name}
                 </p>
-                <p className={styles.dishTime}>{dish.cook_time_min} мин</p>
+                <p className={styles.dishTime}>
+                  {showVolume ? `${dish.weight_g} мл` : `${dish.cook_time_min} мин`}
+                </p>
               </div>
               <div className={styles.dishRight}>
                 <span className={styles.dishPrice}>{dish.cost_rub} руб</span>
