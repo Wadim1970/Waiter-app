@@ -161,11 +161,6 @@ export default function MenuScreen() {
       {/* ── Header: decorative МЕНЮ + sections ── */}
       <div className={styles.header}>
         <span className={styles.menuDecor}>МЕНЮ</span>
-        <button className={styles.backBtn} onClick={() => navigate(-1)}>
-          <svg width="22" height="16" viewBox="0 0 22 16" fill="none">
-            <path d="M21 8H1M1 8L8 1M1 8L8 15" stroke="#717f98" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
         <div className={styles.sectionsRow}>
           {sections.map(sec => (
             <button
