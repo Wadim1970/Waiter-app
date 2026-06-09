@@ -17,7 +17,7 @@ type MenuItem = {
   cook_time_min: number
   weight_g: number
   nutritional_info: { calories?: number; proteins?: number; fats?: number; carbs?: number } | null
-  ingredients: string
+  ingredients: string | string[]
   image_url: string | null
   section_id: string
   subsection_id: string | null
@@ -356,7 +356,20 @@ export default function MenuScreen() {
             </InfoSection>
             {infoDish.ingredients && (
               <InfoSection title="Состав">
-                <p className={styles.infoText}>{infoDish.ingredients}</p>
+                <p className={styles.infoText}>
+                  {(() => {
+                    try {
+                      const arr = typeof infoDish.ingredients === 'string'
+                        ? JSON.parse(infoDish.ingredients)
+                        : infoDish.ingredients
+                      return Array.isArray(arr)
+                        ? arr.map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')
+                        : String(infoDish.ingredients)
+                    } catch {
+                      return String(infoDish.ingredients)
+                    }
+                  })()}
+                </p>
               </InfoSection>
             )}
             {infoDish.nutritional_info && (
