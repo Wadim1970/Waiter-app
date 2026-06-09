@@ -132,12 +132,61 @@
   border-color: #eb651a;
 }
 
+/* ── Sub-subsections bar (third level) ── */
+.subSubsectionsBar {
+  position: fixed;
+  top: 164px;
+  left: 0;
+  right: 0;
+  height: 52px;
+  background: #fff;
+  z-index: 97;
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  animation: slideDownBar 0.25s ease-out;
+}
+
+.subSubsectionsBar::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes slideDownBar {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Pills in third level — smaller than subsections */
+.subSubBtn {
+  flex-shrink: 0;
+  background: #eaeaea;
+  border: 1px solid #8e9096;
+  border-radius: 36px;
+  padding: 7px 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: #000;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.subSubBtnActive {
+  background: #eb651a;
+  color: #fff;
+  border-color: #eb651a;
+}
+
 /* ── Dishes list ── */
 .content {
   flex: 1;
-  margin-top: 164px;
   padding: 4px 0 120px;
   overflow-y: auto;
+  transition: margin-top 0.25s ease-out;
 }
 
 .empty {

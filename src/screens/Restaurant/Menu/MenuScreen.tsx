@@ -7,6 +7,7 @@ import styles from './MenuScreen.module.css'
 
 type MenuSection = { id: string; name: string; sort_order: number }
 type MenuSubsection = { id: string; section_id: string; name: string; sort_order: number }
+type MenuSubSubsection = { id: string; subsection_id: string; name: string; sort_order: number }
 
 type MenuItem = {
   id: string
@@ -20,6 +21,7 @@ type MenuItem = {
   image_url: string | null
   section_id: string
   subsection_id: string | null
+  sub_subsection_id: string | null
   is_available: boolean
 }
 
@@ -36,10 +38,12 @@ export default function MenuScreen() {
 
   const [sections, setSections] = useState<MenuSection[]>([])
   const [subsections, setSubsections] = useState<MenuSubsection[]>([])
+  const [subSubsections, setSubSubsections] = useState<MenuSubSubsection[]>([])
   const [dishes, setDishes] = useState<MenuItem[]>([])
 
   const [activeSectionId, setActiveSectionId] = useState<string>('')
   const [activeSubsectionId, setActiveSubsectionId] = useState<string>('all')
+  const [activeSubSubsectionId, setActiveSubSubsectionId] = useState<string>('all')
 
   const [modifierGroups, setModifierGroups] = useState<ModifierGroup[]>([])
   const [modifiers, setModifiers] = useState<Modifier[]>([])
@@ -79,8 +83,27 @@ export default function MenuScreen() {
       .then(({ data }) => {
         setSubsections(data || [])
         setActiveSubsectionId('all')
+        setSubSubsections([])
+        setActiveSubSubsectionId('all')
       })
   }, [activeSectionId])
+
+  // Load sub-subsections when subsection changes
+  useEffect(() => {
+    setActiveSubSubsectionId('all')
+    if (!activeSubsectionId || activeSubsectionId === 'all') {
+      setSubSubsections([])
+      return
+    }
+    supabase
+      .from('menu_sub_subsections')
+      .select('*')
+      .eq('subsection_id', activeSubsectionId)
+      .order('sort_order')
+      .then(({ data }) => {
+        setSubSubsections(data || [])
+      })
+  }, [activeSubsectionId])
 
   // Load dishes
   useEffect(() => {
@@ -96,8 +119,12 @@ export default function MenuScreen() {
       query = query.eq('subsection_id', activeSubsectionId)
     }
 
+    if (activeSubSubsectionId !== 'all') {
+      query = query.eq('sub_subsection_id', activeSubSubsectionId)
+    }
+
     query.then(({ data }) => setDishes(data || []))
-  }, [activeSectionId, activeSubsectionId])
+  }, [activeSectionId, activeSubsectionId, activeSubSubsectionId])
 
   // When user taps +, check modifiers
   const handleAdd = async (dish: MenuItem) => {
@@ -155,6 +182,9 @@ export default function MenuScreen() {
     if (e.changedTouches[0].clientY - touchStartY.current > 80) close()
   }
 
+  const hasSubSubsections = subSubsections.length > 0
+  const contentTop = 164 + (hasSubSubsections ? 52 + 4 : 0)
+
   return (
     <div className={styles.screen}>
 
@@ -195,8 +225,29 @@ export default function MenuScreen() {
         </div>
       )}
 
+      {/* ── Sub-subsections (third level) ── */}
+      {hasSubSubsections && (
+        <div className={styles.subSubsectionsBar}>
+          <button
+            className={`${styles.subSubBtn} ${activeSubSubsectionId === 'all' ? styles.subSubBtnActive : ''}`}
+            onClick={() => setActiveSubSubsectionId('all')}
+          >
+            Все
+          </button>
+          {subSubsections.map(sub => (
+            <button
+              key={sub.id}
+              className={`${styles.subSubBtn} ${activeSubSubsectionId === sub.id ? styles.subSubBtnActive : ''}`}
+              onClick={() => setActiveSubSubsectionId(sub.id)}
+            >
+              {sub.name}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* ── Dishes ── */}
-      <div className={styles.content}>
+      <div className={styles.content} style={{ marginTop: contentTop }}>
         {dishes.length === 0 && (
           <p className={styles.empty}>Блюда не найдены</p>
         )}
