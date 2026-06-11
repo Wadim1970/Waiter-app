@@ -21,7 +21,7 @@ export async function getOrCreateOrder(
     .from('orders')
     .select('id')
     .eq('table_id', tableId)
-    .eq('status', 'draft')
+    .eq('status', 'new')
     .maybeSingle()
 
   if (existing?.id) return existing.id
@@ -32,7 +32,7 @@ export async function getOrCreateOrder(
       table_id: tableId,
       table_number: String(tableNumber),
       restaurant_id: restaurantId,
-      status: 'draft',
+      status: 'new',
       total_amount: 0,
       items: [],
     })
