@@ -28,7 +28,12 @@ type MenuItem = {
 type ModifierGroup = { id: string; name: string; type: string; required: boolean }
 type Modifier = { id: string; group_id: string; name: string; price_delta: number }
 
-type CartItem = { itemId: string; quantity: number; selectedModifiers: Record<string, string> }
+type CartItem = {
+  itemId: string
+  quantity: number
+  selectedModifiers: Record<string, string>
+  resolvedModifiers: { groupName: string; modName: string }[]
+}
 
 export default function MenuScreen() {
   const navigate = useNavigate()
@@ -153,6 +158,14 @@ export default function MenuScreen() {
   }
 
   const addToCart = (dish: MenuItem, mods: Record<string, string>, comment: string) => {
+    const resolved = Object.entries(mods)
+      .filter(([, modId]) => modId)
+      .map(([groupId, modId]) => ({
+        groupName: modifierGroups.find(g => g.id === groupId)?.name ?? '',
+        modName: modifiers.find(m => m.id === modId)?.name ?? '',
+      }))
+      .filter(r => r.groupName && r.modName)
+
     setCart(prev => {
       const existing = prev.find(item => item.itemId === dish.id)
       if (existing && Object.keys(mods).length === 0) {
@@ -160,7 +173,7 @@ export default function MenuScreen() {
           item.itemId === dish.id ? { ...item, quantity: item.quantity + 1 } : item
         )
       }
-      return [...prev, { itemId: dish.id, quantity: 1, selectedModifiers: mods }]
+      return [...prev, { itemId: dish.id, quantity: 1, selectedModifiers: mods, resolvedModifiers: resolved }]
     })
     setPendingDish(null)
   }
@@ -178,8 +191,21 @@ export default function MenuScreen() {
   const getQuantity = (dishId: string) =>
     cart.filter(item => item.itemId === dishId).reduce((sum, item) => sum + item.quantity, 0)
 
+  const touchStartX = useRef(0)
+
   const handleModalSwipe = (e: React.TouchEvent, close: () => void) => {
     if (e.changedTouches[0].clientY - touchStartY.current > 80) close()
+  }
+
+  const handleScreenSwipeEnd = (e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    if (dx > 80) goToOrder()
+  }
+
+  const goToOrder = () => {
+    navigate(`/restaurant/table/${table?.id ?? ''}/order`, {
+      state: { table, guests: location.state?.guests, cart, dishes, activeGuestIndex: location.state?.activeGuestIndex ?? 0 }
+    })
   }
 
   const activeSection = sections.find(s => s.id === activeSectionId)
@@ -189,7 +215,11 @@ export default function MenuScreen() {
   const contentTop = 164 + (hasSubSubsections ? 52 + 4 : 0)
 
   return (
-    <div className={styles.screen}>
+    <div
+      className={styles.screen}
+      onTouchStart={e => { touchStartX.current = e.touches[0].clientX }}
+      onTouchEnd={handleScreenSwipeEnd}
+    >
 
       {/* ── Header: decorative МЕНЮ + sections ── */}
       <div className={styles.header}>
@@ -292,7 +322,7 @@ export default function MenuScreen() {
 
       {/* ── К СТОЛУ button ── */}
       <div className={styles.footer}>
-        <button className={styles.toTableBtn} onClick={() => navigate('/restaurant/tables')}>
+        <button className={styles.toTableBtn} onClick={goToOrder}>
           К СТОЛУ
         </button>
       </div>

@@ -1,0 +1,367 @@
+.screen {
+  height: 100vh;
+  background: #f5f5f5;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  animation: slideInLeft 0.25s ease-out;
+}
+
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+/* ── Header ── */
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 82px;
+  background: #fff;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.tableDecor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  text-align: center;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 800;
+  font-size: 96px;
+  line-height: 0.85;
+  color: #ededed;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.backBtn {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.headerPrice {
+  position: absolute;
+  right: 16px;
+  bottom: 22px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  color: #000;
+  z-index: 1;
+}
+
+.headerTime {
+  position: absolute;
+  right: 16px;
+  top: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  z-index: 1;
+}
+
+.headerTimeVal {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  color: #000;
+}
+
+.headerTimeLabel {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  font-size: 11px;
+  color: #8e9096;
+  line-height: 1;
+}
+
+/* ── Guest circles bar ── */
+.guestBar {
+  position: fixed;
+  top: 82px;
+  left: 0;
+  right: 0;
+  height: 72px;
+  background: rgba(31, 116, 177, 0.3);
+  z-index: 98;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.guestBar::-webkit-scrollbar {
+  display: none;
+}
+
+.guestCircle {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: rgba(255,255,255,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.guestCircleActive {
+  border-width: 2px;
+  border-style: solid;
+  background: rgba(255,255,255,0.85);
+}
+
+.allIcon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.guestLabel {
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+}
+
+.guestLabelG {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: #717f98;
+}
+
+.guestLabelN {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  color: #717f98;
+}
+
+/* ── White divider ── */
+.divider {
+  position: fixed;
+  top: 154px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: #fff;
+  z-index: 97;
+}
+
+/* ── Guest description ── */
+.guestDesc {
+  position: fixed;
+  top: 158px;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-left: 5px solid;
+  padding: 6px 16px 6px 14px;
+  z-index: 96;
+}
+
+.guestDescText {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* ── Scrollable content area ── */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0 120px;
+  margin-top: 196px;
+}
+
+.contentNoDesc {
+  margin-top: 162px;
+}
+
+.empty {
+  text-align: center;
+  color: #999;
+  margin-top: 40px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 15px;
+}
+
+/* ── Dish card ── */
+.dishCard {
+  background: #fff;
+  border: 1px solid;
+  border-left: 5px solid;
+  margin-bottom: 4px;
+  padding: 10px 14px 10px 12px;
+}
+
+.dishCardTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+
+.dishCardName {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  color: #000;
+  flex: 1;
+  padding-right: 8px;
+}
+
+.dishCardPrice {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  color: #000;
+  white-space: nowrap;
+}
+
+.dishCardMods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.dishCardMod {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  color: #8e9096;
+  background: #f0f0f0;
+  border-radius: 8px;
+  padding: 2px 8px;
+}
+
+.dishCardBottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dishCardTime {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  font-size: 13px;
+  color: #8e9096;
+}
+
+.dishCardControls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.minusBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid #8e9096;
+  background: #fff;
+  color: #8e9096;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s;
+}
+
+.minusBtn:active { opacity: 0.7; }
+
+.addBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid #8e9096;
+  background: #eb651a;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s;
+}
+
+.addBtn:active { opacity: 0.7; }
+
+.qty {
+  min-width: 24px;
+  text-align: center;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 22px;
+  color: #000;
+}
+
+/* ── AI hint block ── */
+.aiBlock {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  margin: 8px 12px;
+  overflow: hidden;
+}
+
+.aiHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.aiTitle {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #000;
+}
+
+.aiIcon {
+  font-size: 18px;
+  color: #ff9500;
+}
+
+.aiBody {
+  padding: 10px 14px 12px;
+}
+
+.aiText {
+  margin: 0;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  color: #444;
+  line-height: 1.5;
+}
