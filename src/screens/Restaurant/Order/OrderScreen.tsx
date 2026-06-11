@@ -38,6 +38,7 @@ export default function OrderScreen() {
   const guests = (location.state?.guests ?? []) as GuestData[]
   const orderId = location.state?.orderId as string | undefined
   const initialGuest = (location.state?.activeGuestIndex ?? 0) as number
+  const noAnimation = location.state?.noAnimation === true
 
   const [activeGuest, setActiveGuest] = useState<number>(initialGuest)
   const [orderItems, setOrderItems] = useState<LoadedOrderItem[]>([])
@@ -57,7 +58,7 @@ export default function OrderScreen() {
   const elapsed = getElapsedSeconds(table?.startedAt ?? null)
 
   const currentItems = orderItems.filter(i => i.seat_number === activeGuest + 1)
-  const totalPrice = orderItems.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
+  const totalPrice = currentItems.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
   const tableNumber = table?.number ?? '—'
 
   const goToMenu = () => {
@@ -80,7 +81,7 @@ export default function OrderScreen() {
 
   return (
     <div
-      className={styles.screen}
+      className={`${styles.screen} ${noAnimation ? styles.screenNoAnim : ''}`}
       onTouchStart={e => { touchStartX.current = e.touches[0].clientX }}
       onTouchEnd={handleSwipeEnd}
     >
@@ -113,11 +114,12 @@ export default function OrderScreen() {
           {GUEST_COLORS.map((color, i) => {
             const isActive = activeGuest === i
             const hasItems = orderItems.some(item => item.seat_number === i + 1)
+            const showBorder = isActive || hasItems
             return (
               <button
                 key={i}
                 className={`${styles.guestCircle} ${isActive ? styles.guestCircleActive : ''}`}
-                style={isActive ? { borderColor: color } : undefined}
+                style={showBorder ? { borderColor: color } : undefined}
                 onClick={() => {
                   if (!itemsLoaded) return
                   if (hasItems) {

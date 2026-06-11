@@ -11,6 +11,10 @@
   to { transform: translateX(0); }
 }
 
+.screenNoAnim {
+  animation: none;
+}
+
 /* ── Fixed header zone: 83px header + 70px guest bar = 153px ── */
 .headerZone {
   position: fixed;

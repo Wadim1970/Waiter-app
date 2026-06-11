@@ -117,7 +117,7 @@ export default function GuestDescriptionScreen() {
                 onClick={() => {
                   if (hasCart && incomingOrderId) {
                     navigate(`/restaurant/table/${table?.id ?? ''}/order`, {
-                      state: { table, guests, orderId: incomingOrderId, activeGuestIndex: i }
+                      state: { table, guests, orderId: incomingOrderId, activeGuestIndex: i, noAnimation: true }
                     })
                   } else {
                     setActiveGuest(i)
