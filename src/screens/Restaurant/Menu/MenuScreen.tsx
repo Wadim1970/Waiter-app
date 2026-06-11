@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../../../lib/supabase'
 import { getActiveShift } from '../QRScanner/QRScannerScreen'
-import { addOrderItem, removeOrderItem, loadOrderItems } from '../../../lib/orders'
+import { getOrCreateOrder, addOrderItem, removeOrderItem, loadOrderItems } from '../../../lib/orders'
 import type { TableWithSession } from '../../../lib/tables'
 import styles from './MenuScreen.module.css'
 
@@ -61,14 +61,24 @@ export default function MenuScreen() {
 
   const [infoDish, setInfoDish] = useState<MenuItem | null>(null)
   const [cart, setCart] = useState<CartItem[]>([])
+  const [currentOrderId, setCurrentOrderId] = useState<string | null>(orderId ?? null)
 
   const touchStartY = useRef(0)
   const touchStartX = useRef(0)
 
+  // Ensure order exists; create if missing
+  useEffect(() => {
+    if (currentOrderId || !table) return
+    const restaurantId = getActiveShift()?.restaurantId ?? ''
+    getOrCreateOrder(table.id, table.number, restaurantId)
+      .then(id => setCurrentOrderId(id))
+      .catch(err => console.error('getOrCreateOrder failed:', err))
+  }, [table, currentOrderId])
+
   // Load existing cart for this guest from DB
   useEffect(() => {
-    if (!orderId) return
-    loadOrderItems(orderId).then(items => {
+    if (!currentOrderId) return
+    loadOrderItems(currentOrderId).then(items => {
       const guestItems = items.filter(i => i.seat_number === activeGuestIndex + 1)
       setCart(guestItems.map(i => ({
         dbId: i.id,
@@ -77,7 +87,7 @@ export default function MenuScreen() {
         modifierNames: i.modifiers.map(m => m.name),
       })))
     })
-  }, [orderId, activeGuestIndex])
+  }, [currentOrderId, activeGuestIndex])
 
   // Load sections
   useEffect(() => {
@@ -168,7 +178,7 @@ export default function MenuScreen() {
   }
 
   const addToCart = async (dish: MenuItem, mods: Record<string, string>) => {
-    if (!orderId) return
+    if (!currentOrderId) return
 
     const modifiersList = Object.entries(mods)
       .filter(([, modId]) => modId)
@@ -182,7 +192,7 @@ export default function MenuScreen() {
       .map(([, modId]) => modifiers.find(m => m.id === modId)?.name ?? '')
       .filter(Boolean)
 
-    const dbId = await addOrderItem(orderId, dish.id, activeGuestIndex + 1, dish.cost_rub, modifiersList)
+    const dbId = await addOrderItem(currentOrderId, dish.id, activeGuestIndex + 1, dish.cost_rub, modifiersList)
 
     setCart(prev => {
       if (modifiersList.length === 0) {
@@ -227,7 +237,7 @@ export default function MenuScreen() {
 
   const goToOrder = () => {
     navigate(`/restaurant/table/${table?.id ?? ''}/order`, {
-      state: { table, guests: location.state?.guests, orderId, activeGuestIndex }
+      state: { table, guests: location.state?.guests, orderId: currentOrderId, activeGuestIndex }
     })
   }
 
