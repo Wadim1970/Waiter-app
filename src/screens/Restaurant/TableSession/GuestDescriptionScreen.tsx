@@ -65,7 +65,7 @@ export default function GuestDescriptionScreen() {
 
         {/* Header 83px: decorative table number + back arrow */}
         <div className={styles.header}>
-          <span className={styles.tableDecor}>СТОЛ №{table?.table_number ?? '—'}</span>
+          <span className={styles.tableDecor}>СТОЛ №{table?.number ?? '—'}</span>
           <button className={styles.backBtn} onClick={() => navigate('/restaurant/tables')}>
             <svg width="22" height="16" viewBox="0 0 22 16" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M21 8H1M1 8L8 1M1 8L8 15" stroke="#717f98" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>

@@ -42,9 +42,9 @@ function formatTime(seconds: number): string {
   return `${m} мин`
 }
 
-function getElapsedSeconds(session: TableWithSession['active_session']): number {
-  if (!session?.created_at) return 0
-  return Math.floor((Date.now() - new Date(session.created_at).getTime()) / 1000)
+function getElapsedSeconds(startedAt: string | null): number {
+  if (!startedAt) return 0
+  return Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000)
 }
 
 export default function OrderScreen() {
@@ -61,7 +61,7 @@ export default function OrderScreen() {
 
   const guestColor = GUEST_COLORS[activeGuest] ?? '#02a826'
   const guestDesc = guests[activeGuest] ? formatGuestDesc(guests[activeGuest]) : ''
-  const elapsed = getElapsedSeconds(table?.active_session)
+  const elapsed = getElapsedSeconds(table?.startedAt ?? null)
 
   const dishMap: Record<string, MenuItem> = {}
   dishes.forEach(d => { dishMap[d.id] = d })
@@ -75,7 +75,7 @@ export default function OrderScreen() {
   // Cart for current guest only
   const currentCart = guestCarts[activeGuest] ?? []
 
-  const tableNumber = table?.table_number ?? '—'
+  const tableNumber = table?.number ?? '—'
 
   const goToMenu = () => {
     navigate('/restaurant/menu', {
@@ -129,14 +129,18 @@ export default function OrderScreen() {
 
           {GUEST_COLORS.map((color, i) => {
             const isActive = activeGuest === i
+            const hasCart = (guestCarts[i]?.length ?? 0) > 0
             return (
               <button
                 key={i}
                 className={`${styles.guestCircle} ${isActive ? styles.guestCircleActive : ''}`}
                 style={isActive ? { borderColor: color } : undefined}
                 onClick={() => {
-                  setActiveGuest(i)
-                  goToGuestDescription(i)
+                  if (hasCart) {
+                    setActiveGuest(i)
+                  } else {
+                    goToGuestDescription(i)
+                  }
                 }}
               >
                 <span

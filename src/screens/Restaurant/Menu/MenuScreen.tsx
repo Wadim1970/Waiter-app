@@ -62,6 +62,7 @@ export default function MenuScreen() {
 
   const [infoDish, setInfoDish] = useState<MenuItem | null>(null)
   const [cart, setCart] = useState<CartItem[]>(() => incomingGuestCarts[activeGuestIndex] ?? [])
+  const dishCacheRef = useRef<Record<string, MenuItem>>({})
 
   const touchStartY = useRef(0)
 
@@ -132,7 +133,11 @@ export default function MenuScreen() {
       query = query.eq('sub_subsection_id', activeSubSubsectionId)
     }
 
-    query.then(({ data }) => setDishes(data || []))
+    query.then(({ data }) => {
+      const loaded = data || []
+      loaded.forEach(d => { dishCacheRef.current[d.id] = d })
+      setDishes(loaded)
+    })
   }, [activeSectionId, activeSubsectionId, activeSubSubsectionId])
 
   // When user taps +, check modifiers
@@ -214,7 +219,7 @@ export default function MenuScreen() {
         table,
         guests: location.state?.guests,
         guestCarts: updatedGuestCarts,
-        dishes,
+        dishes: Object.values(dishCacheRef.current),
         activeGuestIndex,
       }
     })
