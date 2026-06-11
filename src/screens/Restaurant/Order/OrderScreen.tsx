@@ -41,11 +41,15 @@ export default function OrderScreen() {
 
   const [activeGuest, setActiveGuest] = useState<number>(initialGuest)
   const [orderItems, setOrderItems] = useState<LoadedOrderItem[]>([])
+  const [itemsLoaded, setItemsLoaded] = useState(false)
   const touchStartX = useRef(0)
 
   useEffect(() => {
-    if (!orderId) return
-    loadOrderItems(orderId).then(setOrderItems)
+    if (!orderId) { setItemsLoaded(true); return }
+    loadOrderItems(orderId).then(items => {
+      setOrderItems(items)
+      setItemsLoaded(true)
+    })
   }, [orderId])
 
   const guestColor = GUEST_COLORS[activeGuest] ?? '#02a826'
@@ -63,8 +67,9 @@ export default function OrderScreen() {
   }
 
   const goToGuestDescription = (guestIndex: number) => {
+    const seatsWithItems = [...new Set(orderItems.map(i => i.seat_number))]
     navigate(`/restaurant/table/${table?.id ?? ''}/guests`, {
-      state: { table, guests, orderId, activeGuestIndex: guestIndex }
+      state: { table, guests, orderId, activeGuestIndex: guestIndex, seatsWithItems }
     })
   }
 
@@ -114,6 +119,7 @@ export default function OrderScreen() {
                 className={`${styles.guestCircle} ${isActive ? styles.guestCircleActive : ''}`}
                 style={isActive ? { borderColor: color } : undefined}
                 onClick={() => {
+                  if (!itemsLoaded) return
                   if (hasItems) {
                     setActiveGuest(i)
                   } else {

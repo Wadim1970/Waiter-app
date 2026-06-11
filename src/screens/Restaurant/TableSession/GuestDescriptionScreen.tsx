@@ -31,6 +31,7 @@ export default function GuestDescriptionScreen() {
   const initialGuests = (location.state?.guests ?? Array.from({ length: 8 }, emptyGuest)) as GuestData[]
   const initialActiveGuest = location.state?.activeGuestIndex ?? 'all'
   const incomingOrderId = location.state?.orderId as string | undefined
+  const seatsWithItems = (location.state?.seatsWithItems ?? []) as number[]
 
   const [activeGuest, setActiveGuest] = useState<number | 'all'>(initialActiveGuest)
   const [guests, setGuests] = useState<GuestData[]>(initialGuests)
@@ -107,12 +108,21 @@ export default function GuestDescriptionScreen() {
 
           {GUEST_COLORS.map((color, i) => {
             const isActive = activeGuest === i
+            const hasCart = seatsWithItems.includes(i + 1)
             return (
               <button
                 key={i}
                 className={`${styles.guestCircle} ${isActive ? styles.guestCircleActive : ''}`}
                 style={isActive ? { borderColor: color } : undefined}
-                onClick={() => setActiveGuest(i)}
+                onClick={() => {
+                  if (hasCart && incomingOrderId) {
+                    navigate(`/restaurant/table/${table?.id ?? ''}/order`, {
+                      state: { table, guests, orderId: incomingOrderId, activeGuestIndex: i }
+                    })
+                  } else {
+                    setActiveGuest(i)
+                  }
+                }}
               >
                 <span
                   className={styles.guestLabel}
