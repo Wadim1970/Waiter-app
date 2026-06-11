@@ -23,6 +23,8 @@ type MenuItem = {
   section_id: string
 }
 
+type GuestCarts = CartItem[][]
+
 function formatGuestDesc(g: GuestData): string {
   const parts = [
     g.gender ? g.gender + '.' : null,
@@ -50,7 +52,7 @@ export default function OrderScreen() {
   const location = useLocation()
   const table = location.state?.table as TableWithSession | undefined
   const guests = (location.state?.guests ?? []) as GuestData[]
-  const cart = (location.state?.cart ?? []) as CartItem[]
+  const guestCarts = (location.state?.guestCarts ?? Array.from({ length: 8 }, (): CartItem[] => [])) as GuestCarts
   const dishes = (location.state?.dishes ?? []) as MenuItem[]
   const initialGuest = (location.state?.activeGuestIndex ?? 0) as number
 
@@ -64,21 +66,33 @@ export default function OrderScreen() {
   const dishMap: Record<string, MenuItem> = {}
   dishes.forEach(d => { dishMap[d.id] = d })
 
-  const totalPrice = cart.reduce((sum, item) => {
+  // Total price across ALL guests
+  const totalPrice = guestCarts.flat().reduce((sum, item) => {
     const dish = dishMap[item.itemId]
     return sum + (dish ? dish.cost_rub * item.quantity : 0)
   }, 0)
 
-  const handleSwipeEnd = (e: React.TouchEvent) => {
-    const dx = e.changedTouches[0].clientX - touchStartX.current
-    if (dx < -80) {
-      navigate('/restaurant/menu', {
-        state: { table, guests, cart, activeGuestIndex: activeGuest }
-      })
-    }
-  }
+  // Cart for current guest only
+  const currentCart = guestCarts[activeGuest] ?? []
 
   const tableNumber = table?.table_number ?? '—'
+
+  const goToMenu = () => {
+    navigate('/restaurant/menu', {
+      state: { table, guests, guestCarts, dishes, activeGuestIndex: activeGuest }
+    })
+  }
+
+  const goToGuestDescription = (guestIndex: number) => {
+    navigate('/restaurant/table/' + (table?.id ?? '') + '/guests', {
+      state: { table, guests, guestCarts, activeGuestIndex: guestIndex }
+    })
+  }
+
+  const handleSwipeEnd = (e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    if (dx < -80) goToMenu()
+  }
 
   return (
     <div
@@ -86,63 +100,71 @@ export default function OrderScreen() {
       onTouchStart={e => { touchStartX.current = e.touches[0].clientX }}
       onTouchEnd={handleSwipeEnd}
     >
-      {/* ── Header ── */}
-      <div className={styles.header}>
-        <span className={styles.tableDecor}>СТОЛ №{tableNumber}</span>
-        <button className={styles.backBtn} onClick={() => navigate('/restaurant/tables')}>
-          <svg width="22" height="20" viewBox="0 0 22 20" fill="none">
-            <rect x="3" y="8.5" width="18" height="3" rx="1.5" fill="#717F98"/>
-            <rect x="0" y="6.36" width="9" height="3" rx="1.5" transform="rotate(-45 0 6.36)" fill="#717F98"/>
-            <rect x="5.66" y="8" width="9" height="3" rx="1.5" transform="rotate(45 5.66 8)" fill="#717F98"/>
-          </svg>
-        </button>
-        <div className={styles.headerPrice}>{totalPrice} руб</div>
-        <div className={styles.headerTime}>
-          <span className={styles.headerTimeVal}>{formatTime(elapsed)}</span>
-          <span className={styles.headerTimeLabel}>за столом</span>
+      {/* ── Fixed header zone (154px): header + guest bar ── */}
+      <div className={styles.headerZone}>
+
+        {/* Header 83px */}
+        <div className={styles.header}>
+          <span className={styles.tableDecor}>СТОЛ №{tableNumber}</span>
+          <button className={styles.backBtn} onClick={() => navigate('/restaurant/tables')}>
+            <svg width="22" height="16" viewBox="0 0 22 16" fill="none">
+              <path d="M21 8H1M1 8L8 1M1 8L8 15" stroke="#717f98" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          <div className={styles.headerRight}>
+            <div className={styles.headerTime}>
+              <span className={styles.headerTimeVal}>{formatTime(elapsed)}</span>
+              <span className={styles.headerTimeLabel}>за столом</span>
+            </div>
+            <span className={styles.headerPrice}>{totalPrice} руб</span>
+          </div>
+        </div>
+
+        {/* Guest bar 70px */}
+        <div className={styles.guestBar}>
+          {/* "All" circle — just visual, no action on order screen */}
+          <button className={styles.guestCircle} onClick={() => {}}>
+            <img src="/icons/All.png" className={styles.allIcon} alt="все" />
+          </button>
+
+          {GUEST_COLORS.map((color, i) => {
+            const isActive = activeGuest === i
+            return (
+              <button
+                key={i}
+                className={`${styles.guestCircle} ${isActive ? styles.guestCircleActive : ''}`}
+                style={isActive ? { borderColor: color } : undefined}
+                onClick={() => {
+                  setActiveGuest(i)
+                  goToGuestDescription(i)
+                }}
+              >
+                <span
+                  className={styles.guestLabel}
+                  style={{ color: isActive ? color : '#8e9096' }}
+                >
+                  <span className={styles.guestLabelG}>г</span>
+                  <span className={styles.guestLabelN}>{i + 1}</span>
+                </span>
+              </button>
+            )
+          })}
         </div>
       </div>
 
-      {/* ── Guest circles ── */}
-      <div className={styles.guestBar}>
-        <button className={styles.guestCircle} onClick={() => {}}>
-          <img src="/icons/All.png" className={styles.allIcon} alt="все" />
-        </button>
-        {Array.from({ length: 8 }, (_, i) => {
-          const color = GUEST_COLORS[i]
-          const isActive = activeGuest === i
-          return (
-            <button
-              key={i}
-              className={`${styles.guestCircle} ${isActive ? styles.guestCircleActive : ''}`}
-              style={isActive ? { borderColor: color } : {}}
-              onClick={() => setActiveGuest(i)}
-            >
-              <span className={styles.guestLabel}>
-                <span className={styles.guestLabelG} style={isActive ? { color } : {}}>г</span>
-                <span className={styles.guestLabelN} style={isActive ? { color } : {}}>{i + 1}</span>
-              </span>
-            </button>
-          )
-        })}
-      </div>
-
-      {/* ── White divider ── */}
-      <div className={styles.divider} />
-
-      {/* ── Guest description ── */}
+      {/* ── Guest description strip ── */}
       {guestDesc && (
-        <div className={styles.guestDesc} style={{ borderColor: guestColor, borderLeftColor: guestColor }}>
+        <div className={styles.guestDesc} style={{ borderLeftColor: guestColor }}>
           <span className={styles.guestDescText} style={{ color: guestColor }}>{guestDesc}</span>
         </div>
       )}
 
       {/* ── Scrollable content ── */}
       <div className={`${styles.content} ${!guestDesc ? styles.contentNoDesc : ''}`}>
-        {cart.length === 0 && (
+        {currentCart.length === 0 && (
           <p className={styles.empty}>Блюда не выбраны</p>
         )}
-        {cart.map((item, idx) => {
+        {currentCart.map((item, idx) => {
           const dish = dishMap[item.itemId]
           if (!dish) return null
           const price = dish.cost_rub * item.quantity
@@ -184,6 +206,16 @@ export default function OrderScreen() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* ── Right-edge МЕНЮ tab ── */}
+      <div className={styles.menuTab} onClick={goToMenu}>
+        <span className={styles.menuTabText}>МЕНЮ</span>
+      </div>
+
+      {/* ── Footer: В МЕНЮ button ── */}
+      <div className={styles.footer}>
+        <button className={styles.menuBtn} onClick={goToMenu}>В МЕНЮ</button>
       </div>
     </div>
   )

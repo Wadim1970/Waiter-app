@@ -4,14 +4,14 @@ import type { TableWithSession } from '../../../lib/tables'
 import styles from './GuestDescriptionScreen.module.css'
 
 const GUEST_COLORS = [
-  '#02a826', // г1
-  '#ce00b9', // г2
-  '#ff9500', // г3
-  '#003daf', // г4
-  '#6c03ed', // г5
-  '#0f929c', // г6
-  '#700061', // г7
-  '#979200', // г8
+  '#02a826',
+  '#ce00b9',
+  '#ff9500',
+  '#003daf',
+  '#6c03ed',
+  '#0f929c',
+  '#700061',
+  '#979200',
 ]
 
 const GENDER_OPTIONS = ['Муж', 'Жен']
@@ -20,15 +20,23 @@ const BODY_OPTIONS   = ['Худое', 'Спортивное', 'Полное']
 const HAIR_OPTIONS   = ['Темные', 'Светлые', 'Длинные', 'Рыжие', 'Кучерявые', 'Короткие', 'Лысый', 'Хвост', 'Каре', 'Седые']
 
 type GuestData = { gender: string | null; age: string | null; body: string | null; hair: string | null }
+type CartItem = { itemId: string; quantity: number; selectedModifiers: Record<string, string>; resolvedModifiers: { groupName: string; modName: string }[] }
+
 const emptyGuest = (): GuestData => ({ gender: null, age: null, body: null, hair: null })
 
 export default function GuestDescriptionScreen() {
-  const navigate    = useNavigate()
-  const location    = useLocation()
-  const table       = location.state?.table as TableWithSession | undefined
+  const navigate = useNavigate()
+  const location = useLocation()
+  const table = location.state?.table as TableWithSession | undefined
 
-  const [activeGuest, setActiveGuest] = useState<number | 'all'>('all')
-  const [guests, setGuests]           = useState<GuestData[]>(Array.from({ length: 8 }, emptyGuest))
+  // guestCarts and guests may come from OrderScreen when navigating back to describe another guest
+  const initialGuestCarts = (location.state?.guestCarts ?? Array.from({ length: 8 }, (): CartItem[] => [])) as CartItem[][]
+  const initialGuests = (location.state?.guests ?? Array.from({ length: 8 }, emptyGuest)) as GuestData[]
+  const initialActiveGuest = location.state?.activeGuestIndex ?? 'all'
+
+  const [activeGuest, setActiveGuest] = useState<number | 'all'>(initialActiveGuest)
+  const [guests, setGuests] = useState<GuestData[]>(initialGuests)
+  const guestCarts = initialGuestCarts
 
   const guestColor   = activeGuest !== 'all' ? GUEST_COLORS[activeGuest] : null
   const currentGuest = activeGuest !== 'all' ? guests[activeGuest] : null
@@ -42,17 +50,22 @@ export default function GuestDescriptionScreen() {
     })
   }
 
-  const goToMenu = () => navigate('/restaurant/menu', { state: { table, guests } })
+  const goToMenu = () => {
+    const guestIndex = activeGuest === 'all' ? 0 : activeGuest
+    navigate('/restaurant/menu', {
+      state: { table, guests, guestCarts, activeGuestIndex: guestIndex }
+    })
+  }
 
   return (
     <div className={styles.screen}>
 
-      {/* ── Fixed white zone (154px): header + guest bar + divider ── */}
+      {/* ── Fixed white zone (154px): header + guest bar ── */}
       <div className={styles.headerZone}>
 
         {/* Header 83px: decorative table number + back arrow */}
         <div className={styles.header}>
-          <span className={styles.tableDecor}>СТОЛ №{table?.number ?? '—'}</span>
+          <span className={styles.tableDecor}>СТОЛ №{table?.table_number ?? '—'}</span>
           <button className={styles.backBtn} onClick={() => navigate('/restaurant/tables')}>
             <svg width="22" height="16" viewBox="0 0 22 16" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M21 8H1M1 8L8 1M1 8L8 15" stroke="#717f98" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -60,10 +73,8 @@ export default function GuestDescriptionScreen() {
           </button>
         </div>
 
-        {/* Guest bar 70px: circles centered vertically */}
+        {/* Guest bar 70px */}
         <div className={styles.guestBar}>
-
-          {/* All guests */}
           <button
             className={`${styles.guestCircle} ${activeGuest === 'all' ? styles.guestCircleActiveAll : ''}`}
             onClick={() => setActiveGuest('all')}
@@ -71,7 +82,6 @@ export default function GuestDescriptionScreen() {
             <img src="/icons/All.png" alt="все" className={styles.allIcon} />
           </button>
 
-          {/* Guests 1–8 */}
           {GUEST_COLORS.map((color, i) => {
             const isActive = activeGuest === i
             return (

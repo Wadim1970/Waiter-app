@@ -35,11 +35,15 @@ type CartItem = {
   resolvedModifiers: { groupName: string; modName: string }[]
 }
 
+type GuestCarts = CartItem[][]
+
 export default function MenuScreen() {
   const navigate = useNavigate()
   const location = useLocation()
   const table = location.state?.table as TableWithSession | undefined
   const restaurantId = getActiveShift()?.restaurantId ?? ''
+  const activeGuestIndex = (location.state?.activeGuestIndex ?? 0) as number
+  const incomingGuestCarts = (location.state?.guestCarts ?? Array.from({ length: 8 }, (): CartItem[] => [])) as GuestCarts
 
   const [sections, setSections] = useState<MenuSection[]>([])
   const [subsections, setSubsections] = useState<MenuSubsection[]>([])
@@ -57,7 +61,7 @@ export default function MenuScreen() {
   const [modifierComment, setModifierComment] = useState('')
 
   const [infoDish, setInfoDish] = useState<MenuItem | null>(null)
-  const [cart, setCart] = useState<CartItem[]>([])
+  const [cart, setCart] = useState<CartItem[]>(() => incomingGuestCarts[activeGuestIndex] ?? [])
 
   const touchStartY = useRef(0)
 
@@ -203,8 +207,16 @@ export default function MenuScreen() {
   }
 
   const goToOrder = () => {
+    const updatedGuestCarts: GuestCarts = [...incomingGuestCarts]
+    updatedGuestCarts[activeGuestIndex] = cart
     navigate(`/restaurant/table/${table?.id ?? ''}/order`, {
-      state: { table, guests: location.state?.guests, cart, dishes, activeGuestIndex: location.state?.activeGuestIndex ?? 0 }
+      state: {
+        table,
+        guests: location.state?.guests,
+        guestCarts: updatedGuestCarts,
+        dishes,
+        activeGuestIndex,
+      }
     })
   }
 
