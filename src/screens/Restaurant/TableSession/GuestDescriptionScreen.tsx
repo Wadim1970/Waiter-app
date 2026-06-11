@@ -58,6 +58,13 @@ export default function GuestDescriptionScreen() {
       navigate('/restaurant/menu', {
         state: { table, guests, orderId, activeGuestIndex: guestIndex }
       })
+    } catch (err) {
+      console.error('goToMenu error:', err)
+      // Navigate anyway without orderId so the app doesn't freeze
+      const guestIndex = activeGuest === 'all' ? 0 : activeGuest
+      navigate('/restaurant/menu', {
+        state: { table, guests, orderId: incomingOrderId ?? null, activeGuestIndex: guestIndex }
+      })
     } finally {
       setLoading(false)
     }
