@@ -21,6 +21,7 @@ const HAIR_OPTIONS   = ['Темные', 'Светлые', 'Длинные', 'Р�
 
 type GuestData = { gender: string | null; age: string | null; body: string | null; hair: string | null }
 type CartItem = { itemId: string; quantity: number; selectedModifiers: Record<string, string>; resolvedModifiers: { groupName: string; modName: string }[] }
+type MenuItem = { id: string; dish_name: string; cost_rub: number; cook_time_min: number; weight_g: number; section_id: string }
 
 const emptyGuest = (): GuestData => ({ gender: null, age: null, body: null, hair: null })
 
@@ -29,10 +30,11 @@ export default function GuestDescriptionScreen() {
   const location = useLocation()
   const table = location.state?.table as TableWithSession | undefined
 
-  // guestCarts and guests may come from OrderScreen when navigating back to describe another guest
+  // guestCarts, guests and dishCache may come from OrderScreen when navigating back to describe another guest
   const initialGuestCarts = (location.state?.guestCarts ?? Array.from({ length: 8 }, (): CartItem[] => [])) as CartItem[][]
   const initialGuests = (location.state?.guests ?? Array.from({ length: 8 }, emptyGuest)) as GuestData[]
   const initialActiveGuest = location.state?.activeGuestIndex ?? 'all'
+  const dishCache = (location.state?.dishes ?? []) as MenuItem[]
 
   const [activeGuest, setActiveGuest] = useState<number | 'all'>(initialActiveGuest)
   const [guests, setGuests] = useState<GuestData[]>(initialGuests)
@@ -53,8 +55,22 @@ export default function GuestDescriptionScreen() {
   const goToMenu = () => {
     const guestIndex = activeGuest === 'all' ? 0 : activeGuest
     navigate('/restaurant/menu', {
-      state: { table, guests, guestCarts, activeGuestIndex: guestIndex }
+      state: { table, guests, guestCarts, dishes: dishCache, activeGuestIndex: guestIndex }
     })
+  }
+
+  const goToOrder = (guestIndex: number) => {
+    navigate('/restaurant/table/' + (table?.id ?? '') + '/order', {
+      state: { table, guests, guestCarts, dishes: dishCache, activeGuestIndex: guestIndex }
+    })
+  }
+
+  const handleGuestCircleClick = (i: number) => {
+    if ((guestCarts[i]?.length ?? 0) > 0) {
+      goToOrder(i)
+    } else {
+      setActiveGuest(i)
+    }
   }
 
   return (
@@ -89,7 +105,7 @@ export default function GuestDescriptionScreen() {
                 key={i}
                 className={`${styles.guestCircle} ${isActive ? styles.guestCircleActive : ''}`}
                 style={isActive ? { borderColor: color } : undefined}
-                onClick={() => setActiveGuest(i)}
+                onClick={() => handleGuestCircleClick(i)}
               >
                 <span
                   className={styles.guestLabel}

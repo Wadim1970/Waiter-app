@@ -62,7 +62,11 @@ export default function MenuScreen() {
 
   const [infoDish, setInfoDish] = useState<MenuItem | null>(null)
   const [cart, setCart] = useState<CartItem[]>(() => incomingGuestCarts[activeGuestIndex] ?? [])
-  const dishCacheRef = useRef<Record<string, MenuItem>>({})
+  // Pre-populate cache from dishes passed via state (accumulated from previous sections)
+  const incomingDishes = (location.state?.dishes ?? []) as MenuItem[]
+  const dishCacheRef = useRef<Record<string, MenuItem>>(
+    Object.fromEntries(incomingDishes.map(d => [d.id, d]))
+  )
 
   const touchStartY = useRef(0)
 

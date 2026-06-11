@@ -85,7 +85,7 @@ export default function OrderScreen() {
 
   const goToGuestDescription = (guestIndex: number) => {
     navigate('/restaurant/table/' + (table?.id ?? '') + '/guests', {
-      state: { table, guests, guestCarts, activeGuestIndex: guestIndex }
+      state: { table, guests, guestCarts, dishes, activeGuestIndex: guestIndex }
     })
   }
 
