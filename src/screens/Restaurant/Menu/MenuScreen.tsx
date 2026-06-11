@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../../../lib/supabase'
 import { getActiveShift } from '../QRScanner/QRScannerScreen'
+import { addOrderItem, removeOrderItem, loadOrderItems } from '../../../lib/orders'
 import type { TableWithSession } from '../../../lib/tables'
 import styles from './MenuScreen.module.css'
 
@@ -29,21 +30,19 @@ type ModifierGroup = { id: string; name: string; type: string; required: boolean
 type Modifier = { id: string; group_id: string; name: string; price_delta: number }
 
 type CartItem = {
+  dbId: string
   itemId: string
   quantity: number
-  selectedModifiers: Record<string, string>
-  resolvedModifiers: { groupName: string; modName: string }[]
+  modifierNames: string[]
 }
-
-type GuestCarts = CartItem[][]
 
 export default function MenuScreen() {
   const navigate = useNavigate()
   const location = useLocation()
   const table = location.state?.table as TableWithSession | undefined
   const restaurantId = getActiveShift()?.restaurantId ?? ''
+  const orderId = location.state?.orderId as string | undefined
   const activeGuestIndex = (location.state?.activeGuestIndex ?? 0) as number
-  const incomingGuestCarts = (location.state?.guestCarts ?? Array.from({ length: 8 }, (): CartItem[] => [])) as GuestCarts
 
   const [sections, setSections] = useState<MenuSection[]>([])
   const [subsections, setSubsections] = useState<MenuSubsection[]>([])
@@ -61,14 +60,24 @@ export default function MenuScreen() {
   const [modifierComment, setModifierComment] = useState('')
 
   const [infoDish, setInfoDish] = useState<MenuItem | null>(null)
-  const [cart, setCart] = useState<CartItem[]>(() => incomingGuestCarts[activeGuestIndex] ?? [])
-  // Pre-populate cache from dishes passed via state (accumulated from previous sections)
-  const incomingDishes = (location.state?.dishes ?? []) as MenuItem[]
-  const dishCacheRef = useRef<Record<string, MenuItem>>(
-    Object.fromEntries(incomingDishes.map(d => [d.id, d]))
-  )
+  const [cart, setCart] = useState<CartItem[]>([])
 
   const touchStartY = useRef(0)
+  const touchStartX = useRef(0)
+
+  // Load existing cart for this guest from DB
+  useEffect(() => {
+    if (!orderId) return
+    loadOrderItems(orderId).then(items => {
+      const guestItems = items.filter(i => i.seat_number === activeGuestIndex + 1)
+      setCart(guestItems.map(i => ({
+        dbId: i.id,
+        itemId: i.item_id,
+        quantity: i.quantity,
+        modifierNames: i.modifiers.map(m => m.name),
+      })))
+    })
+  }, [orderId, activeGuestIndex])
 
   // Load sections
   useEffect(() => {
@@ -114,9 +123,7 @@ export default function MenuScreen() {
       .select('*')
       .eq('subsection_id', activeSubsectionId)
       .order('sort_order')
-      .then(({ data }) => {
-        setSubSubsections(data || [])
-      })
+      .then(({ data }) => setSubSubsections(data || []))
   }, [activeSubsectionId])
 
   // Load dishes
@@ -129,22 +136,12 @@ export default function MenuScreen() {
       .eq('is_available', true)
       .order('sort_order')
 
-    if (activeSubsectionId !== 'all') {
-      query = query.eq('subsection_id', activeSubsectionId)
-    }
+    if (activeSubsectionId !== 'all') query = query.eq('subsection_id', activeSubsectionId)
+    if (activeSubSubsectionId !== 'all') query = query.eq('sub_subsection_id', activeSubSubsectionId)
 
-    if (activeSubSubsectionId !== 'all') {
-      query = query.eq('sub_subsection_id', activeSubSubsectionId)
-    }
-
-    query.then(({ data }) => {
-      const loaded = data || []
-      loaded.forEach(d => { dishCacheRef.current[d.id] = d })
-      setDishes(loaded)
-    })
+    query.then(({ data }) => setDishes(data || []))
   }, [activeSectionId, activeSubsectionId, activeSubSubsectionId])
 
-  // When user taps +, check modifiers
   const handleAdd = async (dish: MenuItem) => {
     const { data: groups } = await supabase
       .from('modifier_groups')
@@ -166,45 +163,58 @@ export default function MenuScreen() {
       setModifierComment('')
       setPendingDish(dish)
     } else {
-      addToCart(dish, {}, '')
+      await addToCart(dish, {})
     }
   }
 
-  const addToCart = (dish: MenuItem, mods: Record<string, string>, comment: string) => {
-    const resolved = Object.entries(mods)
+  const addToCart = async (dish: MenuItem, mods: Record<string, string>) => {
+    if (!orderId) return
+
+    const modifiersList = Object.entries(mods)
       .filter(([, modId]) => modId)
-      .map(([groupId, modId]) => ({
-        groupName: modifierGroups.find(g => g.id === groupId)?.name ?? '',
-        modName: modifiers.find(m => m.id === modId)?.name ?? '',
+      .map(([, modId]) => ({
+        modifierId: modId,
+        priceDelta: modifiers.find(m => m.id === modId)?.price_delta ?? 0,
       }))
-      .filter(r => r.groupName && r.modName)
+
+    const modifierNames = Object.entries(mods)
+      .filter(([, modId]) => modId)
+      .map(([, modId]) => modifiers.find(m => m.id === modId)?.name ?? '')
+      .filter(Boolean)
+
+    const dbId = await addOrderItem(orderId, dish.id, activeGuestIndex + 1, dish.cost_rub, modifiersList)
 
     setCart(prev => {
-      const existing = prev.find(item => item.itemId === dish.id)
-      if (existing && Object.keys(mods).length === 0) {
-        return prev.map(item =>
-          item.itemId === dish.id ? { ...item, quantity: item.quantity + 1 } : item
-        )
+      if (modifiersList.length === 0) {
+        const existing = prev.find(i => i.itemId === dish.id && i.modifierNames.length === 0)
+        if (existing) {
+          return prev.map(i => i.dbId === existing.dbId ? { ...i, dbId, quantity: i.quantity + 1 } : i)
+        }
       }
-      return [...prev, { itemId: dish.id, quantity: 1, selectedModifiers: mods, resolvedModifiers: resolved }]
+      return [...prev, { dbId, itemId: dish.id, quantity: 1, modifierNames }]
     })
     setPendingDish(null)
   }
 
-  const removeFromCart = (dishId: string) => {
+  const removeFromCart = async (dishId: string) => {
+    const item = cart.find(i => i.itemId === dishId)
+    if (!item) return
+    await removeOrderItem(item.dbId, item.quantity)
     setCart(prev => {
-      const idx = prev.findIndex(item => item.itemId === dishId)
+      const idx = prev.findIndex(i => i.dbId === item.dbId)
       if (idx === -1) return prev
       const next = [...prev]
-      next[idx] = { ...next[idx], quantity: next[idx].quantity - 1 }
-      return next.filter(item => item.quantity > 0)
+      if (next[idx].quantity > 1) {
+        next[idx] = { ...next[idx], quantity: next[idx].quantity - 1 }
+      } else {
+        next.splice(idx, 1)
+      }
+      return next
     })
   }
 
   const getQuantity = (dishId: string) =>
-    cart.filter(item => item.itemId === dishId).reduce((sum, item) => sum + item.quantity, 0)
-
-  const touchStartX = useRef(0)
+    cart.filter(i => i.itemId === dishId).reduce((sum, i) => sum + i.quantity, 0)
 
   const handleModalSwipe = (e: React.TouchEvent, close: () => void) => {
     if (e.changedTouches[0].clientY - touchStartY.current > 80) close()
@@ -216,22 +226,13 @@ export default function MenuScreen() {
   }
 
   const goToOrder = () => {
-    const updatedGuestCarts: GuestCarts = [...incomingGuestCarts]
-    updatedGuestCarts[activeGuestIndex] = cart
     navigate(`/restaurant/table/${table?.id ?? ''}/order`, {
-      state: {
-        table,
-        guests: location.state?.guests,
-        guestCarts: updatedGuestCarts,
-        dishes: Object.values(dishCacheRef.current),
-        activeGuestIndex,
-      }
+      state: { table, guests: location.state?.guests, orderId, activeGuestIndex }
     })
   }
 
   const activeSection = sections.find(s => s.id === activeSectionId)
   const showVolume = activeSection?.name === 'Напитки' || activeSection?.name === 'Алкоголь'
-
   const hasSubSubsections = subSubsections.length > 0
   const contentTop = 164 + (hasSubSubsections ? 52 + 4 : 0)
 
@@ -258,7 +259,7 @@ export default function MenuScreen() {
         </div>
       </div>
 
-      {/* ── Subsections (horizontal scroll) ── */}
+      {/* ── Subsections ── */}
       {subsections.length > 0 && (
         <div className={styles.subsectionsBar}>
           <button
@@ -279,7 +280,7 @@ export default function MenuScreen() {
         </div>
       )}
 
-      {/* ── Sub-subsections (third level) ── */}
+      {/* ── Sub-subsections ── */}
       {hasSubSubsections && (
         <div className={styles.subSubsectionsBar}>
           <button
@@ -343,9 +344,7 @@ export default function MenuScreen() {
 
       {/* ── К СТОЛУ button ── */}
       <div className={styles.footer}>
-        <button className={styles.toTableBtn} onClick={goToOrder}>
-          К СТОЛУ
-        </button>
+        <button className={styles.toTableBtn} onClick={goToOrder}>К СТОЛУ</button>
       </div>
 
       {/* ── Modifier modal ── */}
@@ -389,7 +388,7 @@ export default function MenuScreen() {
             />
             <button
               className={styles.okBtn}
-              onClick={() => addToCart(pendingDish, selectedModifiers, modifierComment)}
+              onClick={() => addToCart(pendingDish, selectedModifiers)}
             >
               Ок
             </button>

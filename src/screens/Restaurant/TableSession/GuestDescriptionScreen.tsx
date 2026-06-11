@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { TableWithSession } from '../../../lib/tables'
+import { getOrCreateOrder } from '../../../lib/orders'
+import { getActiveShift } from '../QRScanner/QRScannerScreen'
 import styles from './GuestDescriptionScreen.module.css'
 
 const GUEST_COLORS = [
@@ -20,25 +22,19 @@ const BODY_OPTIONS   = ['Худое', 'Спортивное', 'Полное']
 const HAIR_OPTIONS   = ['Темные', 'Светлые', 'Длинные', 'Рыжие', 'Кучерявые', 'Короткие', 'Лысый', 'Хвост', 'Каре', 'Седые']
 
 type GuestData = { gender: string | null; age: string | null; body: string | null; hair: string | null }
-type CartItem = { itemId: string; quantity: number; selectedModifiers: Record<string, string>; resolvedModifiers: { groupName: string; modName: string }[] }
-type MenuItem = { id: string; dish_name: string; cost_rub: number; cook_time_min: number; weight_g: number; section_id: string }
-
 const emptyGuest = (): GuestData => ({ gender: null, age: null, body: null, hair: null })
 
 export default function GuestDescriptionScreen() {
   const navigate = useNavigate()
   const location = useLocation()
   const table = location.state?.table as TableWithSession | undefined
-
-  // guestCarts, guests and dishCache may come from OrderScreen when navigating back to describe another guest
-  const initialGuestCarts = (location.state?.guestCarts ?? Array.from({ length: 8 }, (): CartItem[] => [])) as CartItem[][]
   const initialGuests = (location.state?.guests ?? Array.from({ length: 8 }, emptyGuest)) as GuestData[]
   const initialActiveGuest = location.state?.activeGuestIndex ?? 'all'
-  const dishCache = (location.state?.dishes ?? []) as MenuItem[]
+  const incomingOrderId = location.state?.orderId as string | undefined
 
   const [activeGuest, setActiveGuest] = useState<number | 'all'>(initialActiveGuest)
   const [guests, setGuests] = useState<GuestData[]>(initialGuests)
-  const guestCarts = initialGuestCarts
+  const [loading, setLoading] = useState(false)
 
   const guestColor   = activeGuest !== 'all' ? GUEST_COLORS[activeGuest] : null
   const currentGuest = activeGuest !== 'all' ? guests[activeGuest] : null
@@ -52,24 +48,28 @@ export default function GuestDescriptionScreen() {
     })
   }
 
-  const goToMenu = () => {
-    const guestIndex = activeGuest === 'all' ? 0 : activeGuest
-    navigate('/restaurant/menu', {
-      state: { table, guests, guestCarts, dishes: dishCache, activeGuestIndex: guestIndex }
-    })
+  const goToMenu = async () => {
+    if (!table) return
+    setLoading(true)
+    try {
+      const restaurantId = getActiveShift()?.restaurantId ?? ''
+      const orderId = incomingOrderId ?? await getOrCreateOrder(table.id, table.number, restaurantId)
+      const guestIndex = activeGuest === 'all' ? 0 : activeGuest
+      navigate('/restaurant/menu', {
+        state: { table, guests, orderId, activeGuestIndex: guestIndex }
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const goToOrder = (guestIndex: number) => {
-    navigate('/restaurant/table/' + (table?.id ?? '') + '/order', {
-      state: { table, guests, guestCarts, dishes: dishCache, activeGuestIndex: guestIndex }
-    })
-  }
-
-  const handleGuestCircleClick = (i: number) => {
-    if ((guestCarts[i]?.length ?? 0) > 0) {
-      goToOrder(i)
+  const handleBack = () => {
+    if (incomingOrderId) {
+      navigate(`/restaurant/table/${table?.id ?? ''}/order`, {
+        state: { table, guests, orderId: incomingOrderId, activeGuestIndex: 0 }
+      })
     } else {
-      setActiveGuest(i)
+      navigate('/restaurant/tables')
     }
   }
 
@@ -79,10 +79,10 @@ export default function GuestDescriptionScreen() {
       {/* ── Fixed white zone (154px): header + guest bar ── */}
       <div className={styles.headerZone}>
 
-        {/* Header 83px: decorative table number + back arrow */}
+        {/* Header 83px */}
         <div className={styles.header}>
           <span className={styles.tableDecor}>СТОЛ №{table?.number ?? '—'}</span>
-          <button className={styles.backBtn} onClick={() => navigate('/restaurant/tables')}>
+          <button className={styles.backBtn} onClick={handleBack}>
             <svg width="22" height="16" viewBox="0 0 22 16" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M21 8H1M1 8L8 1M1 8L8 15" stroke="#717f98" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -105,7 +105,7 @@ export default function GuestDescriptionScreen() {
                 key={i}
                 className={`${styles.guestCircle} ${isActive ? styles.guestCircleActive : ''}`}
                 style={isActive ? { borderColor: color } : undefined}
-                onClick={() => handleGuestCircleClick(i)}
+                onClick={() => setActiveGuest(i)}
               >
                 <span
                   className={styles.guestLabel}
@@ -155,7 +155,9 @@ export default function GuestDescriptionScreen() {
 
       {/* В МЕНЮ button */}
       <div className={styles.footer}>
-        <button className={styles.menuBtn} onClick={goToMenu}>В МЕНЮ</button>
+        <button className={styles.menuBtn} onClick={goToMenu} disabled={loading}>
+          {loading ? '...' : 'В МЕНЮ'}
+        </button>
       </div>
     </div>
   )

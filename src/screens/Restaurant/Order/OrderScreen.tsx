@@ -1,29 +1,13 @@
-import { useState, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { TableWithSession } from '../../../lib/tables'
+import { loadOrderItems } from '../../../lib/orders'
+import type { LoadedOrderItem } from '../../../lib/orders'
 import styles from './OrderScreen.module.css'
 
 const GUEST_COLORS = ['#02a826','#ce00b9','#ff9500','#003daf','#6c03ed','#0f929c','#700061','#979200']
 
 type GuestData = { gender: string | null; age: string | null; body: string | null; hair: string | null }
-
-type CartItem = {
-  itemId: string
-  quantity: number
-  selectedModifiers: Record<string, string>
-  resolvedModifiers: { groupName: string; modName: string }[]
-}
-
-type MenuItem = {
-  id: string
-  dish_name: string
-  cost_rub: number
-  cook_time_min: number
-  weight_g: number
-  section_id: string
-}
-
-type GuestCarts = CartItem[][]
 
 function formatGuestDesc(g: GuestData): string {
   const parts = [
@@ -52,40 +36,35 @@ export default function OrderScreen() {
   const location = useLocation()
   const table = location.state?.table as TableWithSession | undefined
   const guests = (location.state?.guests ?? []) as GuestData[]
-  const guestCarts = (location.state?.guestCarts ?? Array.from({ length: 8 }, (): CartItem[] => [])) as GuestCarts
-  const dishes = (location.state?.dishes ?? []) as MenuItem[]
+  const orderId = location.state?.orderId as string | undefined
   const initialGuest = (location.state?.activeGuestIndex ?? 0) as number
 
   const [activeGuest, setActiveGuest] = useState<number>(initialGuest)
+  const [orderItems, setOrderItems] = useState<LoadedOrderItem[]>([])
   const touchStartX = useRef(0)
+
+  useEffect(() => {
+    if (!orderId) return
+    loadOrderItems(orderId).then(setOrderItems)
+  }, [orderId])
 
   const guestColor = GUEST_COLORS[activeGuest] ?? '#02a826'
   const guestDesc = guests[activeGuest] ? formatGuestDesc(guests[activeGuest]) : ''
   const elapsed = getElapsedSeconds(table?.startedAt ?? null)
 
-  const dishMap: Record<string, MenuItem> = {}
-  dishes.forEach(d => { dishMap[d.id] = d })
-
-  // Total price across ALL guests
-  const totalPrice = guestCarts.flat().reduce((sum, item) => {
-    const dish = dishMap[item.itemId]
-    return sum + (dish ? dish.cost_rub * item.quantity : 0)
-  }, 0)
-
-  // Cart for current guest only
-  const currentCart = guestCarts[activeGuest] ?? []
-
+  const currentItems = orderItems.filter(i => i.seat_number === activeGuest + 1)
+  const totalPrice = orderItems.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
   const tableNumber = table?.number ?? '—'
 
   const goToMenu = () => {
     navigate('/restaurant/menu', {
-      state: { table, guests, guestCarts, dishes, activeGuestIndex: activeGuest }
+      state: { table, guests, orderId, activeGuestIndex: activeGuest }
     })
   }
 
   const goToGuestDescription = (guestIndex: number) => {
-    navigate('/restaurant/table/' + (table?.id ?? '') + '/guests', {
-      state: { table, guests, guestCarts, dishes, activeGuestIndex: guestIndex }
+    navigate(`/restaurant/table/${table?.id ?? ''}/guests`, {
+      state: { table, guests, orderId, activeGuestIndex: guestIndex }
     })
   }
 
@@ -100,7 +79,7 @@ export default function OrderScreen() {
       onTouchStart={e => { touchStartX.current = e.touches[0].clientX }}
       onTouchEnd={handleSwipeEnd}
     >
-      {/* ── Fixed header zone (154px): header + guest bar ── */}
+      {/* ── Fixed header zone ── */}
       <div className={styles.headerZone}>
 
         {/* Header 83px */}
@@ -122,21 +101,20 @@ export default function OrderScreen() {
 
         {/* Guest bar 70px */}
         <div className={styles.guestBar}>
-          {/* "All" circle — just visual, no action on order screen */}
           <button className={styles.guestCircle} onClick={() => {}}>
             <img src="/icons/All.png" className={styles.allIcon} alt="все" />
           </button>
 
           {GUEST_COLORS.map((color, i) => {
             const isActive = activeGuest === i
-            const hasCart = (guestCarts[i]?.length ?? 0) > 0
+            const hasItems = orderItems.some(item => item.seat_number === i + 1)
             return (
               <button
                 key={i}
                 className={`${styles.guestCircle} ${isActive ? styles.guestCircleActive : ''}`}
                 style={isActive ? { borderColor: color } : undefined}
                 onClick={() => {
-                  if (hasCart) {
+                  if (hasItems) {
                     setActiveGuest(i)
                   } else {
                     goToGuestDescription(i)
@@ -165,29 +143,26 @@ export default function OrderScreen() {
 
       {/* ── Scrollable content ── */}
       <div className={`${styles.content} ${!guestDesc ? styles.contentNoDesc : ''}`}>
-        {currentCart.length === 0 && (
+        {currentItems.length === 0 && (
           <p className={styles.empty}>Блюда не выбраны</p>
         )}
-        {currentCart.map((item, idx) => {
-          const dish = dishMap[item.itemId]
-          if (!dish) return null
-          const price = dish.cost_rub * item.quantity
-          const hasMods = item.resolvedModifiers.length > 0
+        {currentItems.map(item => {
+          const price = item.unit_price * item.quantity
           return (
-            <div key={idx} className={styles.dishCard} style={{ borderColor: guestColor, borderLeftColor: guestColor }}>
+            <div key={item.id} className={styles.dishCard} style={{ borderColor: guestColor, borderLeftColor: guestColor }}>
               <div className={styles.dishCardTop}>
-                <span className={styles.dishCardName}>{dish.dish_name}</span>
+                <span className={styles.dishCardName}>{item.dish_name}</span>
                 <span className={styles.dishCardPrice}>{price} руб</span>
               </div>
-              {hasMods && (
+              {item.modifiers.length > 0 && (
                 <div className={styles.dishCardMods}>
-                  {item.resolvedModifiers.map((m, mi) => (
-                    <span key={mi} className={styles.dishCardMod}>{m.groupName}: {m.modName}</span>
+                  {item.modifiers.map((m, mi) => (
+                    <span key={mi} className={styles.dishCardMod}>{m.name}</span>
                   ))}
                 </div>
               )}
               <div className={styles.dishCardBottom}>
-                <span className={styles.dishCardTime}>{dish.cook_time_min} мин</span>
+                <span className={styles.dishCardTime}>{item.cook_time_min} мин</span>
                 <div className={styles.dishCardControls}>
                   <button className={styles.minusBtn}>−</button>
                   <span className={styles.qty}>{item.quantity}</span>
