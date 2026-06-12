@@ -57,7 +57,8 @@ export default function GuestDescriptionScreen() {
       const orderId = incomingOrderId ?? await getOrCreateOrder(table.id, table.number, restaurantId)
       const guestIndex = activeGuest === 'all' ? 0 : activeGuest
       if (activeGuest !== 'all') {
-        await saveGuestAttributes(orderId, activeGuest + 1, guests[activeGuest])
+        try { await saveGuestAttributes(orderId, activeGuest + 1, guests[activeGuest]) }
+        catch (e) { console.error('saveGuestAttributes error:', e) }
       }
       navigate('/restaurant/menu', {
         state: { table, guests, orderId, activeGuestIndex: guestIndex }

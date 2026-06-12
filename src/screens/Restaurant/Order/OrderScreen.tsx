@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { TableWithSession } from '../../../lib/tables'
-import { loadOrderItems, loadGuestAttributes } from '../../../lib/orders'
+import { loadOrderItems, loadGuestAttributes, removeOrderItem } from '../../../lib/orders'
 import type { LoadedOrderItem, GuestAttrs } from '../../../lib/orders'
 import styles from './OrderScreen.module.css'
 
@@ -59,7 +59,9 @@ export default function OrderScreen() {
   }, [orderId])
 
   const guestColor = GUEST_COLORS[activeGuest] ?? '#02a826'
-  const guestDesc = guestAttrs[activeGuest + 1] ? formatGuestDesc(guestAttrs[activeGuest + 1]) : ''
+  const dbAttrs = guestAttrs[activeGuest + 1]
+  const navAttrs = guests[activeGuest]
+  const guestDesc = dbAttrs ? formatGuestDesc(dbAttrs) : (navAttrs ? formatGuestDesc(navAttrs) : '')
   const elapsed = getElapsedSeconds(table?.startedAt ?? null)
 
   const currentItems = orderItems.filter(i => i.seat_number === activeGuest + 1)
@@ -77,6 +79,18 @@ export default function OrderScreen() {
     navigate(`/restaurant/table/${table?.id ?? ''}/guests`, {
       state: { table, guests, orderId, activeGuestIndex: guestIndex, seatsWithItems }
     })
+  }
+
+  const handleRemove = async (item: LoadedOrderItem) => {
+    await removeOrderItem(item.id, item.quantity)
+    const next = item.quantity > 1
+      ? orderItems.map(i => i.id === item.id ? { ...i, quantity: i.quantity - 1 } : i)
+      : orderItems.filter(i => i.id !== item.id)
+    setOrderItems(next)
+    const guestStillHasItems = next.some(i => i.seat_number === activeGuest + 1)
+    if (!guestStillHasItems) {
+      goToGuestDescription(activeGuest)
+    }
   }
 
   const handleSwipeEnd = (e: React.TouchEvent) => {
@@ -177,7 +191,7 @@ export default function OrderScreen() {
               <div className={styles.dishCardBottom}>
                 <span className={styles.dishCardTime}>{item.cook_time_min} мин</span>
                 <div className={styles.dishCardControls}>
-                  <button className={styles.minusBtn}>−</button>
+                  <button className={styles.minusBtn} onClick={() => handleRemove(item)}>−</button>
                   <span className={styles.qty}>{item.quantity}</span>
                   <button className={styles.addBtn}>+</button>
                 </div>
