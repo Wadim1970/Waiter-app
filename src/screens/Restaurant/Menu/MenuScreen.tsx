@@ -192,7 +192,7 @@ export default function MenuScreen() {
       .map(([, modId]) => modifiers.find(m => m.id === modId)?.name ?? '')
       .filter(Boolean)
 
-    const dbId = await addOrderItem(currentOrderId, dish.id, activeGuestIndex + 1, dish.cost_rub, modifiersList)
+    const dbId = await addOrderItem(currentOrderId, dish.id, activeGuestIndex + 1, dish.cost_rub, modifiersList, modifierComment || undefined)
 
     setCart(prev => {
       if (modifiersList.length === 0) {

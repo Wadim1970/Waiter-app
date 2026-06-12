@@ -184,9 +184,14 @@ export default function OrderScreen() {
               {item.modifiers.length > 0 && (
                 <div className={styles.dishCardMods}>
                   {item.modifiers.map((m, mi) => (
-                    <span key={mi} className={styles.dishCardMod}>{m.name}</span>
+                    <span key={mi} className={styles.dishCardMod}>
+                      {m.groupName ? `${m.groupName}:   ${m.name}` : m.name}
+                    </span>
                   ))}
                 </div>
+              )}
+              {item.comment && (
+                <p className={styles.dishCardComment}>{item.comment}</p>
               )}
               <div className={styles.dishCardBottom}>
                 <span className={styles.dishCardTime}>{item.cook_time_min} мин</span>

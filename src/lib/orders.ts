@@ -9,7 +9,8 @@ export type LoadedOrderItem = {
   status: string
   dish_name: string
   cook_time_min: number
-  modifiers: { name: string; price_delta: number }[]
+  comment: string | null
+  modifiers: { groupName: string; name: string; price_delta: number }[]
 }
 
 export async function getOrCreateOrder(
@@ -49,10 +50,11 @@ export async function addOrderItem(
   seatNumber: number,
   unitPrice: number,
   modifiers: { modifierId: string; priceDelta: number }[],
+  comment?: string,
 ): Promise<string> {
   const hasModifiers = modifiers.length > 0
 
-  if (!hasModifiers) {
+  if (!hasModifiers && !comment) {
     const { data: existing } = await supabase
       .from('order_items')
       .select('id, quantity')
@@ -72,7 +74,14 @@ export async function addOrderItem(
 
   const { data: newItem, error } = await supabase
     .from('order_items')
-    .insert({ order_id: orderId, item_id: itemId, seat_number: seatNumber, quantity: 1, unit_price: unitPrice })
+    .insert({
+      order_id: orderId,
+      item_id: itemId,
+      seat_number: seatNumber,
+      quantity: 1,
+      unit_price: unitPrice,
+      comment: comment || null,
+    })
     .select('id')
     .single()
 
@@ -124,7 +133,7 @@ export async function loadGuestAttributes(orderId: string): Promise<Record<numbe
 export async function loadOrderItems(orderId: string): Promise<LoadedOrderItem[]> {
   const { data: items, error } = await supabase
     .from('order_items')
-    .select('id, item_id, seat_number, quantity, unit_price, status')
+    .select('id, item_id, seat_number, quantity, unit_price, status, comment')
     .eq('order_id', orderId)
     .order('seat_number')
     .order('id')
@@ -141,11 +150,17 @@ export async function loadOrderItems(orderId: string): Promise<LoadedOrderItem[]
 
   const modifierIds = [...new Set((oims || []).map(m => m.modifier_id))]
   const { data: modData } = modifierIds.length
-    ? await supabase.from('modifiers').select('id, name').in('id', modifierIds)
+    ? await supabase.from('modifiers').select('id, name, group_id').in('id', modifierIds)
+    : { data: [] as { id: string; name: string; group_id: string }[] }
+
+  const groupIds = [...new Set((modData || []).map(m => m.group_id).filter(Boolean))]
+  const { data: groupData } = groupIds.length
+    ? await supabase.from('modifier_groups').select('id, name').in('id', groupIds)
     : { data: [] as { id: string; name: string }[] }
 
   const dishMap = Object.fromEntries((menuItems || []).map(m => [m.id, m]))
-  const modMap = Object.fromEntries((modData || []).map(m => [m.id, m.name]))
+  const groupMap = Object.fromEntries((groupData || []).map(g => [g.id, g.name]))
+  const modMap = Object.fromEntries((modData || []).map(m => [m.id, { name: m.name, groupName: groupMap[m.group_id] ?? '' }]))
 
   return items.map(item => ({
     id: item.id,
@@ -154,10 +169,15 @@ export async function loadOrderItems(orderId: string): Promise<LoadedOrderItem[]
     quantity: item.quantity,
     unit_price: item.unit_price,
     status: item.status,
+    comment: item.comment ?? null,
     dish_name: dishMap[item.item_id]?.dish_name ?? '?',
     cook_time_min: dishMap[item.item_id]?.cook_time_min ?? 0,
     modifiers: (oims || [])
       .filter(m => m.order_item_id === item.id)
-      .map(m => ({ name: modMap[m.modifier_id] ?? '', price_delta: m.price_delta })),
+      .map(m => ({
+        groupName: modMap[m.modifier_id]?.groupName ?? '',
+        name: modMap[m.modifier_id]?.name ?? '',
+        price_delta: m.price_delta,
+      })),
   }))
 }
