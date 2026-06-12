@@ -116,7 +116,7 @@ export default function GuestDescriptionScreen() {
               <button
                 key={i}
                 className={`${styles.guestCircle} ${isActive ? styles.guestCircleActive : ''}`}
-                style={isActive ? { borderColor: color } : undefined}
+                style={(isActive || hasCart) ? { borderColor: color } : undefined}
                 onClick={() => {
                   if (hasCart && incomingOrderId) {
                     navigate(`/restaurant/table/${table?.id ?? ''}/order`, {
@@ -129,7 +129,7 @@ export default function GuestDescriptionScreen() {
               >
                 <span
                   className={styles.guestLabel}
-                  style={{ color: isActive ? color : '#8e9096' }}
+                  style={{ color: (isActive || hasCart) ? color : '#8e9096' }}
                 >
                   <span className={styles.guestLabelG}>г</span>
                   <span className={styles.guestLabelN}>{i + 1}</span>
