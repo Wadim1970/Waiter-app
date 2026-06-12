@@ -150,7 +150,7 @@ export default function OrderScreen() {
               >
                 <span
                   className={styles.guestLabel}
-                  style={{ color: isActive ? color : '#8e9096' }}
+                  style={{ color: (isActive || hasItems) ? color : '#8e9096' }}
                 >
                   <span className={styles.guestLabelG}>г</span>
                   <span className={styles.guestLabelN}>{i + 1}</span>
