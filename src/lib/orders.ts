@@ -96,6 +96,31 @@ export async function removeOrderItem(dbId: string, currentQuantity: number): Pr
   }
 }
 
+export type GuestAttrs = { gender: string | null; age: string | null; body: string | null; hair: string | null }
+
+export async function saveGuestAttributes(
+  orderId: string,
+  seatNumber: number,
+  attrs: GuestAttrs,
+): Promise<void> {
+  await supabase.from('order_guests').upsert(
+    { order_id: orderId, seat_number: seatNumber, ...attrs },
+    { onConflict: 'order_id,seat_number' },
+  )
+}
+
+export async function loadGuestAttributes(orderId: string): Promise<Record<number, GuestAttrs>> {
+  const { data } = await supabase
+    .from('order_guests')
+    .select('seat_number, gender, age, body, hair')
+    .eq('order_id', orderId)
+
+  if (!data?.length) return {}
+  return Object.fromEntries(
+    data.map(r => [r.seat_number, { gender: r.gender, age: r.age, body: r.body, hair: r.hair }])
+  )
+}
+
 export async function loadOrderItems(orderId: string): Promise<LoadedOrderItem[]> {
   const { data: items, error } = await supabase
     .from('order_items')

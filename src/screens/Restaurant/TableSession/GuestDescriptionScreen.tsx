@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { TableWithSession } from '../../../lib/tables'
-import { getOrCreateOrder } from '../../../lib/orders'
+import { getOrCreateOrder, saveGuestAttributes } from '../../../lib/orders'
 import { getActiveShift } from '../QRScanner/QRScannerScreen'
 import styles from './GuestDescriptionScreen.module.css'
 
@@ -56,12 +56,14 @@ export default function GuestDescriptionScreen() {
       const restaurantId = getActiveShift()?.restaurantId ?? ''
       const orderId = incomingOrderId ?? await getOrCreateOrder(table.id, table.number, restaurantId)
       const guestIndex = activeGuest === 'all' ? 0 : activeGuest
+      if (activeGuest !== 'all') {
+        await saveGuestAttributes(orderId, activeGuest + 1, guests[activeGuest])
+      }
       navigate('/restaurant/menu', {
         state: { table, guests, orderId, activeGuestIndex: guestIndex }
       })
     } catch (err) {
       console.error('goToMenu error:', err)
-      // Navigate anyway without orderId so the app doesn't freeze
       const guestIndex = activeGuest === 'all' ? 0 : activeGuest
       navigate('/restaurant/menu', {
         state: { table, guests, orderId: incomingOrderId ?? null, activeGuestIndex: guestIndex }

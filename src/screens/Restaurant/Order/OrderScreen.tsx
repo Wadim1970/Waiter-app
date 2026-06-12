@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { TableWithSession } from '../../../lib/tables'
-import { loadOrderItems } from '../../../lib/orders'
-import type { LoadedOrderItem } from '../../../lib/orders'
+import { loadOrderItems, loadGuestAttributes } from '../../../lib/orders'
+import type { LoadedOrderItem, GuestAttrs } from '../../../lib/orders'
 import styles from './OrderScreen.module.css'
 
 const GUEST_COLORS = ['#02a826','#ce00b9','#ff9500','#003daf','#6c03ed','#0f929c','#700061','#979200']
 
-type GuestData = { gender: string | null; age: string | null; body: string | null; hair: string | null }
+type GuestData = GuestAttrs
 
 function formatGuestDesc(g: GuestData): string {
   const parts = [
@@ -43,18 +43,23 @@ export default function OrderScreen() {
   const [activeGuest, setActiveGuest] = useState<number>(initialGuest)
   const [orderItems, setOrderItems] = useState<LoadedOrderItem[]>([])
   const [itemsLoaded, setItemsLoaded] = useState(false)
+  const [guestAttrs, setGuestAttrs] = useState<Record<number, GuestAttrs>>({})
   const touchStartX = useRef(0)
 
   useEffect(() => {
     if (!orderId) { setItemsLoaded(true); return }
-    loadOrderItems(orderId).then(items => {
+    Promise.all([
+      loadOrderItems(orderId),
+      loadGuestAttributes(orderId),
+    ]).then(([items, attrs]) => {
       setOrderItems(items)
+      setGuestAttrs(attrs)
       setItemsLoaded(true)
     })
   }, [orderId])
 
   const guestColor = GUEST_COLORS[activeGuest] ?? '#02a826'
-  const guestDesc = guests[activeGuest] ? formatGuestDesc(guests[activeGuest]) : ''
+  const guestDesc = guestAttrs[activeGuest + 1] ? formatGuestDesc(guestAttrs[activeGuest + 1]) : ''
   const elapsed = getElapsedSeconds(table?.startedAt ?? null)
 
   const currentItems = orderItems.filter(i => i.seat_number === activeGuest + 1)
