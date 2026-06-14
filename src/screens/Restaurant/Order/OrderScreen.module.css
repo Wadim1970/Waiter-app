@@ -104,11 +104,15 @@
 }
 
 .headerPrice {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   font-family: 'Montserrat', sans-serif;
   font-weight: 700;
-  font-size: 17px;
+  font-size: 20px;
   color: #000;
   line-height: 1;
+  white-space: nowrap;
 }
 
 /* Guest bar 70px */

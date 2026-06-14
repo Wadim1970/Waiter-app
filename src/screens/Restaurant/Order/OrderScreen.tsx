@@ -120,8 +120,8 @@ export default function OrderScreen() {
               <span className={styles.headerTimeVal}>{formatTime(elapsed)}</span>
               <span className={styles.headerTimeLabel}>за столом</span>
             </div>
-            <span className={styles.headerPrice}>{totalPrice} руб</span>
           </div>
+          <span className={styles.headerPrice}>{totalPrice} руб</span>
         </div>
 
         {/* Guest bar 70px */}

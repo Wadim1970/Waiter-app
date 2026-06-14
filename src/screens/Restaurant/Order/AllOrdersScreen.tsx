@@ -43,9 +43,16 @@ export default function AllOrdersScreen() {
   const seatsWithItems = [...new Set(orderItems.map(i => i.seat_number))].sort()
 
   const goToGuest = (guestIndex: number) => {
-    navigate(`/restaurant/table/${table?.id ?? ''}/order`, {
-      state: { table, guests, orderId, activeGuestIndex: guestIndex, noAnimation: true }
-    })
+    const hasItems = seatsWithItems.includes(guestIndex + 1)
+    if (hasItems) {
+      navigate(`/restaurant/table/${table?.id ?? ''}/order`, {
+        state: { table, guests, orderId, activeGuestIndex: guestIndex, noAnimation: true }
+      })
+    } else {
+      navigate(`/restaurant/table/${table?.id ?? ''}/guests`, {
+        state: { table, guests, orderId, activeGuestIndex: guestIndex, seatsWithItems }
+      })
+    }
   }
 
   const handleSendToKitchen = () => {
@@ -57,14 +64,13 @@ export default function AllOrdersScreen() {
 
       {/* ── Header 83px ── */}
       <div className={styles.header}>
+        <span className={styles.tableDecor}>СТОЛ №{tableNumber}</span>
         <button className={styles.backBtn} onClick={() => navigate('/restaurant/tables')}>
           <svg width="22" height="16" viewBox="0 0 22 16" fill="none">
-            <path d="M21 8H1M1 8L8 1M1 8L8 15" stroke="#8E9096" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M21 8H1M1 8L8 1M1 8L8 15" stroke="#717f98" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
-
         <span className={styles.headerPrice}>{totalPrice} руб</span>
-
         <div className={styles.headerRight}>
           <span className={styles.headerTimeVal}>{formatTime(elapsed)}</span>
           <span className={styles.headerTimeLabel}>за столом</span>
