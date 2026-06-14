@@ -1,0 +1,325 @@
+.screen {
+  min-height: 100vh;
+  background: #eaeaea;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header 83px ── */
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 83px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.backBtn {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #d1d3d8;
+  border: 1px solid #8e9096;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.headerPrice {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  color: #000;
+}
+
+.headerRight {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.headerTimeVal {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  color: #000;
+  line-height: 1.2;
+}
+
+.headerTimeLabel {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 300;
+  font-size: 14px;
+  color: #000;
+  line-height: 1;
+}
+
+/* ── Guest bar ── */
+.guestBar {
+  position: fixed;
+  top: 83px;
+  left: 0;
+  right: 0;
+  height: 62px;
+  background: #eaeaea;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  gap: 11px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  z-index: 99;
+}
+
+.guestBar::-webkit-scrollbar {
+  display: none;
+}
+
+.guestCircle {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1.5px solid #8e9096;
+  background: #d1d3d8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.guestCircleAllActive {
+  background: #fff;
+  border-color: #8e9096;
+}
+
+.allIcon {
+  width: 24px;
+  height: 17px;
+  object-fit: contain;
+}
+
+.guestLabel {
+  display: flex;
+  align-items: baseline;
+}
+
+.guestLabelG {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 300;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.guestLabelN {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1;
+}
+
+/* ── Scrollable content ── */
+.content {
+  flex: 1;
+  margin-top: 145px;
+  padding: 14px 16px 320px;
+  overflow-y: auto;
+}
+
+.empty {
+  text-align: center;
+  color: #999;
+  margin-top: 40px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 15px;
+}
+
+/* ── Guest order card ── */
+.guestCard {
+  background: #fff;
+  border: 1px solid;
+  border-left: 5px solid;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  padding: 10px 14px 10px 12px;
+  cursor: pointer;
+}
+
+.dishRow {
+  margin-bottom: 6px;
+}
+
+.dishRowMain {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dishName {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  color: #000;
+  flex: 1;
+  padding-right: 8px;
+}
+
+.dishStatus {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.statusDotYellow {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffe733;
+  flex-shrink: 0;
+}
+
+.statusTime {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  color: #000;
+  white-space: nowrap;
+}
+
+.modRow {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 300;
+  font-size: 14px;
+  color: #000;
+  padding-left: 0;
+  line-height: 1.4;
+}
+
+.commentRow {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 300;
+  font-size: 13px;
+  color: #8e9096;
+  font-style: italic;
+  margin-top: 2px;
+}
+
+.guestCardTotal {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  color: #000;
+  text-align: right;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* ── Fixed bottom ── */
+.fixedBottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #eaeaea;
+  padding: 0 0 36px;
+  z-index: 100;
+}
+
+/* ── AI block ── */
+.aiBlock {
+  background: #fff;
+  border: 1px solid #8e9096;
+  border-radius: 8px;
+  margin: 8px 16px 8px;
+  overflow: hidden;
+}
+
+.aiHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 8px;
+}
+
+.aiTitle {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #000;
+}
+
+.aiToggleBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.aiBody {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease;
+}
+
+.aiBodyExpanded {
+  max-height: 200px;
+}
+
+.aiText {
+  margin: 0;
+  padding: 0 14px 12px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #000;
+  background: #f6f6f6;
+  line-height: 1.5;
+}
+
+/* ── Send button ── */
+.footer {
+  display: flex;
+  justify-content: center;
+  padding: 8px 16px 0;
+}
+
+.sendBtn {
+  background: #eb651a;
+  color: #fff;
+  border: none;
+  border-radius: 35px;
+  padding: 12px 24px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  width: 100%;
+  max-width: 320px;
+}
+
+.sendBtn:active {
+  opacity: 0.85;
+}

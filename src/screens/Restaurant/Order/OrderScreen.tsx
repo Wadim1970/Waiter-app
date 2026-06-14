@@ -126,7 +126,12 @@ export default function OrderScreen() {
 
         {/* Guest bar 70px */}
         <div className={styles.guestBar}>
-          <button className={styles.guestCircle} onClick={() => {}}>
+          <button
+            className={styles.guestCircle}
+            onClick={() => navigate(`/restaurant/table/${table?.id ?? ''}/all-orders`, {
+              state: { table, guests, orderId }
+            })}
+          >
             <img src="/icons/All.png" className={styles.allIcon} alt="все" />
           </button>
 

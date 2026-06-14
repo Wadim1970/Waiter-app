@@ -16,6 +16,7 @@ const TablesScreen = lazy(() => import('./screens/Restaurant/Tables/TablesScreen
 const GuestDescriptionScreen = lazy(() => import('./screens/Restaurant/TableSession/GuestDescriptionScreen'))
 const MenuScreen = lazy(() => import('./screens/Restaurant/Menu/MenuScreen'))
 const OrderScreen = lazy(() => import('./screens/Restaurant/Order/OrderScreen'))
+const AllOrdersScreen = lazy(() => import('./screens/Restaurant/Order/AllOrdersScreen'))
 
 const Loader = () => (
   <div style={{ 
@@ -103,6 +104,7 @@ function App() {
           <Route path="/restaurant/table/:tableId/guests" element={<GuestDescriptionScreen />} />
           <Route path="/restaurant/menu" element={<MenuScreen />} />
           <Route path="/restaurant/table/:tableId/order" element={<OrderScreen />} />
+          <Route path="/restaurant/table/:tableId/all-orders" element={<AllOrdersScreen />} />
 
           <Route path="/search" element={<PlaceholderScreen title="🔍 Поиск" />} />
           <Route path="/orders" element={<PlaceholderScreen title="📋 Заказы" />} />
