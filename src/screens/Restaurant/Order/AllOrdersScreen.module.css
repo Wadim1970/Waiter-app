@@ -98,7 +98,7 @@
   top: 83px;
   left: 0;
   right: 0;
-  height: 62px;
+  height: 70px;
   background: #eaeaea;
   display: flex;
   align-items: center;
@@ -160,7 +160,7 @@
 /* ── Scrollable content ── */
 .content {
   flex: 1;
-  margin-top: 145px;
+  margin-top: 153px;
   padding: 14px 16px 320px;
   overflow-y: auto;
 }
