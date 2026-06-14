@@ -28,12 +28,18 @@ export default function AllOrdersScreen() {
   const guests = (location.state?.guests ?? []) as GuestData[]
   const orderId = location.state?.orderId as string | undefined
 
-  const [orderItems, setOrderItems] = useState<LoadedOrderItem[]>([])
+  const initialItems = (location.state?.orderItems ?? []) as LoadedOrderItem[]
+
+  const [orderItems, setOrderItems] = useState<LoadedOrderItem[]>(initialItems)
+  const [itemsLoaded, setItemsLoaded] = useState(initialItems.length > 0)
   const [aiExpanded, setAiExpanded] = useState(false)
 
   useEffect(() => {
-    if (!orderId) return
-    loadOrderItems(orderId).then(setOrderItems)
+    if (!orderId) { setItemsLoaded(true); return }
+    loadOrderItems(orderId).then(items => {
+      setOrderItems(items)
+      setItemsLoaded(true)
+    })
   }, [orderId])
 
   const elapsed = getElapsedSeconds(table?.startedAt ?? null)
@@ -46,7 +52,7 @@ export default function AllOrdersScreen() {
     const hasItems = seatsWithItems.includes(guestIndex + 1)
     if (hasItems) {
       navigate(`/restaurant/table/${table?.id ?? ''}/order`, {
-        state: { table, guests, orderId, activeGuestIndex: guestIndex, noAnimation: true }
+        state: { table, guests, orderId, orderItems, activeGuestIndex: guestIndex, noAnimation: true }
       })
     } else {
       navigate(`/restaurant/table/${table?.id ?? ''}/guests`, {
@@ -105,7 +111,7 @@ export default function AllOrdersScreen() {
 
       {/* ── Scrollable content ── */}
       <div className={styles.content}>
-        {seatsWithItems.length === 0 && (
+        {itemsLoaded && seatsWithItems.length === 0 && (
           <p className={styles.empty}>Нет блюд</p>
         )}
 

@@ -40,9 +40,11 @@ export default function OrderScreen() {
   const initialGuest = (location.state?.activeGuestIndex ?? 0) as number
   const noAnimation = location.state?.noAnimation === true
 
+  const initialItems = (location.state?.orderItems ?? []) as LoadedOrderItem[]
+
   const [activeGuest, setActiveGuest] = useState<number>(initialGuest)
-  const [orderItems, setOrderItems] = useState<LoadedOrderItem[]>([])
-  const [itemsLoaded, setItemsLoaded] = useState(false)
+  const [orderItems, setOrderItems] = useState<LoadedOrderItem[]>(initialItems)
+  const [itemsLoaded, setItemsLoaded] = useState(initialItems.length > 0)
   const [guestAttrs, setGuestAttrs] = useState<Record<number, GuestAttrs>>({})
   const touchStartX = useRef(0)
 
@@ -129,7 +131,7 @@ export default function OrderScreen() {
           <button
             className={styles.guestCircle}
             onClick={() => navigate(`/restaurant/table/${table?.id ?? ''}/all-orders`, {
-              state: { table, guests, orderId }
+              state: { table, guests, orderId, orderItems }
             })}
           >
             <img src="/icons/All.png" className={styles.allIcon} alt="все" />
@@ -175,7 +177,7 @@ export default function OrderScreen() {
 
       {/* ── Scrollable content ── */}
       <div className={`${styles.content} ${!guestDesc ? styles.contentNoDesc : ''}`}>
-        {currentItems.length === 0 && (
+        {itemsLoaded && currentItems.length === 0 && (
           <p className={styles.empty}>Блюда не выбраны</p>
         )}
         {currentItems.map(item => {
