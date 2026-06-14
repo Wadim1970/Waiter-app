@@ -72,8 +72,10 @@ export default function AllOrdersScreen() {
         </button>
         <span className={styles.headerPrice}>{totalPrice} руб</span>
         <div className={styles.headerRight}>
-          <span className={styles.headerTimeVal}>{formatTime(elapsed)}</span>
-          <span className={styles.headerTimeLabel}>за столом</span>
+          <div className={styles.headerTime}>
+            <span className={styles.headerTimeVal}>{formatTime(elapsed)}</span>
+            <span className={styles.headerTimeLabel}>за столом</span>
+          </div>
         </div>
       </div>
 

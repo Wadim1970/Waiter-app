@@ -74,6 +74,12 @@
   z-index: 1;
 }
 
+.headerTime {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
 .headerTimeVal {
   font-family: 'Montserrat', sans-serif;
   font-weight: 700;
