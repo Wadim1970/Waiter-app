@@ -165,7 +165,7 @@
 .content {
   flex: 1;
   margin-top: 153px;
-  padding: 14px 16px 320px;
+  padding: 4px 0 320px;
   overflow-y: auto;
 }
 
@@ -182,8 +182,7 @@
   background: #fff;
   border: 1px solid;
   border-left: 5px solid;
-  border-radius: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   padding: 10px 14px 10px 12px;
   cursor: pointer;
 }
