@@ -41,11 +41,12 @@ export default function OrderScreen() {
   const noAnimation = location.state?.noAnimation === true
 
   const initialItems = (location.state?.orderItems ?? []) as LoadedOrderItem[]
+  const initialAttrs = (location.state?.guestAttrs ?? {}) as Record<number, GuestAttrs>
 
   const [activeGuest, setActiveGuest] = useState<number>(initialGuest)
   const [orderItems, setOrderItems] = useState<LoadedOrderItem[]>(initialItems)
   const [itemsLoaded, setItemsLoaded] = useState(initialItems.length > 0)
-  const [guestAttrs, setGuestAttrs] = useState<Record<number, GuestAttrs>>({})
+  const [guestAttrs, setGuestAttrs] = useState<Record<number, GuestAttrs>>(initialAttrs)
   const touchStartX = useRef(0)
 
   useEffect(() => {
@@ -131,7 +132,7 @@ export default function OrderScreen() {
           <button
             className={styles.guestCircle}
             onClick={() => navigate(`/restaurant/table/${table?.id ?? ''}/all-orders`, {
-              state: { table, guests, orderId, orderItems }
+              state: { table, guests, orderId, orderItems, guestAttrs }
             })}
           >
             <img src="/icons/All.png" className={styles.allIcon} alt="все" />

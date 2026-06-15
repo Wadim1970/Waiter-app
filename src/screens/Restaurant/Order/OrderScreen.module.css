@@ -71,12 +71,10 @@
 .headerRight {
   position: absolute;
   right: 14px;
-  top: 0;
-  bottom: 0;
+  bottom: 10px;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  justify-content: center;
   gap: 2px;
   z-index: 1;
 }
@@ -106,8 +104,8 @@
 .headerPrice {
   position: absolute;
   left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  bottom: 10px;
+  transform: translateX(-50%);
   font-family: 'Montserrat', sans-serif;
   font-weight: 700;
   font-size: 20px;

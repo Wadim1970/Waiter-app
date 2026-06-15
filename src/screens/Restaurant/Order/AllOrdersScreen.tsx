@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { TableWithSession } from '../../../lib/tables'
-import { loadOrderItems } from '../../../lib/orders'
+import { loadOrderItems, loadGuestAttributes } from '../../../lib/orders'
 import type { LoadedOrderItem, GuestAttrs } from '../../../lib/orders'
 import styles from './AllOrdersScreen.module.css'
 
@@ -29,15 +29,21 @@ export default function AllOrdersScreen() {
   const orderId = location.state?.orderId as string | undefined
 
   const initialItems = (location.state?.orderItems ?? []) as LoadedOrderItem[]
+  const initialAttrs = (location.state?.guestAttrs ?? {}) as Record<number, GuestAttrs>
 
   const [orderItems, setOrderItems] = useState<LoadedOrderItem[]>(initialItems)
+  const [guestAttrs, setGuestAttrs] = useState<Record<number, GuestAttrs>>(initialAttrs)
   const [itemsLoaded, setItemsLoaded] = useState(initialItems.length > 0)
   const [aiExpanded, setAiExpanded] = useState(false)
 
   useEffect(() => {
     if (!orderId) { setItemsLoaded(true); return }
-    loadOrderItems(orderId).then(items => {
+    Promise.all([
+      loadOrderItems(orderId),
+      loadGuestAttributes(orderId),
+    ]).then(([items, attrs]) => {
       setOrderItems(items)
+      setGuestAttrs(attrs)
       setItemsLoaded(true)
     })
   }, [orderId])
@@ -52,7 +58,7 @@ export default function AllOrdersScreen() {
     const hasItems = seatsWithItems.includes(guestIndex + 1)
     if (hasItems) {
       navigate(`/restaurant/table/${table?.id ?? ''}/order`, {
-        state: { table, guests, orderId, orderItems, activeGuestIndex: guestIndex, noAnimation: true }
+        state: { table, guests, orderId, orderItems, guestAttrs, activeGuestIndex: guestIndex, noAnimation: true }
       })
     } else {
       navigate(`/restaurant/table/${table?.id ?? ''}/guests`, {
