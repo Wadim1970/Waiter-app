@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { TableWithSession } from '../../../lib/tables'
 import { getOrCreateOrder, saveGuestAttributes } from '../../../lib/orders'
@@ -36,6 +36,7 @@ export default function GuestDescriptionScreen() {
   const [activeGuest, setActiveGuest] = useState<number | 'all'>(initialActiveGuest)
   const [guests, setGuests] = useState<GuestData[]>(initialGuests)
   const [loading, setLoading] = useState(false)
+  const touchStartX = useRef(0)
 
   const guestColor   = activeGuest !== 'all' ? GUEST_COLORS[activeGuest] : null
   const currentGuest = activeGuest !== 'all' ? guests[activeGuest] : null
@@ -85,7 +86,11 @@ export default function GuestDescriptionScreen() {
   }
 
   return (
-    <div className={styles.screen}>
+    <div
+      className={styles.screen}
+      onTouchStart={e => { touchStartX.current = e.touches[0].clientX }}
+      onTouchEnd={e => { if (e.changedTouches[0].clientX - touchStartX.current < -80) goToMenu() }}
+    >
 
       {/* ── Fixed white zone (154px): header + guest bar ── */}
       <div className={styles.headerZone}>
