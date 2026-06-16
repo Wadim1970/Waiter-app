@@ -108,6 +108,7 @@ export async function addOrderItem(
       seat_number: seatNumber,
       quantity: 1,
       unit_price: unitPrice,
+      status: 'new',
       comment: comment || null,
     })
     .select('id')

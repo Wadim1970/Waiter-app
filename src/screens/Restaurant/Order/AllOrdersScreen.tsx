@@ -52,7 +52,7 @@ export default function AllOrdersScreen() {
     })
   }, [orderId])
 
-  const hasNewItems = orderItems.some(i => i.status === 'new')
+  const hasNewItems = orderItems.some(i => i.status !== 'sent')
 
   const btnLabel = hasNewItems
     ? 'ОТПРАВИТЬ НА КУХНЮ'
