@@ -19,7 +19,7 @@ export async function getOrderStatus(orderId: string): Promise<string | null> {
 }
 
 export async function sendToKitchen(orderId: string): Promise<void> {
-  await supabase.from('order_items').update({ status: 'sent' }).eq('order_id', orderId).eq('status', 'new')
+  await supabase.from('order_items').update({ status: 'sent' }).eq('order_id', orderId).neq('status', 'sent')
   await supabase.from('orders').update({ status: 'cooking' }).eq('id', orderId)
 }
 

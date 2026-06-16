@@ -68,7 +68,7 @@ export default function AllOrdersScreen() {
     try {
       if (hasNewItems) {
         await sendToKitchen(orderId)
-        setOrderItems(prev => prev.map(i => i.status === 'new' ? { ...i, status: 'sent' } : i))
+        setOrderItems(prev => prev.map(i => i.status !== 'sent' ? { ...i, status: 'sent' } : i))
         setOrderStatus('cooking')
       } else if (orderStatus === 'cooking' || orderStatus === 'new') {
         await requestBill(orderId)
