@@ -347,3 +347,7 @@
 .sendBtn:active {
   opacity: 0.85;
 }
+
+.sendBtnClear {
+  background: #8e9096;
+}

@@ -13,6 +13,34 @@ export type LoadedOrderItem = {
   modifiers: { groupName: string; name: string; price_delta: number }[]
 }
 
+export async function getOrderStatus(orderId: string): Promise<string | null> {
+  const { data } = await supabase.from('orders').select('status').eq('id', orderId).maybeSingle()
+  return data?.status ?? null
+}
+
+export async function sendToKitchen(orderId: string): Promise<void> {
+  await supabase.from('order_items').update({ status: 'sent' }).eq('order_id', orderId).eq('status', 'new')
+  await supabase.from('orders').update({ status: 'cooking' }).eq('id', orderId)
+}
+
+export async function requestBill(orderId: string): Promise<void> {
+  await supabase.from('orders').update({ status: 'bill_requested' }).eq('id', orderId)
+}
+
+export async function clearTable(orderId: string): Promise<void> {
+  await supabase.from('orders').update({ status: 'paid' }).eq('id', orderId)
+}
+
+export async function markGuestPaid(orderId: string, seatNumber: number): Promise<void> {
+  await supabase.from('order_guests').update({ status: 'paid' }).eq('order_id', orderId).eq('seat_number', seatNumber)
+}
+
+export async function getGuestPaidStatus(orderId: string): Promise<Record<number, string>> {
+  const { data } = await supabase.from('order_guests').select('seat_number, status').eq('order_id', orderId)
+  if (!data?.length) return {}
+  return Object.fromEntries(data.map(r => [r.seat_number, r.status]))
+}
+
 export async function getOrCreateOrder(
   tableId: string,
   tableNumber: number,

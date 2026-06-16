@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { TableWithSession } from '../../../lib/tables'
-import { loadOrderItems, loadGuestAttributes } from '../../../lib/orders'
+import { loadOrderItems, loadGuestAttributes, getOrderStatus, sendToKitchen, requestBill, clearTable } from '../../../lib/orders'
 import type { LoadedOrderItem, GuestAttrs } from '../../../lib/orders'
 import styles from './AllOrdersScreen.module.css'
 
@@ -34,6 +34,8 @@ export default function AllOrdersScreen() {
   const [orderItems, setOrderItems] = useState<LoadedOrderItem[]>(initialItems)
   const [guestAttrs, setGuestAttrs] = useState<Record<number, GuestAttrs>>(initialAttrs)
   const [itemsLoaded, setItemsLoaded] = useState(initialItems.length > 0)
+  const [orderStatus, setOrderStatus] = useState<string>('new')
+  const [btnLoading, setBtnLoading] = useState(false)
   const [aiExpanded, setAiExpanded] = useState(false)
 
   useEffect(() => {
@@ -41,12 +43,45 @@ export default function AllOrdersScreen() {
     Promise.all([
       loadOrderItems(orderId),
       loadGuestAttributes(orderId),
-    ]).then(([items, attrs]) => {
+      getOrderStatus(orderId),
+    ]).then(([items, attrs, status]) => {
       setOrderItems(items)
       setGuestAttrs(attrs)
+      setOrderStatus(status ?? 'new')
       setItemsLoaded(true)
     })
   }, [orderId])
+
+  const hasNewItems = orderItems.some(i => i.status === 'new')
+
+  const btnLabel = hasNewItems
+    ? 'ОТПРАВИТЬ НА КУХНЮ'
+    : orderStatus === 'bill_requested'
+      ? 'ОЧИСТИТЬ СТОЛ'
+      : orderStatus === 'paid'
+        ? ''
+        : 'СЧЕТ'
+
+  const handleMainBtn = async () => {
+    if (!orderId || btnLoading) return
+    setBtnLoading(true)
+    try {
+      if (hasNewItems) {
+        await sendToKitchen(orderId)
+        setOrderItems(prev => prev.map(i => i.status === 'new' ? { ...i, status: 'sent' } : i))
+        setOrderStatus('cooking')
+      } else if (orderStatus === 'cooking' || orderStatus === 'new') {
+        await requestBill(orderId)
+        setOrderStatus('bill_requested')
+      } else if (orderStatus === 'bill_requested') {
+        await clearTable(orderId)
+        setOrderStatus('paid')
+        navigate('/restaurant/tables')
+      }
+    } finally {
+      setBtnLoading(false)
+    }
+  }
 
   const elapsed = getElapsedSeconds(table?.startedAt ?? null)
   const totalPrice = orderItems.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
@@ -65,10 +100,6 @@ export default function AllOrdersScreen() {
         state: { table, guests, orderId, activeGuestIndex: guestIndex, seatsWithItems }
       })
     }
-  }
-
-  const handleSendToKitchen = () => {
-    // TODO
   }
 
   return (
@@ -183,11 +214,17 @@ export default function AllOrdersScreen() {
           </div>
         </div>
 
-        <div className={styles.footer}>
-          <button className={styles.sendBtn} onClick={handleSendToKitchen}>
-            ОТПРАВИТЬ НА КУХНЮ
-          </button>
-        </div>
+        {btnLabel ? (
+          <div className={styles.footer}>
+            <button
+              className={`${styles.sendBtn} ${orderStatus === 'bill_requested' ? styles.sendBtnClear : ''}`}
+              onClick={handleMainBtn}
+              disabled={btnLoading}
+            >
+              {btnLoading ? '...' : btnLabel}
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   )
