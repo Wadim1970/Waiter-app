@@ -428,3 +428,34 @@
 }
 
 .menuBtn:active { opacity: 0.85; }
+
+/* ── Sent dish card ── */
+.dishCardSent {
+  background: #eaeaea;
+  border: none;
+  margin-bottom: 4px;
+  padding: 10px 14px 10px 19px;
+}
+
+.readyBtn {
+  background: #eb651a;
+  color: #fff;
+  border: none;
+  border-radius: 22px;
+  padding: 9px 20px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+
+.readyBtn:active { opacity: 0.8; }
+
+.readyDone {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  color: #15b200;
+}

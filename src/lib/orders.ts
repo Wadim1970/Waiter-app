@@ -52,6 +52,10 @@ export async function updateTableSessionStatus(
     .eq('is_active', true)
 }
 
+export async function markItemReady(itemId: string): Promise<void> {
+  await supabase.from('order_items').update({ status: 'ready' }).eq('id', itemId)
+}
+
 export async function markGuestPaid(orderId: string, seatNumber: number): Promise<void> {
   await supabase.from('order_guests').update({ status: 'paid' }).eq('order_id', orderId).eq('seat_number', seatNumber)
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { TableWithSession } from '../../../lib/tables'
-import { loadOrderItems, loadGuestAttributes, removeOrderItem } from '../../../lib/orders'
+import { loadOrderItems, loadGuestAttributes, removeOrderItem, markItemReady } from '../../../lib/orders'
 import type { LoadedOrderItem, GuestAttrs } from '../../../lib/orders'
 import styles from './OrderScreen.module.css'
 
@@ -82,6 +82,11 @@ export default function OrderScreen() {
     navigate(`/restaurant/table/${table?.id ?? ''}/guests`, {
       state: { table, guests, orderId, activeGuestIndex: guestIndex, seatsWithItems }
     })
+  }
+
+  const handleMarkReady = async (item: LoadedOrderItem) => {
+    await markItemReady(item.id)
+    setOrderItems(prev => prev.map(i => i.id === item.id ? { ...i, status: 'ready' } : i))
   }
 
   const handleRemove = async (item: LoadedOrderItem) => {
@@ -183,6 +188,43 @@ export default function OrderScreen() {
         )}
         {currentItems.map(item => {
           const price = item.unit_price * item.quantity
+          const isSent = item.status === 'sent' || item.status === 'ready'
+          const isReady = item.status === 'ready'
+
+          if (isSent) {
+            return (
+              <div key={item.id} className={styles.dishCardSent}>
+                <div className={styles.dishCardTop}>
+                  <span className={styles.dishCardName}>{item.dish_name}{item.quantity > 1 ? ` ×${item.quantity}` : ''}</span>
+                  <span className={styles.dishCardPrice}>{price} руб</span>
+                </div>
+                {item.modifiers.length > 0 && (
+                  <div className={styles.dishCardMods}>
+                    {item.modifiers.map((m, mi) => (
+                      <span key={mi} className={styles.dishCardMod}>
+                        {m.groupName ? `${m.groupName}: ${m.name}` : m.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {item.comment && (
+                  <p className={styles.dishCardComment}>{item.comment}</p>
+                )}
+                <div className={styles.dishCardBottom}>
+                  <span className={styles.dishCardTime}>{item.cook_time_min} мин</span>
+                  {!isReady && (
+                    <button className={styles.readyBtn} onClick={() => handleMarkReady(item)}>
+                      ГОТОВО
+                    </button>
+                  )}
+                  {isReady && (
+                    <span className={styles.readyDone}>✓ подано</span>
+                  )}
+                </div>
+              </div>
+            )
+          }
+
           return (
             <div key={item.id} className={styles.dishCard} style={{ borderColor: guestColor, borderLeftColor: guestColor }}>
               <div className={styles.dishCardTop}>
@@ -193,7 +235,7 @@ export default function OrderScreen() {
                 <div className={styles.dishCardMods}>
                   {item.modifiers.map((m, mi) => (
                     <span key={mi} className={styles.dishCardMod}>
-                      {m.groupName ? `${m.groupName}:   ${m.name}` : m.name}
+                      {m.groupName ? `${m.groupName}: ${m.name}` : m.name}
                     </span>
                   ))}
                 </div>
