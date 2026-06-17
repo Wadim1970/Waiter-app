@@ -199,10 +199,16 @@ export default function AllOrdersScreen() {
               onClick={() => goToGuest(seat - 1)}
             >
               {items.map(item => {
+                const isReady = item.status === 'ready'
                 const isSent = item.status === 'sent'
-                const timer = isSent
-                  ? getTimerState(item.sent_at, item.cook_time_min)
-                  : { dotClass: styles.statusDotGrey, label: `${item.cook_time_min} мин` }
+                let timer: { dotClass: string; label: string }
+                if (isReady) {
+                  timer = { dotClass: styles.statusDotGreen, label: getTimerState(item.sent_at, item.cook_time_min).label }
+                } else if (isSent) {
+                  timer = getTimerState(item.sent_at, item.cook_time_min)
+                } else {
+                  timer = { dotClass: styles.statusDotGrey, label: `${item.cook_time_min} мин` }
+                }
 
                 return (
                   <div key={item.id} className={styles.dishRow}>
