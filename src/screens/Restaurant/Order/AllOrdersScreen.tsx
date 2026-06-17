@@ -27,10 +27,15 @@ function getTimerState(sentAt: string | null, cookTimeMin: number): {
 } {
   if (!sentAt) return { dotClass: styles.statusDotYellow, label: `${cookTimeMin} мин` }
   const elapsedMin = (Date.now() - new Date(sentAt).getTime()) / 60000
-  const label = `${Math.floor(elapsedMin)} мин`
-  if (elapsedMin < cookTimeMin) return { dotClass: styles.statusDotYellow, label }
-  if (elapsedMin < cookTimeMin * 1.5) return { dotClass: styles.statusDotGreen, label }
-  return { dotClass: styles.statusDotRed, label }
+  const remainingMin = cookTimeMin - elapsedMin
+  if (remainingMin > 0) {
+    return { dotClass: styles.statusDotYellow, label: `${Math.ceil(remainingMin)} мин` }
+  }
+  if (elapsedMin < cookTimeMin * 1.5) {
+    return { dotClass: styles.statusDotGreen, label: 'готово' }
+  }
+  const overdueMin = Math.floor(elapsedMin - cookTimeMin)
+  return { dotClass: styles.statusDotRed, label: `+${overdueMin} мин` }
 }
 
 export default function AllOrdersScreen() {
