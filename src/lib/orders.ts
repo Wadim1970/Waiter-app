@@ -7,6 +7,7 @@ export type LoadedOrderItem = {
   quantity: number
   unit_price: number
   status: string
+  sent_at: string | null
   dish_name: string
   cook_time_min: number
   comment: string | null
@@ -19,7 +20,11 @@ export async function getOrderStatus(orderId: string): Promise<string | null> {
 }
 
 export async function sendToKitchen(orderId: string): Promise<void> {
-  await supabase.from('order_items').update({ status: 'sent' }).eq('order_id', orderId).neq('status', 'sent')
+  await supabase
+    .from('order_items')
+    .update({ status: 'sent', sent_at: new Date().toISOString() })
+    .eq('order_id', orderId)
+    .neq('status', 'sent')
   await supabase.from('orders').update({ status: 'cooking' }).eq('id', orderId)
 }
 
@@ -29,6 +34,22 @@ export async function requestBill(orderId: string): Promise<void> {
 
 export async function clearTable(orderId: string): Promise<void> {
   await supabase.from('orders').update({ status: 'paid' }).eq('id', orderId)
+}
+
+export async function updateTableSessionStatus(
+  tableId: string,
+  status: 'free' | 'preparing' | 'resting' | 'bill_requested' | 'call',
+): Promise<void> {
+  const updates: Record<string, unknown> = { status }
+  if (status === 'free') {
+    updates.is_active = false
+    updates.ended_at = new Date().toISOString()
+  }
+  await supabase
+    .from('table_sessions')
+    .update(updates)
+    .eq('table_id', tableId)
+    .eq('is_active', true)
 }
 
 export async function markGuestPaid(orderId: string, seatNumber: number): Promise<void> {
@@ -162,7 +183,7 @@ export async function loadGuestAttributes(orderId: string): Promise<Record<numbe
 export async function loadOrderItems(orderId: string): Promise<LoadedOrderItem[]> {
   const { data: items, error } = await supabase
     .from('order_items')
-    .select('id, item_id, seat_number, quantity, unit_price, status, comment')
+    .select('id, item_id, seat_number, quantity, unit_price, status, sent_at, comment')
     .eq('order_id', orderId)
     .order('seat_number')
     .order('id')
@@ -198,6 +219,7 @@ export async function loadOrderItems(orderId: string): Promise<LoadedOrderItem[]
     quantity: item.quantity,
     unit_price: item.unit_price,
     status: item.status,
+    sent_at: item.sent_at ?? null,
     comment: item.comment ?? null,
     dish_name: dishMap[item.item_id]?.dish_name ?? '?',
     cook_time_min: dishMap[item.item_id]?.cook_time_min ?? 0,

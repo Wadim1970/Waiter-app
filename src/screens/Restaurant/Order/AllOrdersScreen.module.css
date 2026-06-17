@@ -212,11 +212,35 @@
   flex-shrink: 0;
 }
 
+.statusDotGrey {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #c0c0c0;
+  flex-shrink: 0;
+}
+
 .statusDotYellow {
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: #ffe733;
+  flex-shrink: 0;
+}
+
+.statusDotGreen {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #15b200;
+  flex-shrink: 0;
+}
+
+.statusDotRed {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #d30000;
   flex-shrink: 0;
 }
 

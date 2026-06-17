@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { TableWithSession } from '../../../lib/tables'
-import { loadOrderItems, loadGuestAttributes, getOrderStatus, sendToKitchen, requestBill, clearTable } from '../../../lib/orders'
+import { loadOrderItems, loadGuestAttributes, getOrderStatus, sendToKitchen, requestBill, clearTable, updateTableSessionStatus } from '../../../lib/orders'
 import type { LoadedOrderItem, GuestAttrs } from '../../../lib/orders'
 import styles from './AllOrdersScreen.module.css'
 
@@ -21,6 +21,18 @@ function getElapsedSeconds(startedAt: string | null): number {
   return Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000)
 }
 
+function getTimerState(sentAt: string | null, cookTimeMin: number): {
+  dotClass: string
+  label: string
+} {
+  if (!sentAt) return { dotClass: styles.statusDotYellow, label: `${cookTimeMin} мин` }
+  const elapsedMin = (Date.now() - new Date(sentAt).getTime()) / 60000
+  const label = `${Math.floor(elapsedMin)} мин`
+  if (elapsedMin < cookTimeMin) return { dotClass: styles.statusDotYellow, label }
+  if (elapsedMin < cookTimeMin * 1.5) return { dotClass: styles.statusDotGreen, label }
+  return { dotClass: styles.statusDotRed, label }
+}
+
 export default function AllOrdersScreen() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -37,6 +49,8 @@ export default function AllOrdersScreen() {
   const [orderStatus, setOrderStatus] = useState<string>('new')
   const [btnLoading, setBtnLoading] = useState(false)
   const [aiExpanded, setAiExpanded] = useState(false)
+  const [tick, setTick] = useState(0)
+  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     if (!orderId) { setItemsLoaded(true); return }
@@ -51,6 +65,16 @@ export default function AllOrdersScreen() {
       setItemsLoaded(true)
     })
   }, [orderId])
+
+  useEffect(() => {
+    const hasSentItems = orderItems.some(i => i.status === 'sent' && i.sent_at)
+    if (!hasSentItems) {
+      if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null }
+      return
+    }
+    tickRef.current = setInterval(() => setTick(t => t + 1), 30000)
+    return () => { if (tickRef.current) clearInterval(tickRef.current) }
+  }, [orderItems])
 
   const hasNewItems = orderItems.some(i => i.status !== 'sent')
 
@@ -67,15 +91,21 @@ export default function AllOrdersScreen() {
     setBtnLoading(true)
     try {
       if (hasNewItems) {
+        const now = new Date().toISOString()
         await sendToKitchen(orderId)
-        setOrderItems(prev => prev.map(i => i.status !== 'sent' ? { ...i, status: 'sent' } : i))
+        setOrderItems(prev => prev.map(i =>
+          i.status !== 'sent' ? { ...i, status: 'sent', sent_at: now } : i
+        ))
         setOrderStatus('cooking')
+        if (table?.id) await updateTableSessionStatus(table.id, 'preparing')
       } else if (orderStatus === 'cooking' || orderStatus === 'new') {
         await requestBill(orderId)
         setOrderStatus('bill_requested')
+        if (table?.id) await updateTableSessionStatus(table.id, 'bill_requested')
       } else if (orderStatus === 'bill_requested') {
         await clearTable(orderId)
         setOrderStatus('paid')
+        if (table?.id) await updateTableSessionStatus(table.id, 'free')
         navigate('/restaurant/tables')
       }
     } finally {
@@ -102,10 +132,11 @@ export default function AllOrdersScreen() {
     }
   }
 
+  void tick
+
   return (
     <div className={styles.screen}>
 
-      {/* ── Header 83px ── */}
       <div className={styles.header}>
         <span className={styles.tableDecor}>СТОЛ №{tableNumber}</span>
         <button className={styles.backBtn} onClick={() => navigate('/restaurant/tables')}>
@@ -122,7 +153,6 @@ export default function AllOrdersScreen() {
         </div>
       </div>
 
-      {/* ── Guest bar ── */}
       <div className={styles.guestBar}>
         <button className={`${styles.guestCircle} ${styles.guestCircleAllActive}`}>
           <img src="/icons/All.png" className={styles.allIcon} alt="все" />
@@ -146,7 +176,6 @@ export default function AllOrdersScreen() {
         })}
       </div>
 
-      {/* ── Scrollable content ── */}
       <div className={styles.content}>
         {itemsLoaded && seatsWithItems.length === 0 && (
           <p className={styles.empty}>Нет блюд</p>
@@ -164,34 +193,40 @@ export default function AllOrdersScreen() {
               style={{ borderColor: color, borderLeftColor: color }}
               onClick={() => goToGuest(seat - 1)}
             >
-              {items.map(item => (
-                <div key={item.id} className={styles.dishRow}>
-                  <div className={styles.dishRowMain}>
-                    <span className={styles.dishName}>
-                      {item.dish_name}{item.quantity > 1 ? ` ×${item.quantity}` : ''}
-                    </span>
-                    <div className={styles.dishStatus}>
-                      <span className={styles.statusDotYellow} />
-                      <span className={styles.statusTime}>{item.cook_time_min} мин</span>
+              {items.map(item => {
+                const isSent = item.status === 'sent'
+                const timer = isSent
+                  ? getTimerState(item.sent_at, item.cook_time_min)
+                  : { dotClass: styles.statusDotGrey, label: `${item.cook_time_min} мин` }
+
+                return (
+                  <div key={item.id} className={styles.dishRow}>
+                    <div className={styles.dishRowMain}>
+                      <span className={styles.dishName}>
+                        {item.dish_name}{item.quantity > 1 ? ` x${item.quantity}` : ''}
+                      </span>
+                      <div className={styles.dishStatus}>
+                        <span className={timer.dotClass} />
+                        <span className={styles.statusTime}>{timer.label}</span>
+                      </div>
                     </div>
+                    {item.modifiers.map((m, mi) => (
+                      <div key={mi} className={styles.modRow}>
+                        {m.groupName ? `${m.groupName}: ${m.name}` : m.name}
+                      </div>
+                    ))}
+                    {item.comment && (
+                      <div className={styles.commentRow}>{item.comment}</div>
+                    )}
                   </div>
-                  {item.modifiers.map((m, mi) => (
-                    <div key={mi} className={styles.modRow}>
-                      {m.groupName ? `${m.groupName}: ${m.name}` : m.name}
-                    </div>
-                  ))}
-                  {item.comment && (
-                    <div className={styles.commentRow}>{item.comment}</div>
-                  )}
-                </div>
-              ))}
+                )
+              })}
               <div className={styles.guestCardTotal}>{guestTotal} руб</div>
             </div>
           )
         })}
       </div>
 
-      {/* ── Fixed bottom: AI block + button ── */}
       <div className={styles.fixedBottom}>
         <div className={styles.aiBlock}>
           <div className={styles.aiHeader}>
