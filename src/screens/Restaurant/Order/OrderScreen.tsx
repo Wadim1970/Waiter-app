@@ -193,7 +193,7 @@ export default function OrderScreen() {
 
           if (isSent) {
             return (
-              <div key={item.id} className={styles.dishCardSent}>
+              <div key={item.id} className={styles.dishCard} style={{ borderColor: guestColor, borderLeftColor: guestColor }}>
                 <div className={styles.dishCardTop}>
                   <span className={styles.dishCardName}>{item.dish_name}{item.quantity > 1 ? ` ×${item.quantity}` : ''}</span>
                   <span className={styles.dishCardPrice}>{price} руб</span>
