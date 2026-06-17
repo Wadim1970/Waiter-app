@@ -81,7 +81,7 @@ export default function AllOrdersScreen() {
     return () => { if (tickRef.current) clearInterval(tickRef.current) }
   }, [orderItems])
 
-  const hasNewItems = orderItems.some(i => i.status !== 'sent')
+  const hasNewItems = orderItems.some(i => i.status !== 'sent' && i.status !== 'ready')
 
   const btnLabel = hasNewItems
     ? 'ОТПРАВИТЬ НА КУХНЮ'
