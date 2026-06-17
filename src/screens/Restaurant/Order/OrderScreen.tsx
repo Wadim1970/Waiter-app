@@ -198,15 +198,11 @@ export default function OrderScreen() {
                   <span className={styles.dishCardName}>{item.dish_name}{item.quantity > 1 ? ` ×${item.quantity}` : ''}</span>
                   <span className={styles.dishCardPrice}>{price} руб</span>
                 </div>
-                {item.modifiers.length > 0 && (
-                  <div className={styles.dishCardMods}>
-                    {item.modifiers.map((m, mi) => (
-                      <span key={mi} className={styles.dishCardMod}>
-                        {m.groupName ? `${m.groupName}: ${m.name}` : m.name}
-                      </span>
-                    ))}
+                {item.modifiers.map((m, mi) => (
+                  <div key={mi} className={styles.dishCardMod}>
+                    {m.groupName ? `${m.groupName}: ${m.name}` : m.name}
                   </div>
-                )}
+                ))}
                 {item.comment && (
                   <p className={styles.dishCardComment}>{item.comment}</p>
                 )}
@@ -231,15 +227,11 @@ export default function OrderScreen() {
                 <span className={styles.dishCardName}>{item.dish_name}</span>
                 <span className={styles.dishCardPrice}>{price} руб</span>
               </div>
-              {item.modifiers.length > 0 && (
-                <div className={styles.dishCardMods}>
-                  {item.modifiers.map((m, mi) => (
-                    <span key={mi} className={styles.dishCardMod}>
-                      {m.groupName ? `${m.groupName}: ${m.name}` : m.name}
-                    </span>
-                  ))}
+              {item.modifiers.map((m, mi) => (
+                <div key={mi} className={styles.dishCardMod}>
+                  {m.groupName ? `${m.groupName}: ${m.name}` : m.name}
                 </div>
-              )}
+              ))}
               {item.comment && (
                 <p className={styles.dishCardComment}>{item.comment}</p>
               )}
