@@ -39,17 +39,31 @@ export async function clearTable(orderId: string): Promise<void> {
 export async function updateTableSessionStatus(
   tableId: string,
   status: 'free' | 'preparing' | 'resting' | 'bill_requested' | 'call',
-): Promise<void> {
-  const updates: Record<string, unknown> = { status }
-  if (status === 'free') {
-    updates.is_active = false
-    updates.ended_at = new Date().toISOString()
-  }
-  await supabase
+): Promise<string | null> {
+  const { data: existing } = await supabase
     .from('table_sessions')
-    .update(updates)
+    .select('id')
     .eq('table_id', tableId)
     .eq('is_active', true)
+    .maybeSingle()
+
+  if (existing) {
+    const updates: Record<string, unknown> = { status }
+    if (status === 'free') {
+      updates.is_active = false
+      updates.ended_at = new Date().toISOString()
+    }
+    await supabase.from('table_sessions').update(updates).eq('id', existing.id)
+    return existing.id
+  } else if (status !== 'free') {
+    const { data } = await supabase
+      .from('table_sessions')
+      .insert({ table_id: tableId, status, is_active: true, started_at: new Date().toISOString() })
+      .select('id')
+      .single()
+    return data?.id ?? null
+  }
+  return null
 }
 
 export async function markItemReady(itemId: string): Promise<void> {

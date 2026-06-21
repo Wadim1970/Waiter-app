@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { TableWithSession } from '../../../lib/tables'
-import { loadOrderItems, loadGuestAttributes, removeOrderItem, markItemReady } from '../../../lib/orders'
+import { loadOrderItems, loadGuestAttributes, removeOrderItem, markItemReady, updateTableSessionStatus } from '../../../lib/orders'
 import type { LoadedOrderItem, GuestAttrs } from '../../../lib/orders'
 import styles from './OrderScreen.module.css'
 
@@ -86,7 +86,12 @@ export default function OrderScreen() {
 
   const handleMarkReady = async (item: LoadedOrderItem) => {
     await markItemReady(item.id)
-    setOrderItems(prev => prev.map(i => i.id === item.id ? { ...i, status: 'ready' } : i))
+    const updated = orderItems.map(i => i.id === item.id ? { ...i, status: 'ready' } : i)
+    setOrderItems(updated)
+    const allReady = updated.every(i => i.status === 'ready')
+    if (allReady && table?.id) {
+      await updateTableSessionStatus(table.id, 'resting')
+    }
   }
 
   const handleRemove = async (item: LoadedOrderItem) => {

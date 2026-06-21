@@ -52,6 +52,7 @@ export default function AllOrdersScreen() {
   const [guestAttrs, setGuestAttrs] = useState<Record<number, GuestAttrs>>(initialAttrs)
   const [itemsLoaded, setItemsLoaded] = useState(initialItems.length > 0)
   const [orderStatus, setOrderStatus] = useState<string>('new')
+  const [sessionStartedAt, setSessionStartedAt] = useState<string | null>(table?.startedAt ?? null)
   const [btnLoading, setBtnLoading] = useState(false)
   const [aiExpanded, setAiExpanded] = useState(false)
   const [tick, setTick] = useState(0)
@@ -102,7 +103,10 @@ export default function AllOrdersScreen() {
           i.status !== 'sent' ? { ...i, status: 'sent', sent_at: now } : i
         ))
         setOrderStatus('cooking')
-        if (table?.id) await updateTableSessionStatus(table.id, 'preparing')
+        if (table?.id) {
+          await updateTableSessionStatus(table.id, 'preparing')
+          if (!sessionStartedAt) setSessionStartedAt(now)
+        }
       } else if (orderStatus === 'cooking' || orderStatus === 'new') {
         await requestBill(orderId)
         setOrderStatus('bill_requested')
@@ -118,7 +122,7 @@ export default function AllOrdersScreen() {
     }
   }
 
-  const elapsed = getElapsedSeconds(table?.startedAt ?? null)
+  const elapsed = getElapsedSeconds(sessionStartedAt)
   const totalPrice = orderItems.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
   const tableNumber = table?.number ?? '—'
 
