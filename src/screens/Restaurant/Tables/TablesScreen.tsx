@@ -63,9 +63,25 @@ export default function TablesScreen() {
     return () => { supabase.removeChannel(channel) }
   }, [restaurantId, loadTables])
 
-  const handleTableClick = (table: TableWithSession) => {
+  const handleTableClick = async (table: TableWithSession) => {
     if (table.status === 'free') {
       navigate(`/restaurant/table/${table.id}/guests`, { state: { table } })
+      return
+    }
+    // Для занятых столов — найти активный заказ и открыть общую корзину
+    const { data: order } = await supabase
+      .from('orders')
+      .select('id')
+      .eq('table_id', table.id)
+      .not('status', 'eq', 'paid')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (order?.id) {
+      navigate(`/restaurant/table/${table.id}/all-orders`, {
+        state: { table, guests: [], orderId: order.id }
+      })
     }
   }
 
