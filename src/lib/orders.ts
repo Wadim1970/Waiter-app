@@ -39,6 +39,7 @@ export async function clearTable(orderId: string): Promise<void> {
 export async function updateTableSessionStatus(
   tableId: string,
   status: 'free' | 'preparing' | 'resting' | 'bill_requested' | 'call',
+  guestCount?: number,
 ): Promise<string | null> {
   const { data: existing } = await supabase
     .from('table_sessions')
@@ -53,12 +54,17 @@ export async function updateTableSessionStatus(
       updates.is_active = false
       updates.ended_at = new Date().toISOString()
     }
+    if (guestCount !== undefined) updates.guest_count = guestCount
     await supabase.from('table_sessions').update(updates).eq('id', existing.id)
     return existing.id
   } else if (status !== 'free') {
     const { data } = await supabase
       .from('table_sessions')
-      .insert({ table_id: tableId, status, is_active: true, started_at: new Date().toISOString() })
+      .insert({
+        table_id: tableId, status, is_active: true,
+        started_at: new Date().toISOString(),
+        ...(guestCount !== undefined ? { guest_count: guestCount } : {}),
+      })
       .select('id')
       .single()
     return data?.id ?? null

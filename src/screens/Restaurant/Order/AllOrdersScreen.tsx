@@ -104,7 +104,7 @@ export default function AllOrdersScreen() {
         ))
         setOrderStatus('cooking')
         if (table?.id) {
-          await updateTableSessionStatus(table.id, 'preparing')
+          await updateTableSessionStatus(table.id, 'preparing', seatsWithItems.length)
           if (!sessionStartedAt) setSessionStartedAt(now)
         }
       } else if (orderStatus === 'cooking' || orderStatus === 'new') {
