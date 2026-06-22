@@ -2,15 +2,15 @@ import { lazy, Suspense, useState } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import WelcomeScreen from './screens/Welcome/WelcomeScreen'
 import AuthCheck from './screens/Auth/AuthCheck'
-import JobDetailsScreen from './screens/Map/JobDetailsScreen'
 import './App.css'
-import RegistrationForm from './screens/Auth/RegistrationForm'
-import BookingSuccessScreen from './screens/Booking/BookingSuccessScreen'
-import MyShiftsScreen from './screens/MyShifts/MyShiftsScreen'
 
 const RegisterScreen = lazy(() => import('./screens/Auth/RegisterScreen'))
 const VerificationScreen = lazy(() => import('./screens/Auth/VerificationScreen'))
+const RegistrationForm = lazy(() => import('./screens/Auth/RegistrationForm'))
 const MapScreen = lazy(() => import('./screens/Map/MapScreen'))
+const JobDetailsScreen = lazy(() => import('./screens/Map/JobDetailsScreen'))
+const BookingSuccessScreen = lazy(() => import('./screens/Booking/BookingSuccessScreen'))
+const MyShiftsScreen = lazy(() => import('./screens/MyShifts/MyShiftsScreen'))
 const QRScannerScreen = lazy(() => import('./screens/Restaurant/QRScanner/QRScannerScreen'))
 const TablesScreen = lazy(() => import('./screens/Restaurant/Tables/TablesScreen'))
 const GuestDescriptionScreen = lazy(() => import('./screens/Restaurant/TableSession/GuestDescriptionScreen'))
