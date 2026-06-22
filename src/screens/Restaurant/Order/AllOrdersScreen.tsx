@@ -16,6 +16,16 @@ function formatTime(seconds: number): string {
   return `${m} мин`
 }
 
+function formatGuestDesc(g: GuestData): string {
+  const parts = [
+    g.gender ? g.gender + '.' : null,
+    g.age ?? null,
+    g.body ? g.body.toLowerCase() : null,
+    g.hair ? g.hair.toLowerCase() : null,
+  ].filter(Boolean)
+  return parts.join(', ')
+}
+
 function getElapsedSeconds(startedAt: string | null): number {
   if (!startedAt) return 0
   return Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000)
@@ -202,6 +212,15 @@ export default function AllOrdersScreen() {
               style={{ borderColor: color, borderLeftColor: color }}
               onClick={() => goToGuest(seat - 1)}
             >
+              {(() => {
+                const attrs = guestAttrs[seat]
+                const desc = attrs ? formatGuestDesc(attrs) : ''
+                return desc ? (
+                  <div className={styles.guestDesc} style={{ color }}>
+                    {desc}
+                  </div>
+                ) : null
+              })()}
               {items.map(item => {
                 const isReady = item.status === 'ready'
                 const isSent = item.status === 'sent'
