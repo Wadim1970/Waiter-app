@@ -2,7 +2,7 @@
    "name": "RestAI Waiter App",
   "short_name": "Waiter App",
   "description": "Приложение для официантов ресторана RestAI",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "display_override": ["fullscreen", "standalone"],
   "theme_color": "#102A45",
