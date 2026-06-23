@@ -283,12 +283,10 @@ export default function IncomeScreen() {
             const height = maxVal > 0 ? Math.round((bar.value / maxVal) * BAR_MAX_HEIGHT) : 0
             return (
               <div key={i} className={styles.barCol}>
-                <div className={styles.barSpace}>
-                  <div
-                    className={`${styles.bar} ${bar.isCurrent ? styles.barActive : ''}`}
-                    style={{ height: `${Math.max(height, 2)}px` }}
-                  />
-                </div>
+                <div
+                  className={`${styles.bar} ${bar.isCurrent ? styles.barActive : ''}`}
+                  style={{ height: `${Math.max(height, 2)}px` }}
+                />
                 {showLabels && (
                   <span className={styles.barLabel}>{bar.label}</span>
                 )}
