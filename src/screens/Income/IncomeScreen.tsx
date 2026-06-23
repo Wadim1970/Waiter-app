@@ -220,6 +220,7 @@ export default function IncomeScreen() {
     : getYearBars(shifts)
 
   const maxVal = Math.max(...bars.map(b => b.value), 1)
+  const maxIndex = bars.findIndex(b => b.value === maxVal && maxVal > 0)
 
   const periodLabel = tab === 'week' ? 'за неделю' : tab === 'month' ? 'за месяц' : 'за год'
 
@@ -284,7 +285,7 @@ export default function IncomeScreen() {
             return (
               <div key={i} className={styles.barCol}>
                 <div
-                  className={`${styles.bar} ${bar.isCurrent ? styles.barActive : ''}`}
+                  className={`${styles.bar} ${i === maxIndex ? styles.barActive : ''}`}
                   style={{ height: `${Math.max(height, 2)}px` }}
                 />
                 {showLabels && (
