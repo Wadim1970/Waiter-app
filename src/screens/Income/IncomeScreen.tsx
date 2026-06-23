@@ -229,7 +229,7 @@ export default function IncomeScreen() {
     { key: 'year', label: 'Год' },
   ]
 
-  const showLabels = tab === 'week' || tab === 'year'
+  const showLabels = tab === 'year'
 
   return (
     <div className={styles.screen}>
