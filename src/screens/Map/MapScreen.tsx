@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo, memo } from 'react'
+import { useEffect, useState, useCallback, useMemo, memo, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
 import L, { DivIcon } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -157,10 +157,15 @@ function MapEvents() {
   return null
 }
 
+// Счётчик для уникальных ключей MapContainer при каждом маунте
+let mapMountCounter = 0
+
 // НОВОЕ: Оборачиваем компонент в React.memo для предотвращения лишних рендеров
 function MapScreen({ onJobClick }: MapScreenProps) {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [loading, setLoading] = useState(true)
+  // Уникальный ключ для MapContainer — создаётся один раз при маунте компонента
+  const mapKey = useRef(++mapMountCounter)
   // ИЗМЕНЕНИЕ: selectedDate теперь из Zustand
   const { selectedDate, setSelectedDate, center, zoom } = useMapStore()
   const [userLocation, setUserLocation] = useState<[number, number]>([55.7558, 37.6173])
@@ -273,7 +278,7 @@ function MapScreen({ onJobClick }: MapScreenProps) {
 
       {/* ИЗМЕНЕНИЕ: center и zoom теперь из Zustand */}
       <MapContainer
-        key="main-map"
+        key={mapKey.current}
         center={center}
         zoom={zoom}
         className={styles.map}
