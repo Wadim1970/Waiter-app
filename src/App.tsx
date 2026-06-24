@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useState, useCallback } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import WelcomeScreen from './screens/Welcome/WelcomeScreen'
 import AuthCheck from './screens/Auth/AuthCheck'
@@ -66,12 +66,14 @@ function MapScreenWithDetails() {
     shiftDate: string
   } | null>(null)
 
+  const handleJobClick = useCallback((restaurantId: string, shiftDate: string) => {
+    setJobDetails({ restaurantId, shiftDate })
+  }, [])
+
   return (
     <>
       <div style={{ display: jobDetails ? 'none' : 'block' }}>
-        <MapScreen onJobClick={(restaurantId, shiftDate) => {
-          setJobDetails({ restaurantId, shiftDate })
-        }} />
+        <MapScreen onJobClick={handleJobClick} />
       </div>
 
       {jobDetails && (
