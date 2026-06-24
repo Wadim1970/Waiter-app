@@ -2,6 +2,21 @@ import { useEffect, useState, useCallback, useMemo, memo, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
 import L, { DivIcon } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+
+// Патч Leaflet: убираем _leaflet_id перед инициализацией если контейнер уже использовался.
+// Это нужно потому что react-leaflet очищает карту через useEffect (асинхронно, после paint),
+// а инициализация новой карты происходит синхронно в ref-callback — отсюда гонка.
+;(function patchLeaflet() {
+  const proto = L.Map.prototype as any
+  if (proto._initContainer._patched) return
+  const orig = proto._initContainer
+  proto._initContainer = function(id: any) {
+    const el = typeof id === 'string' ? document.getElementById(id) : id
+    if (el && el._leaflet_id) { delete el._leaflet_id }
+    return orig.call(this, id)
+  }
+  proto._initContainer._patched = true
+})()
 import { supabaseRestaurants } from '../../lib/supabase'
 import { useMapStore } from '../../store/mapStore' // НОВОЕ: Подключение Zustand
 import Header from '../shared/Header'
