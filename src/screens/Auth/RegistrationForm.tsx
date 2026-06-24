@@ -78,6 +78,7 @@ export default function RegistrationForm() {
 
   const [errors, setErrors] = useState<ValidationErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isOcrLoading, setIsOcrLoading] = useState(false)
   const [visibleMedicalSlots, setVisibleMedicalSlots] = useState(3)
   const [focusedField, setFocusedField] = useState<string | null>(null)
 
@@ -283,6 +284,43 @@ export default function RegistrationForm() {
     }
   }
 
+  const runOcr = async (file: File) => {
+    setIsOcrLoading(true)
+    try {
+      const form = new FormData()
+      form.append('image', file)
+      const res = await fetch('http://supabase.insis.pro:4001/ocr/passport', {
+        method: 'POST',
+        body: form,
+      })
+      if (!res.ok) return
+      const json = await res.json()
+      const results: { label: string; text: string }[] =
+        json?.data?.[0]?.data?.results ?? []
+      const get = (label: string) => results.find(r => r.label === label)?.text ?? ''
+      const rawDate = (s: string) => {
+        const d = s.replace(/[^\d.]/g, '')
+        return d.length === 10 ? d : ''
+      }
+      setFormData(prev => ({
+        ...prev,
+        lastName: get('lastname') || prev.lastName,
+        firstName: get('firstname') || prev.firstName,
+        patronymic: get('patronymic') || prev.patronymic,
+        birthDate: rawDate(get('birth_date')) || prev.birthDate,
+        passportSeries: get('series').replace(/\D/g, '').slice(0, 4) || prev.passportSeries,
+        passportNumber: get('number').replace(/\D/g, '').slice(0, 6) || prev.passportNumber,
+        passportDepartmentCode: formatDepartmentCode(get('department_code')) || prev.passportDepartmentCode,
+        passportIssueDate: rawDate(get('issue_date')) || prev.passportIssueDate,
+        passportIssuedBy: get('issued_by') || prev.passportIssuedBy,
+      }))
+    } catch {
+      // silent — user can fill manually
+    } finally {
+      setIsOcrLoading(false)
+    }
+  }
+
   const handleClose = () => {
     navigate(-1)
   }
@@ -358,6 +396,7 @@ export default function RegistrationForm() {
                   onAdd={(f) => {
                     setPhotos(prev => ({ ...prev, passportMain: f }))
                     setErrors(prev => ({ ...prev, passportMain: false }))
+                    runOcr(f)
                   }}
                   onRemove={() => setPhotos(prev => ({ ...prev, passportMain: null }))}
                   alt="Основной разворот паспорта"
@@ -380,7 +419,7 @@ export default function RegistrationForm() {
             </div>
 
             <div className={styles.divider}>
-              <span>проверьте данные*</span>
+              <span>{isOcrLoading ? 'распознаётся паспорт...' : 'проверьте данные*'}</span>
             </div>
 
             <input 
