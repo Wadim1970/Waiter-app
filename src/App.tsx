@@ -2,6 +2,7 @@ import { lazy, Suspense, useState } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import WelcomeScreen from './screens/Welcome/WelcomeScreen'
 import AuthCheck from './screens/Auth/AuthCheck'
+import JobDetailsScreenEager from './screens/Map/JobDetailsScreen'
 import './App.css'
 
 const RegisterScreen = lazy(() => import('./screens/Auth/RegisterScreen'))
@@ -74,7 +75,7 @@ function MapScreenWithDetails() {
       </div>
 
       {jobDetails && (
-        <JobDetailsScreen
+        <JobDetailsScreenEager
           restaurantId={jobDetails.restaurantId}
           shiftDate={jobDetails.shiftDate}
           onClose={() => setJobDetails(null)}
