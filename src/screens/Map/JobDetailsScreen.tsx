@@ -13,7 +13,7 @@ interface RestaurantDetails {
     address: string
     rating_staff: number
     number_of_voters: number
-    photo_url: string
+    photo_url: string | null
   }
   job: {
     start_time: string
@@ -68,7 +68,7 @@ const minSwipeDistance = 50
     const [restaurantResult, jobsResult, reviewsResult] = await Promise.all([
       supabaseRestaurants
         .from('restaurants')
-        .select('restaurantId, name, address, rating_staff, number_of_voters')
+        .select('restaurantId, name, address, rating_staff, number_of_voters, photo_hall')
         .eq('restaurantId', restaurantId)
         .single(),
       
@@ -103,7 +103,7 @@ const minSwipeDistance = 50
         address: restaurantResult.data.address,
         rating_staff: restaurantResult.data.rating_staff,
         number_of_voters: restaurantResult.data.number_of_voters || 0,
-        photo_url: 'https://utdfzrpkoscyikitceow.supabase.co/storage/v1/object/public/foto_restaurants/foto_holl.png'
+        photo_url: restaurantResult.data.photo_hall || null
       },
       job: {
         start_time: jobData.start_time,
