@@ -8,7 +8,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Отсутствуют переменные окружения для Supabase (restaurants)')
 }
 
-export const supabaseRestaurants = createClient(supabaseUrl, supabaseAnonKey)
+export const supabaseRestaurants = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false }
+})
 
 // ========== БАЗА 2: ОФИЦИАНТЫ (VPS) ==========
 const supabaseWaiterUrl = import.meta.env.VITE_SUPABASE_WAITER_URL
@@ -41,12 +43,20 @@ export async function setCurrentUser(userId: string) {
   }
 }
 
+const authConfig = {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+    detectSessionInUrl: false
+  }
+}
+
 // Клиент с ANON KEY (для обычных запросов)
-export const supabaseWaiter = createClient(supabaseWaiterUrl, supabaseWaiterAnonKey)
+export const supabaseWaiter = createClient(supabaseWaiterUrl, supabaseWaiterAnonKey, authConfig)
 
 // Клиент с SERVICE ROLE KEY (для Storage, обходит RLS)
-export const supabaseWaiterAdmin = supabaseWaiterServiceKey 
-  ? createClient(supabaseWaiterUrl, supabaseWaiterServiceKey)
+export const supabaseWaiterAdmin = supabaseWaiterServiceKey
+  ? createClient(supabaseWaiterUrl, supabaseWaiterServiceKey, authConfig)
   : supabaseWaiter // Фолбэк на ANON если SERVICE KEY не задан
 
 // Для обратной совместимости со старым кодом
