@@ -273,6 +273,7 @@ function MapScreen({ onJobClick }: MapScreenProps) {
 
       {/* ИЗМЕНЕНИЕ: center и zoom теперь из Zustand */}
       <MapContainer
+        key="main-map"
         center={center}
         zoom={zoom}
         className={styles.map}
