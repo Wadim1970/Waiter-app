@@ -9,6 +9,12 @@ interface ValidationErrors {
   [key: string]: boolean
 }
 
+// Конвертация DD.MM.YYYY → YYYY-MM-DD для PostgreSQL
+const toIsoDate = (s: string): string => {
+  const m = s.match(/^(\d{2})\.(\d{2})\.(\d{4})$/)
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : s
+}
+
 // Валидация паспортных данных
 const validatePassportSeries = (value: string) => /^\d{4}$/.test(value)
 const validatePassportNumber = (value: string) => /^\d{6}$/.test(value)
@@ -239,13 +245,13 @@ export default function RegistrationForm() {
           last_name: formData.lastName.trim(),
           middle_name: formData.patronymic.trim(),
           first_name: formData.firstName.trim(),
-          date_of_birth: formData.birthDate,
+          date_of_birth: toIsoDate(formData.birthDate),
           gender: formData.gender,
           passport_series: formData.passportSeries.trim(),
           passport_number: formData.passportNumber.trim(),
           passport_department_code: formData.passportDepartmentCode.trim(),
           passport_issued_by: formData.passportIssuedBy.trim(),
-          passport_issue_date: formData.passportIssueDate,
+          passport_issue_date: toIsoDate(formData.passportIssueDate),
           passport_photo_main_url: passportMainUrl,
           passport_photo_registration_url: passportRegUrl,
           medical_book_photo_1_url: medicalUrls[0] || null,
