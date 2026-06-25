@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabaseWaiter, supabaseWaiterAdmin } from '../../lib/supabase'
+import { applyForJob } from '../../lib/bookings'
 import RegistrationModal from './RegistrationModal'
 import ImagePreview from '../shared/ImagePreview'
 import styles from './RegistrationForm.module.css'
@@ -52,6 +53,7 @@ export default function RegistrationForm() {
   
   // Проверяем нужно ли показать модалку
   const shouldShowModal = searchParams.get('showModal') === 'true'
+  const pendingJobId = searchParams.get('jobId')
   const [isModalVisible, setIsModalVisible] = useState(shouldShowModal)
   
   const [formData, setFormData] = useState({
@@ -279,7 +281,16 @@ export default function RegistrationForm() {
       if (error) throw error
 
       console.log('✅ Профиль официанта обновлён:', data)
-      
+
+      if (pendingJobId) {
+        const { error: bookingError } = await applyForJob(waiterId!, pendingJobId)
+        if (bookingError) {
+          alert(`❌ ${bookingError.message || 'Не удалось забронировать смену'}`)
+          navigate('/map')
+          return
+        }
+      }
+
       navigate('/booking-success')
 
     } catch (error: any) {

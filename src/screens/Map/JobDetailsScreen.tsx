@@ -174,7 +174,7 @@ const minSwipeDistance = 50
       console.log('✅ Бронирование создано:', bookingData)
       navigate('/booking-success')
     } else {
-      navigate('/registration?showModal=true')
+      navigate(`/registration?showModal=true&jobId=${jobId}`)
     }
   } catch (error: any) {
     console.error('❌ Ошибка проверки профиля:', error)
