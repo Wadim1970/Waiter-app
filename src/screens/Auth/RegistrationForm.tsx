@@ -312,7 +312,7 @@ export default function RegistrationForm() {
         lastName: get('lastname') || prev.lastName,
         firstName: get('name') || prev.firstName,
         patronymic: get('middlename') || prev.patronymic,
-        gender: get('sex').slice(0, 3).toLowerCase() || prev.gender,
+        gender: get('sex').slice(0, 3) || prev.gender,
         birthDate: convertDate(get('birth_date')) || prev.birthDate,
         passportSeries: serial1.slice(0, 4) || prev.passportSeries,
         passportNumber: serial1.slice(4, 10) || prev.passportNumber,
