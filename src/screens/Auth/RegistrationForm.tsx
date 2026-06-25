@@ -288,8 +288,10 @@ export default function RegistrationForm() {
     setIsOcrLoading(true)
     try {
       const form = new FormData()
+      form.append('token', import.meta.env.VITE_OCR_TOKEN ?? '')
       form.append('image', file)
-      const res = await fetch('http://supabase.insis.pro:4001/ocr/passport', {
+      form.append('include_b64_image', '0')
+      const res = await fetch('https://api.ocr.ads-soft.ru/recognition', {
         method: 'POST',
         body: form,
       })
@@ -298,21 +300,24 @@ export default function RegistrationForm() {
       const results: { label: string; text: string }[] =
         json?.data?.[0]?.data?.results ?? []
       const get = (label: string) => results.find(r => r.label === label)?.text ?? ''
-      const rawDate = (s: string) => {
-        const d = s.replace(/[^\d.]/g, '')
-        return d.length === 10 ? d : ''
+      // API возвращает даты в формате YYYY-MM-DD, конвертируем в DD.MM.YYYY
+      const convertDate = (s: string) => {
+        const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+        return m ? `${m[3]}.${m[2]}.${m[1]}` : ''
       }
+      // serial_1 содержит серию и номер через пробел: "1234 567890"
+      const serial1 = get('serial_1').replace(/\D/g, '')
       setFormData(prev => ({
         ...prev,
         lastName: get('lastname') || prev.lastName,
-        firstName: get('firstname') || prev.firstName,
-        patronymic: get('patronymic') || prev.patronymic,
-        birthDate: rawDate(get('birth_date')) || prev.birthDate,
-        passportSeries: get('series').replace(/\D/g, '').slice(0, 4) || prev.passportSeries,
-        passportNumber: get('number').replace(/\D/g, '').slice(0, 6) || prev.passportNumber,
-        passportDepartmentCode: formatDepartmentCode(get('department_code')) || prev.passportDepartmentCode,
-        passportIssueDate: rawDate(get('issue_date')) || prev.passportIssueDate,
-        passportIssuedBy: get('issued_by') || prev.passportIssuedBy,
+        firstName: get('name') || prev.firstName,
+        patronymic: get('middlename') || prev.patronymic,
+        birthDate: convertDate(get('birth_date')) || prev.birthDate,
+        passportSeries: serial1.slice(0, 4) || prev.passportSeries,
+        passportNumber: serial1.slice(4, 10) || prev.passportNumber,
+        passportDepartmentCode: formatDepartmentCode(get('issued_number')) || prev.passportDepartmentCode,
+        passportIssueDate: convertDate(get('issued_date')) || prev.passportIssueDate,
+        passportIssuedBy: get('issued') || prev.passportIssuedBy,
       }))
     } catch {
       // silent — user can fill manually
