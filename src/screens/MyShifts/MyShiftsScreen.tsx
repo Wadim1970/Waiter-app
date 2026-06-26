@@ -101,22 +101,20 @@ const handleCloseDetails = () => {
       {/* ХЕДЕР */}
       <div className={styles.header}>
         <h1 className={styles.title}>МОИ СМЕНЫ</h1>
-        
+
         <div className={styles.mainTabs}>
           <button
             className={`${styles.mainTab} ${mainTab === 'active' ? styles.mainTabActive : ''}`}
             onClick={() => setMainTab('active')}
           >
             Активные
-            {mainTab === 'active' && <div className={styles.mainTabIndicator} />}
           </button>
-          
+
           <button
             className={`${styles.mainTab} ${mainTab === 'past' ? styles.mainTabActive : ''}`}
             onClick={() => setMainTab('past')}
           >
-            Прошедшие
-            {mainTab === 'past' && <div className={styles.mainTabIndicator} />}
+            АРХИВ
           </button>
         </div>
       </div>
