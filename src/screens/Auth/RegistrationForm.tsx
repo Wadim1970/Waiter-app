@@ -283,16 +283,12 @@ export default function RegistrationForm() {
       console.log('✅ Профиль официанта обновлён:', data)
 
       if (pendingJobId) {
-        alert(`🔍 Создаю бронирование: waiterId=${waiterId}, jobId=${pendingJobId}`)
-        const { data: bookingData, error: bookingError } = await applyForJob(waiterId!, pendingJobId)
+        const { error: bookingError } = await applyForJob(waiterId!, pendingJobId)
         if (bookingError) {
-          alert(`❌ Ошибка бронирования: ${bookingError.message || JSON.stringify(bookingError)}`)
+          alert(`❌ ${bookingError.message || 'Не удалось забронировать смену'}`)
           navigate('/map')
           return
         }
-        alert(`✅ Бронирование создано: ${JSON.stringify(bookingData)}`)
-      } else {
-        alert(`⚠️ pendingJobId отсутствует в URL`)
       }
 
       navigate('/booking-success')

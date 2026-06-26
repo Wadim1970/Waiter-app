@@ -55,9 +55,6 @@ export interface ShiftWithDetails extends Booking {
 
 export async function applyForJob(waiterId: string, jobId: string) {
   try {
-    // НОВОЕ: Устанавливаем текущего пользователя
-    await setCurrentUser(waiterId)
-
     // Проверяем что вакансия ещё доступна
     const { data: job, error: jobError } = await supabaseRestaurants
       .from('jobs')
@@ -66,21 +63,17 @@ export async function applyForJob(waiterId: string, jobId: string) {
       .single()
 
     if (jobError) throw jobError
-    
+
     if (!job || job.slots_available <= 0) {
       throw new Error('К сожалению, эта вакансия уже недоступна')
     }
 
-    // Создаём бронирование
+    // Создаём бронирование через функцию БД (решает проблему RLS + app.current_user_id)
     const { data, error } = await supabaseWaiter
-      .from('bookings')
-      .insert({
-        job_id: jobId,
-        worker_id: waiterId,
-        status: 'applied'
+      .rpc('create_booking', {
+        p_worker_id: waiterId,
+        p_job_id: jobId
       })
-      .select()
-      .single()
 
     if (error) {
       if (error.code === '23505') {
