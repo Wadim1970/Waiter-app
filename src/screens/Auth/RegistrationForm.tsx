@@ -282,6 +282,7 @@ export default function RegistrationForm() {
 
       console.log('✅ Профиль официанта обновлён:', data)
 
+      alert(`DEBUG: pendingJobId=${pendingJobId}, waiterId=${waiterId}`)
       if (pendingJobId) {
         const { error: bookingError } = await applyForJob(waiterId!, pendingJobId)
         if (bookingError) {
