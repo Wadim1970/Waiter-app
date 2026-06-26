@@ -194,19 +194,17 @@ export async function cancelBooking(bookingId: string, waiterId: string) {
     }
 
     // Отменяем
-    const { data, error } = await supabaseWaiter
+    const { error } = await supabaseWaiter
       .from('bookings')
-      .update({ 
+      .update({
         status: 'cancelled',
         updated_at: new Date().toISOString()
       })
       .eq('id', bookingId)
-      .select()
-      .single()
 
     if (error) throw error
 
-    return { data, error: null }
+    return { data: { id: bookingId, status: 'cancelled' }, error: null }
   } catch (error: any) {
     console.error('Ошибка отмены бронирования:', error)
     return { data: null, error }
