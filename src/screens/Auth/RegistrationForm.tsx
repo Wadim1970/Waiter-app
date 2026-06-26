@@ -53,7 +53,7 @@ export default function RegistrationForm() {
   
   // Проверяем нужно ли показать модалку
   const shouldShowModal = searchParams.get('showModal') === 'true'
-  const pendingJobId = searchParams.get('jobId')
+  const [pendingJobId] = useState(searchParams.get('jobId'))
   const [isModalVisible, setIsModalVisible] = useState(shouldShowModal)
   
   const [formData, setFormData] = useState({
@@ -282,7 +282,6 @@ export default function RegistrationForm() {
 
       console.log('✅ Профиль официанта обновлён:', data)
 
-      alert(`DEBUG: pendingJobId=${pendingJobId}, waiterId=${waiterId}`)
       if (pendingJobId) {
         const { error: bookingError } = await applyForJob(waiterId!, pendingJobId)
         if (bookingError) {
