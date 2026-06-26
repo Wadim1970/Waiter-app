@@ -107,7 +107,7 @@ const handleCloseDetails = () => {
             className={`${styles.mainTab} ${mainTab === 'active' ? styles.mainTabActive : ''}`}
             onClick={() => setMainTab('active')}
           >
-            Активные
+            АКТИВНЫЕ
             {mainTab === 'active' && <div className={styles.mainTabIndicator} />}
           </button>
           
