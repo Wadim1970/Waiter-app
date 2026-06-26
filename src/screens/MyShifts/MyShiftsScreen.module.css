@@ -44,8 +44,7 @@
 /* Табы верхнего уровня: Активные / АРХИВ */
 .mainTabs {
   display: flex;
-  flex-direction: column;
-  gap: 0.625rem; /* 10px между рядами */
+  gap: 1rem; /* 16px между кнопками */
 }
 
 .mainTab {
@@ -130,8 +129,7 @@
 /* Табы: Одобрены / Ожидают — ФИКС */
 .subTabs {
   display: flex;
-  flex-direction: column;
-  gap: 0.625rem; /* 10px между рядами */
+  gap: 0.4375rem; /* 7px между кнопками */
   margin-bottom: 0;
   padding: 0 1.125rem 1.25rem 1.125rem; /* 18px по бокам, 20px снизу */
   background: white;
