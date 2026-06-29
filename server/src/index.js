@@ -1,3 +1,4 @@
+import 'dotenv/config' // загружает server/.env в process.env (должно быть первым)
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
 import multipart from '@fastify/multipart'
