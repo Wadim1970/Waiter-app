@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { sendSmsCode } from '../../lib/api'
 import styles from './RegisterScreen.module.css'
 
 export default function RegisterScreen() {
@@ -101,27 +102,12 @@ export default function RegisterScreen() {
       waiterId = newWaiter.id;
     }
 
-    // 2. Вызываем n8n webhook для отправки SMS
-    const webhookUrl = import.meta.env.VITE_WEBHOOK_URL;
-    const webhookSecret = import.meta.env.VITE_WEBHOOK_SECRET;
-
-    const smsResponse = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Webhook-Secret': webhookSecret
-      },
-      body: JSON.stringify({
-        waiterId: waiterId,
-        phone: phone.trim(),
-        name: name.trim()
-      })
+    // 2. Отправка SMS-кода через бэкенд (секрет вебхука хранится на сервере)
+    await sendSmsCode({
+      waiterId,
+      phone: phone.trim(),
+      name: name.trim(),
     });
-
-    if (!smsResponse.ok) {
-      const errorData = await smsResponse.json();
-      throw new Error(errorData.message || 'Ошибка отправки SMS');
-    }
 
     // 3. Переходим на экран верификации
     navigate('/verification', {

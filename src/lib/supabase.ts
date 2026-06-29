@@ -15,7 +15,6 @@ export const supabaseRestaurants = createClient(supabaseUrl, supabaseAnonKey, {
 // ========== БАЗА 2: ОФИЦИАНТЫ (VPS) ==========
 const supabaseWaiterUrl = import.meta.env.VITE_SUPABASE_WAITER_URL
 const supabaseWaiterAnonKey = import.meta.env.VITE_SUPABASE_WAITER_ANON_KEY
-const supabaseWaiterServiceKey = import.meta.env.VITE_SUPABASE_WAITER_SERVICE_KEY // ← НОВОЕ
 
 if (!supabaseWaiterUrl || !supabaseWaiterAnonKey) {
   throw new Error('Отсутствуют переменные окружения для Supabase Waiter')
@@ -54,10 +53,8 @@ const authConfig = {
 // Клиент с ANON KEY (для обычных запросов)
 export const supabaseWaiter = createClient(supabaseWaiterUrl, supabaseWaiterAnonKey, authConfig)
 
-// Клиент с SERVICE ROLE KEY (для Storage, обходит RLS)
-export const supabaseWaiterAdmin = supabaseWaiterServiceKey
-  ? createClient(supabaseWaiterUrl, supabaseWaiterServiceKey, authConfig)
-  : supabaseWaiter // Фолбэк на ANON если SERVICE KEY не задан
+// SERVICE ROLE KEY вынесен на бэкенд (server/). Операции, которым он нужен
+// (загрузка документов в Storage), теперь идут через waiter-api — см. src/lib/api.ts
 
 // Для обратной совместимости со старым кодом
 export const supabase = supabaseWaiter

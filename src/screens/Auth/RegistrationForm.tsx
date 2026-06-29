@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { supabaseWaiter, supabaseWaiterAdmin } from '../../lib/supabase'
+import { supabaseWaiter } from '../../lib/supabase'
+import { uploadDocument, recognizePassport } from '../../lib/api'
 import { applyForJob } from '../../lib/bookings'
 import RegistrationModal from './RegistrationModal'
 import ImagePreview from '../shared/ImagePreview'
@@ -164,35 +165,11 @@ export default function RegistrationForm() {
 
   const uploadPhoto = async (file: File, path: string): Promise<string | null> => {
     try {
-      console.log('📤 Начало загрузки:', file.name, 'Размер:', file.size, 'Тип:', file.type)
-      
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
-      const filePath = `${waiterId}/${path}/${fileName}`
-
-      console.log('📂 Путь загрузки:', filePath)
-
-      const { data: uploadData, error: uploadError } = await supabaseWaiterAdmin.storage
-        .from('waiter-documents')
-        .upload(filePath, file)
-
-      if (uploadError) {
-        console.error('❌ Ошибка загрузки:', uploadError)
-        throw uploadError
-      }
-
-      console.log('✅ Файл загружен:', uploadData)
-
-      const { data } = supabaseWaiterAdmin.storage
-        .from('waiter-documents')
-        .getPublicUrl(filePath)
-
-      console.log('🔗 Публичный URL:', data.publicUrl)
-
-      return data.publicUrl
-    } catch (error) {
-      console.error('❌ Ошибка загрузки фото:', error)
-      alert(`Ошибка загрузки ${file.name}: ${JSON.stringify(error)}`)
+      // Загрузка идёт через бэкенд waiter-api (service-key хранится на сервере)
+      return await uploadDocument(file, waiterId!, path)
+    } catch (error: any) {
+      console.error('Ошибка загрузки фото:', error)
+      alert(`Ошибка загрузки ${file.name}: ${error?.message ?? 'попробуйте снова'}`)
       return null
     }
   }
@@ -304,18 +281,8 @@ export default function RegistrationForm() {
   const runOcr = async (file: File) => {
     setIsOcrLoading(true)
     try {
-      const form = new FormData()
-      form.append('token', import.meta.env.VITE_OCR_TOKEN ?? '')
-      form.append('image', file)
-      form.append('include_b64_image', '0')
-      const res = await fetch('https://api.ocr.ads-soft.ru/recognition', {
-        method: 'POST',
-        body: form,
-      })
-      if (!res.ok) return
-      const json = await res.json()
-      const results: { label: string; text: string }[] =
-        json?.data?.[0]?.data?.results ?? []
+      // Распознавание идёт через бэкенд waiter-api (OCR-токен хранится на сервере)
+      const results = await recognizePassport(file)
       const get = (label: string) => results.find(r => r.label === label)?.text ?? ''
       // API возвращает даты в формате YYYY-MM-DD, конвертируем в DD.MM.YYYY
       const convertDate = (s: string) => {
