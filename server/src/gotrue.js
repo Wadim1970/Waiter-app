@@ -8,7 +8,8 @@ import crypto from 'node:crypto'
 import { config } from './config.js'
 import { supabaseAdmin } from './supabase.js'
 
-const adminUrl = (path) => `${config.supabaseUrl.replace(/\/$/, '')}/auth/v1/admin${path}`
+const authBase = () => `${config.supabaseUrl.replace(/\/$/, '')}/auth/v1`
+const adminUrl = (path) => `${authBase()}/admin${path}`
 
 const adminHeaders = () => ({
   apikey: config.serviceKey,
@@ -106,29 +107,40 @@ export async function linkWaiterToAuthUser({ phone, authUserId }) {
   return created.id
 }
 
-// Записать refresh_token в auth.refresh_tokens напрямую через service-key.
-// supabase-js обменяет этот токен на новый access_token через GoTrue.
-export async function persistRefreshToken({ userId, refreshToken }) {
-  // Сессия в GoTrue должна существовать — создаём.
-  // Структура таблиц auth.sessions / auth.refresh_tokens стабильна в GoTrue v2.
-  const sessionId = crypto.randomUUID()
+// Поставить пользователю пароль (admin API). Используется как одноразовый
+// случайный пароль, чтобы тут же залогиниться им и получить сессию.
+export async function setUserPassword(userId, password) {
+  const res = await fetch(adminUrl(`/users/${userId}`), {
+    method: 'PUT',
+    headers: adminHeaders(),
+    body: JSON.stringify({ password }),
+  })
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}))
+    throw new Error(`GoTrue setPassword ${res.status}: ${d?.msg ?? d?.error ?? res.statusText}`)
+  }
+  return await res.json()
+}
 
-  const { error: sessErr } = await supabaseAdmin
-    .schema('auth')
-    .from('sessions')
-    .insert({ id: sessionId, user_id: userId })
-  if (sessErr) throw new Error(`auth.sessions insert: ${sessErr.message}`)
+// Обменять телефон+пароль на НАСТОЯЩУЮ сессию GoTrue.
+// GoTrue сам создаёт session и refresh_token в auth.* — мы туда не лезем.
+// Возвращает { access_token, refresh_token, expires_in, token_type, user }.
+export async function passwordGrant(phone, password) {
+  const res = await fetch(`${authBase()}/token?grant_type=password`, {
+    method: 'POST',
+    headers: { apikey: config.serviceKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone, password }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    throw new Error(
+      `GoTrue token ${res.status}: ${data?.msg ?? data?.error_description ?? data?.error ?? res.statusText}`
+    )
+  }
+  return data
+}
 
-  const { error: rtErr } = await supabaseAdmin
-    .schema('auth')
-    .from('refresh_tokens')
-    .insert({
-      token: refreshToken,
-      user_id: userId,
-      session_id: sessionId,
-      revoked: false,
-    })
-  if (rtErr) throw new Error(`auth.refresh_tokens insert: ${rtErr.message}`)
-
-  return sessionId
+// Длинный случайный пароль (используется один раз и забывается).
+export function randomPassword() {
+  return crypto.randomBytes(24).toString('base64url')
 }

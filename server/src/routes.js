@@ -2,8 +2,7 @@ import bcrypt from 'bcryptjs'
 import crypto from 'node:crypto'
 import { config } from './config.js'
 import { supabaseAdmin } from './supabase.js'
-import { signAccessToken, generateRefreshToken } from './jwt.js'
-import { normalizePhone, getOrCreateAuthUserByPhone, linkWaiterToAuthUser, persistRefreshToken } from './gotrue.js'
+import { normalizePhone, getOrCreateAuthUserByPhone, linkWaiterToAuthUser, setUserPassword, passwordGrant, randomPassword } from './gotrue.js'
 
 // Разрешённые типы файлов для документов официанта
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf'])
@@ -235,21 +234,24 @@ export async function routes(app) {
       return reply.code(500).send({ error: 'Не удалось обновить waiters: ' + e.message })
     }
 
-    // Выпускаем токены
-    const accessToken = signAccessToken({ userId: authUser.id, phone })
-    const refreshToken = generateRefreshToken()
+    // Выпускаем НАСТОЯЩУЮ сессию через GoTrue: ставим одноразовый пароль
+    // и сразу логинимся им (grant_type=password). GoTrue сам создаёт сессию
+    // и refresh_token в auth.* — нам не нужно лезть в его таблицы.
+    let session
     try {
-      await persistRefreshToken({ userId: authUser.id, refreshToken })
+      const pwd = randomPassword()
+      await setUserPassword(authUser.id, pwd)
+      session = await passwordGrant(phone, pwd)
     } catch (e) {
       req.log.error(e)
-      return reply.code(500).send({ error: 'Не удалось сохранить сессию: ' + e.message })
+      return reply.code(502).send({ error: 'Auth session: ' + e.message })
     }
 
     return {
-      access_token: accessToken,
-      refresh_token: refreshToken,
-      expires_in: config.jwtAccessTtlSec,
-      token_type: 'bearer',
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+      expires_in: session.expires_in,
+      token_type: session.token_type ?? 'bearer',
       user: { id: authUser.id, phone, waiter_id: waiterId },
     }
   })
