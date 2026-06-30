@@ -41,19 +41,38 @@ export async function recognizePassport(file: File): Promise<OcrField[]> {
   return (data.results ?? []) as OcrField[]
 }
 
-// Отправка SMS-кода через бэкенд (секрет вебхука хранится на сервере).
-export async function sendSmsCode(payload: {
-  waiterId: string
-  phone: string
-  name: string
-}): Promise<void> {
+// Запрос SMS-кода. Бэкенд сам генерирует код, хеширует и шлёт через n8n.
+export async function sendSmsCode(phone: string): Promise<void> {
   const res = await fetch(apiUrl('/api/send-sms'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ phone }),
   })
   if (!res.ok) {
     const data = await res.json().catch(() => ({}))
     throw new Error(data.error || 'Ошибка отправки SMS')
   }
+}
+
+export type VerifySmsResult = {
+  access_token: string
+  refresh_token: string
+  expires_in: number
+  token_type: string
+  user: { id: string; phone: string; waiter_id: string }
+}
+
+// Проверка SMS-кода. При успехе бэкенд возвращает настоящую сессию Supabase
+// (access + refresh токены) и waiter_id.
+export async function verifySms(phone: string, code: string): Promise<VerifySmsResult> {
+  const res = await fetch(apiUrl('/api/verify-sms'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone, code }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    throw new Error(data.error || 'Не удалось подтвердить код')
+  }
+  return data as VerifySmsResult
 }

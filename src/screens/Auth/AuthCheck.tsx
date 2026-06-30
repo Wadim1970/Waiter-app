@@ -15,54 +15,24 @@ export default function AuthCheck() {
     hasCheckedRef.current = true
 
     const checkAuth = async () => {
-      const savedWaiterId = localStorage.getItem('waiter_device_id')
-
-      if (!savedWaiterId) {
-        console.log('❌ Device ID не найден')
-        return
-      }
-
       try {
         setIsChecking(true)
-        
-        // НОВОЕ: Добавляем таймаут для запроса
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout')), 5000) // 5 секунд максимум
-        )
 
-        const checkPromise = supabase
-          .from('waiters')
-          .select('id, first_name, phone_verified')
-          .eq('id', savedWaiterId)
-          .maybeSingle()
+        // Источник правды — сессия Supabase (JWT). Есть валидная сессия →
+        // официант залогинен на этом устройстве; supabase-js сам её обновляет.
+        const { data: { session } } = await supabase.auth.getSession()
 
-        // НОВОЕ: Race между запросом и таймаутом
-        const { data: waiter, error } = await Promise.race([
-          checkPromise,
-          timeoutPromise
-        ]) as any
-
-        if (error) {
-          console.error('Ошибка проверки официанта:', error)
+        if (!session) {
+          // Нет сессии — чистим возможный устаревший кэш id, показываем Welcome.
+          localStorage.removeItem('waiter_device_id')
           return
         }
 
-        if (waiter && waiter.phone_verified === true) {
-          console.log('✅ Официант найден и верифицирован:', waiter.first_name)
-          
-          // НОВОЕ: Редирект только если на главной странице
-          if (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/register') {
-            console.log('🔄 Перенаправляю на /map')
-            navigate('/map', { replace: true })
-          }
-        } else if (waiter && waiter.phone_verified === false) {
-          console.log('⚠️ Официант найден, но не верифицирован')
-        } else {
-          console.log('❌ Официант не найден, возможно удален из базы')
-          localStorage.removeItem('waiter_device_id')
+        // Редиректим в приложение только со стартовых страниц.
+        if (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/register') {
+          navigate('/map', { replace: true })
         }
       } catch (err) {
-        // НОВОЕ: Если таймаут или ошибка — просто игнорируем и показываем WelcomeScreen
         console.error('⚠️ Ошибка проверки авторизации (игнорируем):', err)
       } finally {
         setIsChecking(false)

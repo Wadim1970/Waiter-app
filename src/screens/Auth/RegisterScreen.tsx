@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
 import { sendSmsCode } from '../../lib/api'
 import styles from './RegisterScreen.module.css'
 
@@ -41,8 +40,8 @@ export default function RegisterScreen() {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault(); // ← ДОБАВЬ ЭТУ СТРОКУ!
-  
+  e.preventDefault();
+
   if (!name.trim() || !phone.trim()) {
     alert('Пожалуйста, заполните все поля');
     return;
@@ -51,72 +50,17 @@ export default function RegisterScreen() {
   setIsLoading(true);
 
   try {
-    // Получаем или создаём device_id
-    let deviceId = localStorage.getItem('waiter_device_id');
+    // Запрашиваем SMS-код. Создание/привязка waiter'а произойдёт на бэкенде
+    // при подтверждении кода (verify-sms), личность подтвердит JWT.
+    await sendSmsCode(phone.trim());
 
-    // 1. Проверяем существует ли официант с таким телефоном
-    const { data: existingWaiter } = await supabase
-      .from('waiters')
-      .select('id, phone_verified')
-      .eq('phone', phone)
-      .maybeSingle();
-
-    let waiterId: string;
-
-    if (existingWaiter) {
-      // Официант существует
-      waiterId = existingWaiter.id;
-
-      // Обновляем имя
-      await supabase
-        .from('waiters')
-        .update({ first_name: name.trim() })
-        .eq('id', waiterId);
-
-      // Если уже верифицирован - пропускаем верификацию
-      if (existingWaiter.phone_verified) {
-        localStorage.setItem('waiter_device_id', waiterId);
-        navigate('/profile');
-        return;
-      }
-    } else {
-      // Создаём нового официанта
-      if (!deviceId) {
-        deviceId = crypto.randomUUID();
-        localStorage.setItem('waiter_device_id', deviceId);
-      }
-
-      const { data: newWaiter, error } = await supabase
-        .from('waiters')
-        .insert({
-          first_name: name.trim(),
-          phone: phone.trim(),
-          device_id: deviceId,
-          employment_type: 'freelance',
-          phone_verified: false
-        })
-        .select('id')
-        .single();
-
-      if (error) throw error;
-      waiterId = newWaiter.id;
-    }
-
-    // 2. Отправка SMS-кода через бэкенд (секрет вебхука хранится на сервере)
-    await sendSmsCode({
-      waiterId,
-      phone: phone.trim(),
-      name: name.trim(),
-    });
-
-    // 3. Переходим на экран верификации
+    // Имя передаём дальше — сохраним в профиль после входа.
     navigate('/verification', {
       state: {
         phone: phone.trim(),
-        waiterId: waiterId
-      }
+        name: name.trim(),
+      },
     });
-
   } catch (error: any) {
     console.error('Ошибка регистрации:', error);
     alert(error.message || 'Произошла ошибка. Попробуйте снова.');

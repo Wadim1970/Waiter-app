@@ -1,21 +1,22 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import styles from './VerificationScreen.module.css'
-import { supabase } from '../../lib/supabase'
+import { supabase, setWaiterId } from '../../lib/supabase'
+import { verifySms } from '../../lib/api'
 
 export default function VerificationScreen() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { phone, waiterId } = location.state || {}
-  
+  const { phone, name } = location.state || {}
+
   const [code, setCode] = useState(['', '', '', ''])
 
   useEffect(() => {
-    if (!phone || !waiterId) {
+    if (!phone) {
       navigate('/register')
       return
     }
-  }, [phone, waiterId, navigate])
+  }, [phone, navigate])
 
   const handleCodeChange = (index: number, value: string) => {
     if (value.length > 1) return
@@ -59,63 +60,42 @@ export default function VerificationScreen() {
 
   const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault()
-  
+
   const fullCode = code.join('')
-  
+
   if (fullCode.length < 4) {
     alert('Пожалуйста, введите полный PIN код')
     return
   }
 
   try {
-    
-    // Получаем данные официанта
-    const { data: waiter, error } = await supabase
-      .from('waiters')
-      .select('id, pin_code, pin_expires_at')
-      .eq('id', waiterId)
-      .maybeSingle()
+    // Бэкенд проверяет код и возвращает настоящую сессию Supabase.
+    const result = await verifySms(phone, fullCode)
 
-    if (error || !waiter) {
-      throw new Error('Официант не найден')
+    // Устанавливаем сессию — дальше supabase-js сам носит JWT во всех запросах,
+    // а RLS на стороне БД проверяет auth.uid().
+    const { error: sessionError } = await supabase.auth.setSession({
+      access_token: result.access_token,
+      refresh_token: result.refresh_token,
+    })
+    if (sessionError) throw sessionError
+
+    // Кэшируем waiters.id для синхронного чтения в экранах.
+    setWaiterId(result.user.waiter_id)
+
+    // Сохраняем имя в профиль (если пришли с экрана регистрации).
+    // Теперь запрос идёт от имени официанта — RLS пропустит только свою запись.
+    if (name && name.trim()) {
+      await supabase
+        .from('waiters')
+        .update({ first_name: name.trim() })
+        .eq('id', result.user.waiter_id)
     }
 
-    // Проверяем срок действия PIN
-    if (!waiter.pin_expires_at) {
-      throw new Error('PIN-код не был отправлен. Вернитесь назад и попробуйте снова.')
-    }
-
-    const expiresAt = new Date(waiter.pin_expires_at)
-    if (expiresAt < new Date()) {
-      throw new Error('Код истёк. Вернитесь назад и запросите новый.')
-    }
-
-    // Проверяем PIN
-    if (waiter.pin_code !== fullCode) {
-      throw new Error('Неверный код. Попробуйте снова.')
-    }
-
-    // ✅ PIN правильный! Обновляем статус
-    const { error: updateError } = await supabase
-      .from('waiters')
-      .update({
-        phone_verified: true,
-        pin_code: null, // Очищаем использованный PIN
-        pin_expires_at: null
-      })
-      .eq('id', waiterId)
-
-    if (updateError) throw updateError
-
-    // Сохраняем device_id
-    localStorage.setItem('waiter_device_id', waiterId)
-
-    // Переходим в профиль
     navigate('/profile')
-
   } catch (error: any) {
     console.error('Ошибка верификации:', error)
-    alert(error.message || 'Произошла ошибка')
+    alert(error.message || 'Неверный код. Попробуйте снова.')
   }
 }
 

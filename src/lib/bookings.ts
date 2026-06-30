@@ -1,5 +1,4 @@
 import { supabaseWaiter, supabaseRestaurants } from './supabase'
-import { setCurrentUser } from './supabase' // ← ДОБАВЬ ИМПОРТ В НАЧАЛО ФАЙЛА
 
 // ══════════════════════════════════════════════════════════════
 // ТИПЫ
@@ -98,9 +97,6 @@ export async function getMyShifts(
   status: 'applied' | 'approved' | 'confirmed'
 ): Promise<{ data: ShiftWithDetails[] | null; error: any }> {
   try {
-    // НОВОЕ: Устанавливаем текущего пользователя
-    await setCurrentUser(waiterId)
-
     // Получаем бронирования из таблицы официантов
     const { data: bookings, error: bookingsError } = await supabaseWaiter
       .from('bookings')
@@ -149,12 +145,9 @@ export async function getMyShifts(
 
 export async function confirmShift(bookingId: string, waiterId: string) {
   try {
-    // Устанавливаем текущего пользователя
-    await setCurrentUser(waiterId)
-
     const { data, error } = await supabaseWaiter
       .from('bookings')
-      .update({ 
+      .update({
         status: 'confirmed',
         updated_at: new Date().toISOString()
       })
@@ -179,7 +172,6 @@ export async function confirmShift(bookingId: string, waiterId: string) {
 
 export async function cancelBooking(bookingId: string, waiterId: string) {
   try {
-    await setCurrentUser(waiterId)
     // Проверяем что статус не 'confirmed'
     const { data: booking, error: checkError } = await supabaseWaiter
       .from('bookings')
