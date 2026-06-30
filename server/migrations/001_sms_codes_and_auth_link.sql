@@ -15,6 +15,11 @@
 --     не трогаются. Текущий поток регистрации продолжает работать.
 --   - Никакие существующие RLS-политики не меняются.
 --
+-- Запускать ИЗ-ПОД supabase_admin — он владелец public.waiters.
+-- Команда:
+--   sudo docker exec -i supabase-db psql -U supabase_admin -d postgres \
+--     -v ON_ERROR_STOP=1 < server/migrations/001_sms_codes_and_auth_link.sql
+--
 -- Откат: см. файл 001_sms_codes_and_auth_link_rollback.sql
 -- ============================================================
 
@@ -50,6 +55,12 @@ ALTER TABLE public.sms_codes FORCE ROW LEVEL SECURITY;
 -- Никаких политик не создаём: при включённом RLS без политик доступ закрыт.
 -- service_role (наш бэкенд) обходит RLS — он сможет читать/писать.
 -- anon и authenticated не увидят ничего.
+
+-- Гранты: PostgREST раздаёт запросы через эти роли. Без GRANT-ов даже
+-- service_role получит "permission denied for table sms_codes".
+-- Сама RLS уже отрежет anon/authenticated, так что давать им SELECT
+-- безопасно (FORCE RLS без политик = пусто).
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.sms_codes TO anon, authenticated, service_role;
 
 -- 4. Связка waiters ↔ auth.users --------------------------------------------
 ALTER TABLE public.waiters
