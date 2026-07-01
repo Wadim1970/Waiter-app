@@ -93,44 +93,30 @@ export async function applyForJob(waiterId: string, jobId: string) {
 // ═══════════════════════════════════════════════════════════════
 
 export async function getMyShifts(
-  waiterId: string, 
+  waiterId: string,
   status: 'applied' | 'approved' | 'confirmed'
 ): Promise<{ data: ShiftWithDetails[] | null; error: any }> {
   try {
-    // Получаем бронирования из таблицы официантов
-    const { data: bookings, error: bookingsError } = await supabaseWaiter
+    // bookings и jobs/restaurants исторически читались через два разных
+    // клиента ("База 1"/"База 2"), но это один и тот же проект Supabase —
+    // PostgREST сам строит вложенный JOIN по существующим FK
+    // (bookings.job_id -> jobs.id, jobs.restaurant_id -> restaurants),
+    // так что один запрос заменяет прежние два round-trip'а с join'ом в JS.
+    const { data, error } = await supabaseWaiter
       .from('bookings')
-      .select('*')
+      .select(`
+        *,
+        job:jobs ( *, restaurant:restaurants(*) )
+      `)
       .eq('worker_id', waiterId)
       .eq('status', status)
       .order('created_at', { ascending: false })
 
-    if (bookingsError) throw bookingsError
-    if (!bookings || bookings.length === 0) {
-      return { data: [], error: null }
-    }
+    if (error) throw error
 
-    // Получаем детали вакансий из таблицы ресторанов
-    const jobIds = bookings.map(b => b.job_id)
-    
-    const { data: jobs, error: jobsError } = await supabaseRestaurants
-      .from('jobs')
-      .select(`
-        *,
-        restaurant:restaurants(*)
-      `)
-      .in('id', jobIds)
-
-    if (jobsError) throw jobsError
-
-    // Соединяем данные
-    const shiftsWithDetails: ShiftWithDetails[] = bookings.map(booking => {
-      const job = jobs?.find(j => j.id === booking.job_id)
-      return {
-        ...booking,
-        job: job as Job & { restaurant: Restaurant }
-      }
-    }).filter(shift => shift.job) // Удаляем записи где job не найден
+    const shiftsWithDetails = (data ?? [])
+      .filter((b: any) => b.job)
+      .map((b: any) => b as ShiftWithDetails)
 
     return { data: shiftsWithDetails, error: null }
   } catch (error: any) {
