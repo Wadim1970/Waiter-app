@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { TableWithSession } from '../../../lib/tables'
-import { loadOrderItems, loadGuestAttributes, getOrderStatus, sendToKitchen, requestBill, clearTable, updateTableSessionStatus } from '../../../lib/orders'
+import { loadOrderItems, loadGuestAttributes, getOrderStatus, getGuestPaidStatus, sendToKitchen, requestBill, clearTable, updateTableSessionStatus } from '../../../lib/orders'
 import type { LoadedOrderItem, GuestAttrs } from '../../../lib/orders'
+import { supabase } from '../../../lib/supabase'
 import styles from './AllOrdersScreen.module.css'
 
 const GUEST_COLORS = ['#02a826','#ce00b9','#ff9500','#003daf','#6c03ed','#0f929c','#700061','#979200']
@@ -60,6 +61,10 @@ export default function AllOrdersScreen() {
 
   const [orderItems, setOrderItems] = useState<LoadedOrderItem[]>(initialItems)
   const [guestAttrs, setGuestAttrs] = useState<Record<number, GuestAttrs>>(initialAttrs)
+  // Место (seat_number) -> 'paid', если гость оплатил через RestAI сам, без
+  // участия официанта (pay_table_seats). Такое место дальше скрываем из
+  // списка карточек — официант не должен видеть уже закрытую гостем корзину.
+  const [guestPaidStatus, setGuestPaidStatus] = useState<Record<number, string>>({})
   const [itemsLoaded, setItemsLoaded] = useState(initialItems.length > 0)
   const [orderStatus, setOrderStatus] = useState<string>('new')
   const [sessionStartedAt, setSessionStartedAt] = useState<string | null>(table?.startedAt ?? null)
@@ -74,12 +79,35 @@ export default function AllOrdersScreen() {
       loadOrderItems(orderId),
       loadGuestAttributes(orderId),
       getOrderStatus(orderId),
-    ]).then(([items, attrs, status]) => {
+      getGuestPaidStatus(orderId),
+    ]).then(([items, attrs, status, paidStatus]) => {
       setOrderItems(items)
       setGuestAttrs(attrs)
       setOrderStatus(status ?? 'new')
+      setGuestPaidStatus(paidStatus)
       setItemsLoaded(true)
     })
+  }, [orderId])
+
+  // Realtime: гость может оплатить своё место через RestAI прямо сейчас,
+  // пока официант смотрит на этот экран — карточка должна пропасть сама,
+  // без похода "назад-вперёд" по экранам.
+  useEffect(() => {
+    if (!orderId) return
+
+    const filter = `order_id=eq.${orderId}`
+    const patch = (payload: any) => {
+      const row = payload.new as { seat_number: number; status: string | null }
+      setGuestPaidStatus(prev => ({ ...prev, [row.seat_number]: row.status ?? '' }))
+    }
+
+    const channel = supabase
+      .channel(`order_guests:${orderId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'order_guests', filter }, patch)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'order_guests', filter }, patch)
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   }, [orderId])
 
   useEffect(() => {
@@ -133,20 +161,28 @@ export default function AllOrdersScreen() {
   }
 
   const elapsed = getElapsedSeconds(sessionStartedAt)
-  const totalPrice = orderItems.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
   const tableNumber = table?.number ?? '—'
 
+  // seatsWithItems — реальный список мест с позициями, используется там, где
+  // важен физический состав стола (например, guest_count при отправке на
+  // кухню — гость, оплативший раньше остальных, не перестаёт сидеть за
+  // столом). visibleSeats — то же самое, но без уже оплаченных гостем самим
+  // мест: их корзины должны пропадать из интерфейса официанта.
   const seatsWithItems = [...new Set(orderItems.map(i => i.seat_number))].sort()
+  const visibleSeats = seatsWithItems.filter(seat => guestPaidStatus[seat] !== 'paid')
+  const totalPrice = orderItems
+    .filter(i => guestPaidStatus[i.seat_number] !== 'paid')
+    .reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
 
   const goToGuest = (guestIndex: number) => {
-    const hasItems = seatsWithItems.includes(guestIndex + 1)
+    const hasItems = visibleSeats.includes(guestIndex + 1)
     if (hasItems) {
       navigate(`/restaurant/table/${table?.id ?? ''}/order`, {
         state: { table, guests, orderId, orderItems, guestAttrs, activeGuestIndex: guestIndex, noAnimation: true }
       })
     } else {
       navigate(`/restaurant/table/${table?.id ?? ''}/guests`, {
-        state: { table, guests, orderId, activeGuestIndex: guestIndex, seatsWithItems }
+        state: { table, guests, orderId, activeGuestIndex: guestIndex, seatsWithItems: visibleSeats }
       })
     }
   }
@@ -178,7 +214,7 @@ export default function AllOrdersScreen() {
         </button>
 
         {GUEST_COLORS.map((color, i) => {
-          const hasItems = seatsWithItems.includes(i + 1)
+          const hasItems = visibleSeats.includes(i + 1)
           return (
             <button
               key={i}
@@ -196,11 +232,11 @@ export default function AllOrdersScreen() {
       </div>
 
       <div className={styles.content}>
-        {itemsLoaded && seatsWithItems.length === 0 && (
+        {itemsLoaded && visibleSeats.length === 0 && (
           <p className={styles.empty}>Нет блюд</p>
         )}
 
-        {seatsWithItems.map(seat => {
+        {visibleSeats.map(seat => {
           const color = GUEST_COLORS[seat - 1] ?? '#02a826'
           const items = orderItems.filter(i => i.seat_number === seat)
           const guestTotal = items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
