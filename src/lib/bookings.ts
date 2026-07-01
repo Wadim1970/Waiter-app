@@ -111,6 +111,10 @@ export async function getMyShifts(
       .eq('worker_id', waiterId)
       .eq('status', status)
       .order('created_at', { ascending: false })
+      // bookings никогда не удаляются — за годы работы официанта тут может
+      // накопиться сотни записей на статус. Экран показывает недавние смены,
+      // а не полную историю с начала времён.
+      .limit(50)
 
     if (error) throw error
 
@@ -218,11 +222,12 @@ export async function hasAppliedForJob(waiterId: string, jobId: string): Promise
 
 export async function getShiftCounts(waiterId: string) {
   try {
-    const { data, error } = await supabaseWaiter
-      .from('bookings')
-      .select('status')
-      .eq('worker_id', waiterId)
-      .in('status', ['applied', 'approved', 'confirmed'])
+    // Считаем прямо в БД (GROUP BY), а не гоняем по сети все bookings
+    // официанта ради подсчёта 3 чисел для бейджей — bookings не удаляются
+    // и за долгую карьеру это могли быть сотни строк на один рендер.
+    const { data, error } = await supabaseWaiter.rpc('get_shift_counts', {
+      p_worker_id: waiterId,
+    })
 
     if (error) throw error
 
@@ -232,9 +237,9 @@ export async function getShiftCounts(waiterId: string) {
       confirmed: 0
     }
 
-    data?.forEach(booking => {
-      if (booking.status in counts) {
-        counts[booking.status as keyof typeof counts]++
+    ;(data ?? []).forEach((row: { status: string; cnt: number }) => {
+      if (row.status in counts) {
+        counts[row.status as keyof typeof counts] = Number(row.cnt)
       }
     })
 
