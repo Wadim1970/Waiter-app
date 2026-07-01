@@ -91,6 +91,9 @@ export async function getMyTables(waiterId: string, restaurantId: string): Promi
       )
     `)
     .eq('waiter_id', waiterId)
+    // Без этого фильтра официант, закреплённый за столами в нескольких
+    // ресторанах, видел бы их все вперемешку вместо только текущего.
+    .eq('tables.restaurant_id', restaurantId)
     .or(`assigned_date.eq.${today},is_permanent.eq.true`)
 
   if (error) throw error
