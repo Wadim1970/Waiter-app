@@ -76,78 +76,65 @@ export function applySessionToTables(
   })
 }
 
+// Плоская строка вью public.tables_with_active_session (миграция 004):
+// LEFT JOIN стола с ЕДИНСТВЕННОЙ активной сессией сделан в БД, так что
+// сюда больше не долетает история закрытых смен.
+const VIEW_COLUMNS = 'id, number, zone, capacity, session_id, session_status, guest_count, started_at, session_waiter_id'
+
+function mapViewRow(t: any): TableWithSession {
+  return {
+    id: t.id,
+    number: t.number,
+    zone: t.zone as TableZone,
+    capacity: t.capacity,
+    status: (t.session_status ?? 'free') as TableStatus,
+    guestCount: t.guest_count ?? 0,
+    startedAt: t.started_at ?? null,
+    sessionId: t.session_id ?? null,
+    waiterId: t.session_waiter_id ?? null,
+  }
+}
+
 export async function getMyTables(waiterId: string, restaurantId: string): Promise<TableWithSession[]> {
   const today = new Date().toISOString().split('T')[0]
 
-  const { data, error } = await supabase
+  // Небольшой запрос: какие столы закреплены за официантом в ЭТОМ ресторане.
+  const { data: assignments, error: aErr } = await supabase
     .from('waiter_table_assignments')
-    .select(`
-      table_id,
-      tables!inner (
-        id, number, zone, capacity,
-        table_sessions (
-          id, status, guest_count, started_at, waiter_id, is_active
-        )
-      )
-    `)
+    .select('table_id, tables!inner ( restaurant_id )')
     .eq('waiter_id', waiterId)
     // Без этого фильтра официант, закреплённый за столами в нескольких
     // ресторанах, видел бы их все вперемешку вместо только текущего.
     .eq('tables.restaurant_id', restaurantId)
     .or(`assigned_date.eq.${today},is_permanent.eq.true`)
 
-  if (error) throw error
+  if (aErr) throw aErr
 
-  return mapTablesToView(data)
-}
+  const tableIds = (assignments ?? []).map((a: any) => a.table_id)
+  if (tableIds.length === 0) return []
 
-export async function getAllTables(restaurantId: string): Promise<TableWithSession[]> {
   const { data, error } = await supabase
-    .from('tables')
-    .select(`
-      id, number, zone, capacity,
-      table_sessions (
-        id, status, guest_count, started_at, waiter_id, is_active
-      )
-    `)
-    .eq('restaurant_id', restaurantId)
-    .eq('is_active', true)
+    .from('tables_with_active_session')
+    .select(VIEW_COLUMNS)
+    .in('id', tableIds)
     .order('number')
 
   if (error) throw error
 
-  return data.map((t: any) => {
-    const session = t.table_sessions?.find((s: any) => s.is_active) ?? null
-    return {
-      id: t.id,
-      number: t.number,
-      zone: t.zone as TableZone,
-      capacity: t.capacity,
-      status: (session?.status ?? 'free') as TableStatus,
-      guestCount: session?.guest_count ?? 0,
-      startedAt: session?.started_at ?? null,
-      sessionId: session?.id ?? null,
-      waiterId: session?.waiter_id ?? null,
-    }
-  })
+  return (data as any[]).map(mapViewRow)
 }
 
-function mapTablesToView(data: any[]): TableWithSession[] {
-  return data.map((row: any) => {
-    const t = row.tables
-    const session = t.table_sessions?.find((s: any) => s.is_active) ?? null
-    return {
-      id: t.id,
-      number: t.number,
-      zone: t.zone as TableZone,
-      capacity: t.capacity,
-      status: (session?.status ?? 'free') as TableStatus,
-      guestCount: session?.guest_count ?? 0,
-      startedAt: session?.started_at ?? null,
-      sessionId: session?.id ?? null,
-      waiterId: session?.waiter_id ?? null,
-    }
-  })
+export async function getAllTables(restaurantId: string): Promise<TableWithSession[]> {
+  const { data, error } = await supabase
+    .from('tables_with_active_session')
+    .select(VIEW_COLUMNS)
+    .eq('restaurant_id', restaurantId)
+    .eq('table_is_active', true)
+    .order('number')
+
+  if (error) throw error
+
+  return (data as any[]).map(mapViewRow)
 }
 
 export function formatElapsedTime(startedAt: string | null): string {

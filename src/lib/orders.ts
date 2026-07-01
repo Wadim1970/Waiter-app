@@ -205,39 +205,30 @@ export async function loadGuestAttributes(orderId: string): Promise<Record<numbe
   )
 }
 
+// Один вложенный PostgREST-запрос вместо прежних 4-5 последовательных
+// round-trip'ов (order_items → menu_items + order_item_modifiers → modifiers
+// → modifier_groups). Работает благодаря существующим FK: order_items.item_id
+// -> menu_items.id, order_item_modifiers.order_item_id -> order_items.id,
+// order_item_modifiers.modifier_id -> modifiers.id, modifiers.group_id ->
+// modifier_groups.id — PostgREST сам строит JOIN по этим связям.
 export async function loadOrderItems(orderId: string): Promise<LoadedOrderItem[]> {
   const { data: items, error } = await supabase
     .from('order_items')
-    .select('id, item_id, seat_number, quantity, unit_price, status, sent_at, comment')
+    .select(`
+      id, item_id, seat_number, quantity, unit_price, status, sent_at, comment,
+      menu_items ( dish_name, cook_time_min ),
+      order_item_modifiers (
+        price_delta,
+        modifiers ( name, modifier_groups ( name ) )
+      )
+    `)
     .eq('order_id', orderId)
     .order('seat_number')
     .order('id')
 
   if (error || !items?.length) return []
 
-  const itemIds = [...new Set(items.map(i => i.item_id))]
-  const orderItemIds = items.map(i => i.id)
-
-  const [{ data: menuItems }, { data: oims }] = await Promise.all([
-    supabase.from('menu_items').select('id, dish_name, cook_time_min').in('id', itemIds),
-    supabase.from('order_item_modifiers').select('order_item_id, modifier_id, price_delta').in('order_item_id', orderItemIds),
-  ])
-
-  const modifierIds = [...new Set((oims || []).map(m => m.modifier_id))]
-  const { data: modData } = modifierIds.length
-    ? await supabase.from('modifiers').select('id, name, group_id').in('id', modifierIds)
-    : { data: [] as { id: string; name: string; group_id: string }[] }
-
-  const groupIds = [...new Set((modData || []).map(m => m.group_id).filter(Boolean))]
-  const { data: groupData } = groupIds.length
-    ? await supabase.from('modifier_groups').select('id, name').in('id', groupIds)
-    : { data: [] as { id: string; name: string }[] }
-
-  const dishMap = Object.fromEntries((menuItems || []).map(m => [m.id, m]))
-  const groupMap = Object.fromEntries((groupData || []).map(g => [g.id, g.name]))
-  const modMap = Object.fromEntries((modData || []).map(m => [m.id, { name: m.name, groupName: groupMap[m.group_id] ?? '' }]))
-
-  return items.map(item => ({
+  return (items as any[]).map(item => ({
     id: item.id,
     item_id: item.item_id,
     seat_number: item.seat_number,
@@ -246,14 +237,12 @@ export async function loadOrderItems(orderId: string): Promise<LoadedOrderItem[]
     status: item.status,
     sent_at: item.sent_at ?? null,
     comment: item.comment ?? null,
-    dish_name: dishMap[item.item_id]?.dish_name ?? '?',
-    cook_time_min: dishMap[item.item_id]?.cook_time_min ?? 0,
-    modifiers: (oims || [])
-      .filter(m => m.order_item_id === item.id)
-      .map(m => ({
-        groupName: modMap[m.modifier_id]?.groupName ?? '',
-        name: modMap[m.modifier_id]?.name ?? '',
-        price_delta: m.price_delta,
-      })),
+    dish_name: item.menu_items?.dish_name ?? '?',
+    cook_time_min: item.menu_items?.cook_time_min ?? 0,
+    modifiers: (item.order_item_modifiers ?? []).map((m: any) => ({
+      groupName: m.modifiers?.modifier_groups?.name ?? '',
+      name: m.modifiers?.name ?? '',
+      price_delta: m.price_delta,
+    })),
   }))
 }
