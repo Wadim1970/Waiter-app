@@ -37,6 +37,45 @@ export interface TableWithSession {
   waiterId: string | null
 }
 
+// Сырая строка public.table_sessions, как её отдаёт Realtime в payload.new
+export interface TableSessionRow {
+  id: string
+  table_id: string
+  waiter_id: string | null
+  status: TableStatus
+  guest_count: number
+  started_at: string | null
+  is_active: boolean
+}
+
+// Точечно применяет одно изменение table_sessions к уже загруженному списку
+// столов — без похода в БД. Используется в Realtime-подписке TablesScreen,
+// чтобы не дёргать полный loadTables() на каждое событие (см. разбор
+// "widcast storm" — сотни событий/сек на весь ресторан не должны означать
+// сотни лишних SELECT'ов).
+export function applySessionToTables(
+  tables: TableWithSession[],
+  session: TableSessionRow,
+): TableWithSession[] {
+  return tables.map(t => {
+    if (t.id !== session.table_id) return t
+
+    if (!session.is_active) {
+      // Сессия закрылась (стол освободили) — сбрасываем на "свободен"
+      return { ...t, status: 'free', guestCount: 0, startedAt: null, sessionId: null, waiterId: null }
+    }
+
+    return {
+      ...t,
+      status: session.status,
+      guestCount: session.guest_count,
+      startedAt: session.started_at,
+      sessionId: session.id,
+      waiterId: session.waiter_id,
+    }
+  })
+}
+
 export async function getMyTables(waiterId: string, restaurantId: string): Promise<TableWithSession[]> {
   const today = new Date().toISOString().split('T')[0]
 

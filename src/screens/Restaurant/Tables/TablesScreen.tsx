@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { getActiveShift } from '../QRScanner/QRScannerScreen'
-import { getMyTables, getAllTables } from '../../../lib/tables'
-import type { TableWithSession } from '../../../lib/tables'
+import { getMyTables, getAllTables, applySessionToTables } from '../../../lib/tables'
+import type { TableWithSession, TableSessionRow } from '../../../lib/tables'
 import { supabase } from '../../../lib/supabase'
 import TableCard from './TableCard'
 import Footer from '../../shared/Footer'
@@ -45,16 +45,38 @@ export default function TablesScreen() {
     loadTables()
   }, [loadTables])
 
-  // Realtime подписка на изменения статусов
+  // Realtime подписка на изменения статусов — только своего ресторана.
+  // INSERT/UPDATE патчат стол точечно, без похода в БД (см. applySessionToTables).
+  // DELETE — редкость (сессии обычно не удаляют, а помечают is_active=false),
+  // на него безопасно делаем полный рефетч.
   useEffect(() => {
     if (!restaurantId) return
 
+    const filter = `restaurant_id=eq.${restaurantId}`
+
     const channel = supabase
-      .channel('table_sessions_changes')
+      .channel(`table_sessions:${restaurantId}`)
       .on('postgres_changes', {
-        event: '*',
+        event: 'INSERT',
         schema: 'public',
         table: 'table_sessions',
+        filter,
+      }, (payload) => {
+        setTables(prev => applySessionToTables(prev, payload.new as TableSessionRow))
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'table_sessions',
+        filter,
+      }, (payload) => {
+        setTables(prev => applySessionToTables(prev, payload.new as TableSessionRow))
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'table_sessions',
+        filter,
       }, () => {
         loadTables()
       })
