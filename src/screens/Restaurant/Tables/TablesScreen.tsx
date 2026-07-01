@@ -95,6 +95,7 @@ export default function TablesScreen() {
       .from('orders')
       .select('id')
       .eq('table_id', table.id)
+      .eq('restaurant_id', restaurantId)
       .not('status', 'eq', 'paid')
       .order('created_at', { ascending: false })
       .limit(1)

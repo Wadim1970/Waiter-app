@@ -95,6 +95,7 @@ export async function getOrCreateOrder(
     .from('orders')
     .select('id')
     .eq('table_id', tableId)
+    .eq('restaurant_id', restaurantId)
     .eq('status', 'new')
     .maybeSingle()
 
