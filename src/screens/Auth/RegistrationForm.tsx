@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { supabaseWaiter } from '../../lib/supabase'
+import { supabaseWaiter, getWaiterId } from '../../lib/supabase'
 import { uploadDocument, recognizePassport } from '../../lib/api'
 import { applyForJob } from '../../lib/bookings'
 import RegistrationModal from './RegistrationModal'
@@ -50,7 +50,7 @@ export default function RegistrationForm() {
   const [searchParams] = useSearchParams()
   
   // Получаем UUID официанта из localStorage
-  const waiterId = localStorage.getItem('waiter_device_id')
+  const waiterId = getWaiterId()
   
   // Проверяем нужно ли показать модалку
   const shouldShowModal = searchParams.get('showModal') === 'true'

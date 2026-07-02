@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabaseRestaurants } from '../../lib/supabase'
 import styles from './JobDetailsScreen.module.css'
 import { pluralizeReviews } from '../../utils/pluralize'
-import { supabaseWaiter } from '../../lib/supabase'
+import { supabaseWaiter, getWaiterId } from '../../lib/supabase'
 import { applyForJob } from '../../lib/bookings'
 
 interface RestaurantDetails {
@@ -138,7 +138,7 @@ const minSwipeDistance = 50
   }
 
  const handleBooking = async () => {
-  const waiterId = localStorage.getItem('waiter_device_id')
+  const waiterId = getWaiterId()
   
   if (!waiterId) {
     alert('❌ Пожалуйста, войдите в систему')

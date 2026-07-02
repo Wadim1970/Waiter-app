@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { cancelBooking, confirmShift } from '../../lib/bookings'
+import { getWaiterId } from '../../lib/supabase'
 import styles from './ShiftCard.module.css'
 
 interface ShiftCardProps {
@@ -57,7 +58,7 @@ export default function ShiftCard({
     setIsLoading(true)
 
     try {
-      const waiterId = localStorage.getItem('waiter_device_id')
+      const waiterId = getWaiterId()
       if (!waiterId) throw new Error('Waiter ID не найден')
 
       const { error } = await cancelBooking(bookingId, waiterId)
@@ -89,7 +90,7 @@ export default function ShiftCard({
     setIsLoading(true)
 
     try {
-      const waiterId = localStorage.getItem('waiter_device_id')
+      const waiterId = getWaiterId()
       if (!waiterId) throw new Error('Waiter ID не найден')
 
       const { error } = await confirmShift(bookingId, waiterId)

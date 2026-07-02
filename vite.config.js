@@ -85,7 +85,12 @@ export default defineConfig({
 //}
  //   })
   ],
-  base: './',
+  // BrowserRouter (не HashRouter) держит реальный путь в адресной строке
+  // (/restaurant/tables и т.п.) — относительный base='./' резолвится от
+  // ЭТОГО пути, а не от корня сайта, поэтому прямой заход/обновление на
+  // вложенном маршруте ломает загрузку JS/manifest (сервер отдаёт вместо
+  // них index.html, браузер ругается на MIME-тип).
+  base: '/',
   build: {
     // УБРАЛИ manualChunks - rolldown-vite его не поддерживает в объектной форме
     chunkSizeWarningLimit: 1000,

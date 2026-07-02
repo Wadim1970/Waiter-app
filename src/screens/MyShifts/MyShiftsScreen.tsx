@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getMyShifts, ShiftWithDetails } from '../../lib/bookings'
+import { getWaiterId } from '../../lib/supabase'
 import ShiftCard from './ShiftCard'
 import WorkingShiftCard from './WorkingShiftCard'
 import WorkingShiftsSlider from './WorkingShiftsSlider' 
@@ -20,7 +21,7 @@ export default function MyShiftsScreen() {
   const [loading, setLoading] = useState(true)
   const [selectedShift, setSelectedShift] = useState<ShiftWithDetails | null>(null)
 
-  const waiterId = localStorage.getItem('waiter_device_id')
+  const waiterId = getWaiterId()
 
   // Загрузка смен
   useEffect(() => {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
+import { supabase, getWaiterId } from '../../lib/supabase'
 import Footer from '../shared/Footer'
 import styles from './IncomeScreen.module.css'
 
@@ -143,7 +143,7 @@ export default function IncomeScreen() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const waiterId = localStorage.getItem('waiter_device_id')
+    const waiterId = getWaiterId()
     if (!waiterId) { navigate('/'); return }
 
     const { from, to } = getPeriodRange(tab)

@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import { getActiveShift } from '../QRScanner/QRScannerScreen'
 import { getMyTables, getAllTables, applySessionToTables } from '../../../lib/tables'
 import type { TableWithSession, TableSessionRow } from '../../../lib/tables'
-import { supabase } from '../../../lib/supabase'
+import { supabase, getWaiterId } from '../../../lib/supabase'
 import TableCard from './TableCard'
 import Footer from '../../shared/Footer'
 import styles from './TablesScreen.module.css'
@@ -20,8 +20,7 @@ export default function TablesScreen() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const id = localStorage.getItem('waiter_device_id')
-    setWaiterId(id)
+    setWaiterId(getWaiterId())
   }, [])
 
 
