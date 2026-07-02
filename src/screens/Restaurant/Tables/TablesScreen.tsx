@@ -146,10 +146,6 @@ export default function TablesScreen() {
             <p className={styles.emptyText}>
               {tab === 'my' ? 'На сегодня столы не назначены' : 'Столы не найдены'}
             </p>
-            {/* ВРЕМЕННО для диагностики — убрать после отладки */}
-            <p className={styles.emptyText} style={{ fontSize: 11, opacity: 0.5, marginTop: 8 }}>
-              debug: waiterId={String(waiterId)}, restaurantId={String(restaurantId)}
-            </p>
           </div>
         )}
 
