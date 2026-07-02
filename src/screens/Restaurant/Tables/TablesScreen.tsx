@@ -109,6 +109,10 @@ export default function TablesScreen() {
 
   return (
     <div className={styles.screen}>
+      {/* ВРЕМЕННО для диагностики — убрать после отладки */}
+      <div style={{ fontSize: 10, opacity: 0.6, padding: '4px 8px', wordBreak: 'break-all', background: '#fffae0', color: '#333' }}>
+        debug: restaurantId={String(restaurantId)} | searchParam={String(searchParams.get('restaurant'))} | activeShift={JSON.stringify(getActiveShift())} | waiterId={String(waiterId)} | tab={tab} | loading={String(loading)} | error={String(error)} | tablesCount={tables.length}
+      </div>
       <div className={styles.header}>
         <div className={styles.tabs}>
           <button
