@@ -50,7 +50,7 @@ export interface ShiftWithDetails extends Booking {
 
 // ═══════════════════════════════════════════════════════════════
 // 1️⃣ ОТКЛИКНУТЬСЯ НА ВАКАНСИЮ
-// ═══════════��═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 
 export async function applyForJob(waiterId: string, jobId: string) {
   try {
@@ -129,7 +129,7 @@ export async function getMyShifts(
   }
 }
 
-// ══════════════════��════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 // 3️⃣ ПОДТВЕРДИТЬ ВЫХОД НА СМЕНУ (МЭТЧ!)
 // ═══════════════════════════════════════════════════════════════
 
@@ -247,5 +247,33 @@ export async function getShiftCounts(waiterId: string) {
   } catch (error: any) {
     console.error('Ошибка получения счётчиков:', error)
     return { data: null, error }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 7️⃣ ДОПУЩЕН ЛИ ОФИЦИАНТ К СМЕНЕ В ЭТОМ РЕСТОРАНЕ СЕГОДНЯ
+// ═══════════════════════════════════════════════════════════════
+// Используется и при сканировании QR, и при открытии экрана столов —
+// одной ссылки/старого кэша смены недостаточно для доступа к чужому
+// ресторану, нужна реально подтверждённая смена именно там и сегодня.
+
+export async function hasConfirmedShiftToday(waiterId: string, restaurantId: string): Promise<boolean> {
+  try {
+    const today = new Date().toISOString().split('T')[0]
+    const { data, error } = await supabaseWaiter
+      .from('bookings')
+      .select('id, jobs!inner(restaurant_id, shift_date)')
+      .eq('worker_id', waiterId)
+      .eq('status', 'confirmed')
+      .eq('jobs.restaurant_id', restaurantId)
+      .eq('jobs.shift_date', today)
+      .limit(1)
+      .maybeSingle()
+
+    if (error) throw error
+    return !!data
+  } catch (error) {
+    console.error('Ошибка проверки допуска к смене:', error)
+    return false
   }
 }

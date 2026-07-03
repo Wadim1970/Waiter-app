@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../../../lib/supabase'
+import { supabase, resolveWaiterId } from '../../../lib/supabase'
+import { hasConfirmedShiftToday } from '../../../lib/bookings'
+import RestaurantAccessDeniedModal from '../../shared/RestaurantAccessDeniedModal'
 import styles from './QRScannerScreen.module.css'
 
 const SHIFT_KEY = 'waiter_shift'
@@ -25,6 +27,7 @@ export default function QRScannerScreen() {
   const navigate = useNavigate()
   const videoRef = useRef<HTMLVideoElement>(null)
   const [error, setError] = useState<string | null>(null)
+  const [accessDenied, setAccessDenied] = useState(false)
 
   // Если смена уже активна — сразу на столы
   useEffect(() => {
@@ -92,6 +95,15 @@ export default function QRScannerScreen() {
       return
     }
 
+    // QR-код валиден, но одного этого мало — доступ к столам конкретного
+    // ресторана даём только при подтверждённой смене там же и сегодня.
+    const waiterId = await resolveWaiterId()
+    const allowed = waiterId ? await hasConfirmedShiftToday(waiterId, data.restaurant_id) : false
+    if (!allowed) {
+      setAccessDenied(true)
+      return
+    }
+
     // Сохраняем смену на 12 часов
     localStorage.setItem(SHIFT_KEY, JSON.stringify({
       restaurantId: data.restaurant_id,
@@ -124,6 +136,15 @@ export default function QRScannerScreen() {
               Попробовать снова
             </button>
           </div>
+        )}
+
+        {accessDenied && (
+          <RestaurantAccessDeniedModal
+            onClose={() => {
+              localStorage.removeItem('waiter_shift')
+              window.location.reload()
+            }}
+          />
         )}
       </div>
     </div>
