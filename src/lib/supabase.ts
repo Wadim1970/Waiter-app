@@ -52,6 +52,30 @@ export function setWaiterId(id: string): void {
   localStorage.setItem(WAITER_ID_KEY, id)
 }
 
+// Надёжное определение официанта: сначала кэш, а если он пуст (сессия
+// восстановилась, но кэш ещё не заполнен — см. AuthCheck) — достаём напрямую
+// из текущей сессии. Без этого экраны, читающие getWaiterId() один раз при
+// монтировании, могут навсегда остаться с null, даже когда сессия валидна.
+export async function resolveWaiterId(): Promise<string | null> {
+  const cached = getWaiterId()
+  if (cached) return cached
+
+  const { data: { session } } = await supabaseWaiter.auth.getSession()
+  if (!session) return null
+
+  const { data: waiter } = await supabaseWaiter
+    .from('waiters')
+    .select('id')
+    .eq('auth_user_id', session.user.id)
+    .maybeSingle()
+
+  if (waiter) {
+    setWaiterId(waiter.id)
+    return waiter.id
+  }
+  return null
+}
+
 // ========== ТИПЫ ==========
 
 export interface WaiterRegistration {

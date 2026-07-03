@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { supabase, getWaiterId, setWaiterId } from '../../lib/supabase'
+import { supabase, resolveWaiterId } from '../../lib/supabase'
 
 export default function AuthCheck() {
   const navigate = useNavigate()
@@ -32,17 +32,10 @@ export default function AuthCheck() {
         // VerificationScreen — при свежем входе по смс. Если сессия просто
         // ВОССТАНОВИЛАСЬ (persistSession, другая вкладка, localStorage
         // частично почищен) этот шаг не отрабатывает повторно, и кэш
-        // остаётся null при абсолютно рабочей сессии — экраны, которые on
+        // остаётся null при абсолютно рабочей сессии — экраны, которые
         // читают id напрямую (TablesScreen и т.п.), молча не находят "своих"
         // данных. Восстанавливаем кэш из БД, если он пуст.
-        if (!getWaiterId()) {
-          const { data: waiter } = await supabase
-            .from('waiters')
-            .select('id')
-            .eq('auth_user_id', session.user.id)
-            .maybeSingle()
-          if (waiter) setWaiterId(waiter.id)
-        }
+        await resolveWaiterId()
 
         // Редиректим в приложение только со стартовых страниц.
         if (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/register') {

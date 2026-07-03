@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import { getActiveShift } from '../QRScanner/QRScannerScreen'
 import { getMyTables, getAllTables, applySessionToTables } from '../../../lib/tables'
 import type { TableWithSession, TableSessionRow } from '../../../lib/tables'
-import { supabase, getWaiterId } from '../../../lib/supabase'
+import { supabase, resolveWaiterId } from '../../../lib/supabase'
 import TableCard from './TableCard'
 import Footer from '../../shared/Footer'
 import styles from './TablesScreen.module.css'
@@ -20,17 +20,24 @@ export default function TablesScreen() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    setWaiterId(getWaiterId())
+    resolveWaiterId().then(setWaiterId)
   }, [])
 
 
   const loadTables = useCallback(async () => {
     if (!restaurantId) return
+    // "Мои" без определённого официанта не должны молча подменяться на
+    // "Все" — иначе оба таба показывают одно и то же под чужим ярлыком,
+    // пока waiterId ещё не разрешился (см. resolveWaiterId выше).
+    if (tab === 'my' && !waiterId) {
+      setLoading(true)
+      return
+    }
     try {
       setLoading(true)
       setError(null)
-      const data = tab === 'my' && waiterId
-        ? await getMyTables(waiterId, restaurantId)
+      const data = tab === 'my'
+        ? await getMyTables(waiterId!, restaurantId)
         : await getAllTables(restaurantId)
       setTables(data)
     } catch (e: any) {
@@ -109,10 +116,6 @@ export default function TablesScreen() {
 
   return (
     <div className={styles.screen}>
-      {/* ВРЕМЕННО для диагностики — убрать после отладки */}
-      <div style={{ fontSize: 10, opacity: 0.6, padding: '4px 8px', wordBreak: 'break-all', background: '#fffae0', color: '#333' }}>
-        debug: restaurantId={String(restaurantId)} | searchParam={String(searchParams.get('restaurant'))} | activeShift={JSON.stringify(getActiveShift())} | waiterId={String(waiterId)} | tab={tab} | loading={String(loading)} | error={String(error)} | tablesCount={tables.length}
-      </div>
       <div className={styles.header}>
         <div className={styles.tabs}>
           <button
