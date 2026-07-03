@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { TableWithSession } from '../../../lib/tables'
 import { loadOrderItems, loadGuestAttributes, getOrderStatus, getGuestPaidStatus, sendToKitchen, requestBill, clearTable, updateTableSessionStatus } from '../../../lib/orders'
@@ -73,42 +73,50 @@ export default function AllOrdersScreen() {
   const [tick, setTick] = useState(0)
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  useEffect(() => {
+  const refreshOrder = useCallback(async () => {
     if (!orderId) { setItemsLoaded(true); return }
-    Promise.all([
+    const [items, attrs, status, paidStatus] = await Promise.all([
       loadOrderItems(orderId),
       loadGuestAttributes(orderId),
       getOrderStatus(orderId),
       getGuestPaidStatus(orderId),
-    ]).then(([items, attrs, status, paidStatus]) => {
-      setOrderItems(items)
-      setGuestAttrs(attrs)
-      setOrderStatus(status ?? 'new')
-      setGuestPaidStatus(paidStatus)
-      setItemsLoaded(true)
-    })
+    ])
+    setOrderItems(items)
+    setGuestAttrs(attrs)
+    setOrderStatus(status ?? 'new')
+    setGuestPaidStatus(paidStatus)
+    setItemsLoaded(true)
   }, [orderId])
 
-  // Realtime: гость может оплатить своё место через RestAI прямо сейчас,
-  // пока официант смотрит на этот экран — карточка должна пропасть сама,
-  // без похода "назад-вперёд" по экранам.
+  useEffect(() => { refreshOrder() }, [refreshOrder])
+
+  // Realtime по одному заказу. Два независимых источника изменений от гостя
+  // через RestAI, пока официант смотрит на этот экран:
+  //   1. order_guests — гость оплатил своё место (pay_table_seats): точечно
+  //      помечаем место 'paid', его карточка дальше скрывается.
+  //   2. order_items — гость докинул блюда в существующий заказ
+  //      (place_guest_order, приходят как 'sent'): перечитываем заказ целиком,
+  //      чтобы новые позиции, суммы и таймеры появились у официанта сразу.
   useEffect(() => {
     if (!orderId) return
 
     const filter = `order_id=eq.${orderId}`
-    const patch = (payload: any) => {
+    const patchGuest = (payload: any) => {
       const row = payload.new as { seat_number: number; status: string | null }
       setGuestPaidStatus(prev => ({ ...prev, [row.seat_number]: row.status ?? '' }))
     }
 
     const channel = supabase
-      .channel(`order_guests:${orderId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'order_guests', filter }, patch)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'order_guests', filter }, patch)
+      .channel(`order:${orderId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'order_guests', filter }, patchGuest)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'order_guests', filter }, patchGuest)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'order_items', filter }, () => { refreshOrder() })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'order_items', filter }, () => { refreshOrder() })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'order_items', filter }, () => { refreshOrder() })
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [orderId])
+  }, [orderId, refreshOrder])
 
   useEffect(() => {
     const hasSentItems = orderItems.some(i => i.status === 'sent' && i.sent_at)
