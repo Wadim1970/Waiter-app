@@ -38,6 +38,12 @@ export default function QRScannerScreen() {
   }, [])
 
   useEffect(() => {
+    // Если смена уже активна — этот экран сейчас редиректит на столы
+    // (см. эффект выше), камеру НЕ включаем вообще. Иначе из-за гонки
+    // async-старта поток успевает подняться уже после ухода с экрана и
+    // висит "сам по себе", пока его не выключишь руками.
+    if (getActiveShift()) return
+
     let stopped = false
     let controls: { stop: () => void } | null = null
 
@@ -64,6 +70,10 @@ export default function QRScannerScreen() {
             await handleScan(result.getText())
           }
         )
+        // Экран мог размонтироваться, пока поднималась камера (async-гонка):
+        // тогда cleanup уже отработал с ещё пустым controls. Глушим поток
+        // сразу, иначе он останется висеть включённым.
+        if (stopped) controls.stop()
       } catch {
         setError('Не удалось запустить камеру. Проверьте разрешения.')
       }
