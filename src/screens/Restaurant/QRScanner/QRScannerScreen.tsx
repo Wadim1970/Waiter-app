@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../../../lib/supabase'
+import { supabase, resolveWaiterId } from '../../../lib/supabase'
+import { hasConfirmedShiftToday } from '../../../lib/bookings'
+import RestaurantAccessDeniedModal from '../../shared/RestaurantAccessDeniedModal'
 import styles from './QRScannerScreen.module.css'
 
 const SHIFT_KEY = 'waiter_shift'
@@ -25,6 +27,7 @@ export default function QRScannerScreen() {
   const navigate = useNavigate()
   const videoRef = useRef<HTMLVideoElement>(null)
   const [error, setError] = useState<string | null>(null)
+  const [accessDenied, setAccessDenied] = useState(false)
 
   // Если смена уже активна — сразу на столы
   useEffect(() => {
@@ -35,6 +38,12 @@ export default function QRScannerScreen() {
   }, [])
 
   useEffect(() => {
+    // Если смена уже активна — этот экран сейчас редиректит на столы
+    // (см. эффект выше), камеру НЕ включаем вообще. Иначе из-за гонки
+    // async-старта поток успевает подняться уже после ухода с экрана и
+    // висит "сам по себе", пока его не выключишь руками.
+    if (getActiveShift()) return
+
     let stopped = false
     let controls: { stop: () => void } | null = null
 
@@ -61,6 +70,10 @@ export default function QRScannerScreen() {
             await handleScan(result.getText())
           }
         )
+        // Экран мог размонтироваться, пока поднималась камера (async-гонка):
+        // тогда cleanup уже отработал с ещё пустым controls. Глушим поток
+        // сразу, иначе он останется висеть включённым.
+        if (stopped) controls.stop()
       } catch {
         setError('Не удалось запустить камеру. Проверьте разрешения.')
       }
@@ -89,6 +102,15 @@ export default function QRScannerScreen() {
 
     if (!data) {
       setError('QR-код недействителен или устарел.')
+      return
+    }
+
+    // QR-код валиден, но одного этого мало — доступ к столам конкретного
+    // ресторана даём только при подтверждённой смене там же и сегодня.
+    const waiterId = await resolveWaiterId()
+    const allowed = waiterId ? await hasConfirmedShiftToday(waiterId, data.restaurant_id) : false
+    if (!allowed) {
+      setAccessDenied(true)
       return
     }
 
@@ -124,6 +146,15 @@ export default function QRScannerScreen() {
               Попробовать снова
             </button>
           </div>
+        )}
+
+        {accessDenied && (
+          <RestaurantAccessDeniedModal
+            onClose={() => {
+              localStorage.removeItem('waiter_shift')
+              window.location.reload()
+            }}
+          />
         )}
       </div>
     </div>

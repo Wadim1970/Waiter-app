@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom'
+import { getActiveShift } from '../Restaurant/QRScanner/QRScannerScreen'
 import styles from './Footer.module.css'
 
 export default function Footer() {
@@ -30,7 +31,13 @@ export default function Footer() {
       {/* СКАНЕР QR → СТОЛЫ РЕСТОРАНА */}
       <button
         className={`${styles.iconButton} ${isActive('/restaurant/scan') || isActive('/restaurant/tables') ? styles.active : ''}`}
-        onClick={() => navigate('/restaurant/scan')}
+        onClick={() => {
+          // Смена уже активна — ведём сразу на столы, а не через сканер:
+          // иначе на миг рендерится камера, прежде чем сканер сам себя
+          // перенаправит (см. redirect-эффект в QRScannerScreen).
+          const shift = getActiveShift()
+          navigate(shift ? `/restaurant/tables?restaurant=${shift.restaurantId}` : '/restaurant/scan')
+        }}
         aria-label="Столы ресторана"
       >
         <img src="/icons/Home-logo.png" alt="Главная" className={styles.homeIcon} />
