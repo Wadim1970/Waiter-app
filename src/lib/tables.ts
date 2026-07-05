@@ -35,6 +35,9 @@ export interface TableWithSession {
   startedAt: string | null
   sessionId: string | null
   waiterId: string | null
+  // Тип запрошенного счёта: 'personal' (раздельный) | 'table' (общий) | null.
+  // Показывается на карточке только при статусе bill_requested.
+  billType: string | null
 }
 
 // Сырая строка public.table_sessions, как её отдаёт Realtime в payload.new
@@ -46,6 +49,7 @@ export interface TableSessionRow {
   guest_count: number
   started_at: string | null
   is_active: boolean
+  bill_type: string | null
 }
 
 // Точечно применяет одно изменение table_sessions к уже загруженному списку
@@ -62,7 +66,7 @@ export function applySessionToTables(
 
     if (!session.is_active) {
       // Сессия закрылась (стол освободили) — сбрасываем на "свободен"
-      return { ...t, status: 'free', guestCount: 0, startedAt: null, sessionId: null, waiterId: null }
+      return { ...t, status: 'free', guestCount: 0, startedAt: null, sessionId: null, waiterId: null, billType: null }
     }
 
     return {
@@ -72,6 +76,7 @@ export function applySessionToTables(
       startedAt: session.started_at,
       sessionId: session.id,
       waiterId: session.waiter_id,
+      billType: session.bill_type ?? null,
     }
   })
 }
@@ -79,7 +84,7 @@ export function applySessionToTables(
 // Плоская строка вью public.tables_with_active_session (миграция 004):
 // LEFT JOIN стола с ЕДИНСТВЕННОЙ активной сессией сделан в БД, так что
 // сюда больше не долетает история закрытых смен.
-const VIEW_COLUMNS = 'id, number, zone, capacity, session_id, session_status, guest_count, started_at, session_waiter_id'
+const VIEW_COLUMNS = 'id, number, zone, capacity, session_id, session_status, guest_count, started_at, session_waiter_id, session_bill_type'
 
 function mapViewRow(t: any): TableWithSession {
   return {
@@ -92,6 +97,7 @@ function mapViewRow(t: any): TableWithSession {
     startedAt: t.started_at ?? null,
     sessionId: t.session_id ?? null,
     waiterId: t.session_waiter_id ?? null,
+    billType: t.session_bill_type ?? null,
   }
 }
 
