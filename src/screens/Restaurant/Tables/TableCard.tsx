@@ -9,6 +9,11 @@ interface Props {
 
 export default function TableCard({ table, onClick }: Props) {
   const colors = STATUS_COLORS[table.status]
+  // При "ждут счёт" дописываем, какой счёт нести: общий или раздельный —
+  // гость выбрал это, когда звал официанта.
+  const billNote = table.status === 'bill_requested' && table.billType
+    ? table.billType === 'table' ? ' · общий' : ' · раздельный'
+    : ''
   const guestLabel = table.guestCount === 0
     ? '0 гостей'
     : table.guestCount === 1
@@ -30,7 +35,7 @@ export default function TableCard({ table, onClick }: Props) {
       </div>
       <div className={styles.bottomLeft}>
         <span className={styles.zone}>{ZONE_LABELS[table.zone]}</span>
-        <span className={styles.status}>{STATUS_LABELS[table.status]}</span>
+        <span className={styles.status}>{STATUS_LABELS[table.status]}{billNote}</span>
       </div>
     </div>
   )
