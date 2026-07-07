@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import WelcomeScreen from './screens/Welcome/WelcomeScreen'
 import AuthCheck from './screens/Auth/AuthCheck'
 import JobDetailsScreenEager from './screens/Map/JobDetailsScreen'
+import WaiterCallOverlay from './screens/shared/WaiterCallOverlay'
 import './App.css'
 
 const RegisterScreen = lazy(() => import('./screens/Auth/RegisterScreen'))
@@ -91,6 +92,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthCheck />
+      <WaiterCallOverlay />
       <Suspense fallback={<Loader />}>
         <Routes>
           <Route path="/" element={<WelcomeScreen />} />
