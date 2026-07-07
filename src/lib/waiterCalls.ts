@@ -6,7 +6,7 @@ export interface WaiterCall {
   table_id: string
   table_number: string
   target_waiter_id: string | null
-  status: 'pending' | 'acknowledged'
+  status: 'pending' | 'acknowledged' | 'cancelled'
   created_at: string
 }
 
@@ -16,6 +16,24 @@ export interface WaiterCall {
 // (широковещательный, target_waiter_id === null), либо назначен именно мне.
 export function isCallForMe(call: WaiterCall, myWaiterId: string): boolean {
   return call.target_waiter_id === null || call.target_waiter_id === myWaiterId
+}
+
+// Ловит вызовы, пропущенные, пока приложение было в фоне (вкладка
+// свёрнута — realtime-соединение браузер мог оборвать, INSERT-событие
+// за это время не долетит никогда, задним числом Realtime его не отдаёт).
+// Вызывается и при монтировании, и при возврате видимости — без этого
+// официант, вернувшись в приложение, не видел вызовы, случившиеся, пока
+// он был в другом приложении (главный баг, который это чинит).
+export async function fetchPendingCalls(restaurantId: string): Promise<WaiterCall[]> {
+  const { data, error } = await supabaseWaiter
+    .from('waiter_calls')
+    .select('*')
+    .eq('restaurant_id', restaurantId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: true })
+
+  if (error) throw error
+  return (data ?? []) as WaiterCall[]
 }
 
 export function subscribeToWaiterCalls(

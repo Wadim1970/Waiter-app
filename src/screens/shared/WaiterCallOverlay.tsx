@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { getActiveShift } from '../Restaurant/QRScanner/QRScannerScreen'
 import { resolveWaiterId } from '../../lib/supabase'
-import { subscribeToWaiterCalls, acknowledgeWaiterCall, isCallForMe, type WaiterCall } from '../../lib/waiterCalls'
+import { subscribeToWaiterCalls, acknowledgeWaiterCall, fetchPendingCalls, isCallForMe, type WaiterCall } from '../../lib/waiterCalls'
 import styles from './WaiterCallOverlay.module.css'
 
 function BellIcon() {
@@ -128,6 +128,44 @@ export default function WaiterCallOverlay() {
   const handleCallResolved = useCallback((call: WaiterCall) => {
     setQueue(prev => prev.filter(c => c.id !== call.id))
   }, [])
+
+  // Подхватывает вызовы, пропущенные, пока приложение было в фоне —
+  // Realtime не отдаёт задним числом события, случившиеся при разорванном
+  // соединении, поэтому это отдельный, обычный запрос.
+  const refreshPendingCalls = useCallback(async () => {
+    if (!restaurantId || !waiterId) return
+    try {
+      const calls = await fetchPendingCalls(restaurantId)
+      const mine = calls.filter(c => isCallForMe(c, waiterId))
+      setQueue(prev => {
+        const existingIds = new Set(prev.map(c => c.id))
+        const toAdd = mine.filter(c => !existingIds.has(c.id))
+        return toAdd.length > 0 ? [...prev, ...toAdd] : prev
+      })
+    } catch (err) {
+      console.error('Не удалось получить список вызовов:', err)
+    }
+  }, [restaurantId, waiterId])
+
+  // При первом появлении смены/официанта — сразу подтягиваем то, что уже
+  // могло накопиться (вызов пришёл до открытия приложения).
+  useEffect(() => {
+    refreshPendingCalls()
+  }, [refreshPendingCalls])
+
+  // Главный фикс: официант свернул приложение (не закрыл — просто ушёл в
+  // другое), Realtime-соединение вкладки браузер мог оборвать. При
+  // возврате в приложение — сразу перепроверяем, а не ждём следующего
+  // случайного события.
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        refreshPendingCalls()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [refreshPendingCalls])
 
   useEffect(() => {
     if (!restaurantId || !waiterId) return
