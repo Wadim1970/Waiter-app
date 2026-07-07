@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getMyShifts, ShiftWithDetails } from '../../lib/bookings'
+import { getMyShifts, markApprovedSeen, ShiftWithDetails } from '../../lib/bookings'
 import { getWaiterId } from '../../lib/supabase'
 import ShiftCard from './ShiftCard'
 import WorkingShiftCard from './WorkingShiftCard'
@@ -27,6 +27,14 @@ export default function MyShiftsScreen() {
   useEffect(() => {
     loadShifts()
   }, [])
+
+  // Открыл вкладку "ОДОБРЕНЫ" — гасим бейдж в футере (сам факт просмотра,
+  // не дожидаясь, пока официант подтвердит или отменит).
+  useEffect(() => {
+    if (subTab === 'approved' && waiterId) {
+      markApprovedSeen(waiterId)
+    }
+  }, [subTab, waiterId])
 
   const loadShifts = async () => {
   if (!waiterId) {

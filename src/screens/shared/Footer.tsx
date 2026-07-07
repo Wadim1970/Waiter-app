@@ -1,12 +1,53 @@
+import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { getActiveShift } from '../Restaurant/QRScanner/QRScannerScreen'
+import { getUnseenApprovedCount } from '../../lib/bookings'
+import { getWaiterId, resolveWaiterId, supabaseWaiter } from '../../lib/supabase'
 import styles from './Footer.module.css'
 
 export default function Footer() {
   const navigate = useNavigate()
   const location = useLocation()
+  const [unseenApproved, setUnseenApproved] = useState(0)
 
   const isActive = (path: string) => location.pathname === path
+
+  // Бейдж на иконке "Мои смены" — сколько одобрений официант ещё не видел.
+  // Footer смонтирован почти на всех экранах, поэтому обновление по
+  // Realtime здесь даёт живой бейдж без необходимости отдельного
+  // глобального компонента (см. WaiterCallOverlay — там иначе, потому что
+  // он должен жить и на экранах без Footer).
+  useEffect(() => {
+    let channel: ReturnType<typeof supabaseWaiter.channel> | null = null
+    let cancelled = false
+
+    const init = async () => {
+      const waiterId = getWaiterId() ?? (await resolveWaiterId())
+      if (!waiterId || cancelled) return
+
+      const refresh = () => {
+        getUnseenApprovedCount(waiterId).then(count => {
+          if (!cancelled) setUnseenApproved(count)
+        })
+      }
+      refresh()
+
+      channel = supabaseWaiter
+        .channel(`booking_approvals:${waiterId}`)
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'bookings', filter: `worker_id=eq.${waiterId}` },
+          refresh
+        )
+        .subscribe()
+    }
+    init()
+
+    return () => {
+      cancelled = true
+      if (channel) supabaseWaiter.removeChannel(channel)
+    }
+  }, [])
 
   return (
     <footer className={styles.footer}>
@@ -20,12 +61,15 @@ export default function Footer() {
       </button>
 
       {/* ЗАКАЗЫ → МОИ СМЕНЫ */}
-      <button 
+      <button
         className={`${styles.iconButton} ${isActive('/my-shifts') ? styles.active : ''}`}
         onClick={() => navigate('/my-shifts')}
         aria-label="Мои смены"
       >
         <img src="/icons/orders.png" alt="Заказы" className={styles.icon} />
+        {unseenApproved > 0 && (
+          <span className={styles.badge}>{unseenApproved > 9 ? '9+' : unseenApproved}</span>
+        )}
       </button>
 
       {/* СКАНЕР QR → СТОЛЫ РЕСТОРАНА */}
