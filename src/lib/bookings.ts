@@ -133,24 +133,22 @@ export async function getMyShifts(
 // 3️⃣ ПОДТВЕРДИТЬ ВЫХОД НА СМЕНУ (МЭТЧ!)
 // ═══════════════════════════════════════════════════════════════
 
+// RPC вместо прямого update — заодно каскадно отменяет ОСТАЛЬНЫЕ брони
+// этого официанта (applied/approved) на ТУ ЖЕ дату смены: нельзя выйти
+// в двух местах одновременно. Триггер на slots_available срабатывает
+// как и раньше — RPC делает тот же UPDATE bookings, просто изнутри.
 export async function confirmShift(bookingId: string, waiterId: string) {
   try {
-    const { data, error } = await supabaseWaiter
-      .from('bookings')
-      .update({
-        status: 'confirmed',
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', bookingId)
-      .select()
-      .single()
+    const { error } = await supabaseWaiter.rpc('confirm_shift', {
+      p_booking_id: bookingId,
+      p_worker_id: waiterId,
+    })
 
     if (error) throw error
 
-    // Триггер автоматически уменьшит slots_available
-    console.log('✅ Смена подтверждена:', data)
+    console.log('✅ Смена подтверждена')
 
-    return { data, error: null }
+    return { data: { id: bookingId, status: 'confirmed' }, error: null }
   } catch (error: any) {
     console.error('Ошибка подтверждения смены:', error)
     return { data: null, error }
@@ -247,6 +245,36 @@ export async function getShiftCounts(waiterId: string) {
   } catch (error: any) {
     console.error('Ошибка получения счётчиков:', error)
     return { data: null, error }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 8️⃣ NOTIFICATION BADGE: НЕПРОСМОТРЕННЫЕ ОДОБРЕНИЯ
+// ═══════════════════════════════════════════════════════════════
+// seen_at сбрасывается в NULL на самой БД при переходе брони в 'approved'
+// (см. миграцию) — здесь просто читаем счётчик и отмечаем просмотренным.
+
+export async function getUnseenApprovedCount(waiterId: string): Promise<number> {
+  try {
+    const { data, error } = await supabaseWaiter.rpc('get_unseen_approved_count', {
+      p_worker_id: waiterId,
+    })
+    if (error) throw error
+    return Number(data ?? 0)
+  } catch (error) {
+    console.error('Ошибка получения счётчика одобрений:', error)
+    return 0
+  }
+}
+
+export async function markApprovedSeen(waiterId: string): Promise<void> {
+  try {
+    const { error } = await supabaseWaiter.rpc('mark_approved_seen', {
+      p_worker_id: waiterId,
+    })
+    if (error) throw error
+  } catch (error) {
+    console.error('Ошибка отметки одобрений просмотренными:', error)
   }
 }
 
