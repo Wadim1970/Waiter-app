@@ -18,10 +18,48 @@ function BellIcon() {
 
 // Простой сгенерированный сигнал через Web Audio — без внешнего аудиофайла.
 // Если нужен конкретный звук (mp3) — можно заменить на new Audio(url).play().
-function playCallSound() {
+//
+// iOS Safari создаёт AudioContext сразу в состоянии 'suspended' и запускает
+// его ТОЛЬКО изнутри настоящего касания экрана — без ошибки, просто тишина,
+// если контекст создать/использовать из асинхронного колбэка (как раз наш
+// случай: звук должен играть по событию Realtime, а не по клику). Поэтому
+// используем ОДИН общий контекст на всё приложение и один раз "будим" его
+// первым же касанием где угодно — дальше его можно дёргать программно.
+let sharedAudioContext: AudioContext | null = null
+
+function getAudioContext(): AudioContext | null {
   try {
-    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
-    const ctx = new AudioCtx()
+    if (!sharedAudioContext) {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
+      sharedAudioContext = new AudioCtx()
+    }
+    return sharedAudioContext
+  } catch {
+    return null
+  }
+}
+
+function unlockAudio() {
+  const ctx = getAudioContext()
+  if (ctx && ctx.state === 'suspended') {
+    ctx.resume().catch(() => {})
+  }
+}
+
+// Вызывается один раз при монтировании — вешает разовые слушатели на первое
+// касание/клик где угодно в приложении, задолго до первого реального вызова.
+function unlockAudioOnFirstGesture() {
+  document.addEventListener('touchend', unlockAudio, { once: true, passive: true })
+  document.addEventListener('click', unlockAudio, { once: true })
+}
+
+function playCallSound() {
+  const ctx = getAudioContext()
+  if (!ctx) return
+  if (ctx.state === 'suspended') {
+    ctx.resume().catch(() => {})
+  }
+  try {
     const beep = (startTime: number) => {
       const osc = ctx.createOscillator()
       const gain = ctx.createGain()
@@ -39,7 +77,7 @@ function playCallSound() {
     beep(now + 0.45)
     beep(now + 0.9)
   } catch {
-    // AudioContext может быть недоступен/заблокирован политикой браузера — не критично
+    // Контекст мог оказаться в неожиданном состоянии — не критично
   }
 }
 
@@ -74,6 +112,12 @@ export default function WaiterCallOverlay() {
 
   useEffect(() => {
     resolveWaiterId().then(setWaiterId)
+  }, [])
+
+  // Разблокировка звука на iOS — вешаем слушатели один раз при монтировании,
+  // задолго до первого реального вызова (см. комментарий у playCallSound).
+  useEffect(() => {
+    unlockAudioOnFirstGesture()
   }, [])
 
   const handleNewCall = useCallback((call: WaiterCall) => {
@@ -152,6 +196,7 @@ export default function WaiterCallOverlay() {
 
   const handleComing = async () => {
     if (!activeCall || !waiterId) return
+    unlockAudio() // страховка: настоящее касание, гарантированно разблокирует звук на будущее
     try {
       await acknowledgeWaiterCall(activeCall.id, waiterId)
     } catch (err) {
