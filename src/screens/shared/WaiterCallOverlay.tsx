@@ -60,22 +60,31 @@ function playCallSound() {
     ctx.resume().catch(() => {})
   }
   try {
-    const beep = (startTime: number) => {
+    // Треугольная волна вместо чистой синусоиды — заметнее на телефонных
+    // динамиках при том же уровне громкости (больше обертонов).
+    const beep = (startTime: number, freq: number, duration: number) => {
       const osc = ctx.createOscillator()
       const gain = ctx.createGain()
-      osc.type = 'sine'
-      osc.frequency.value = 880
-      gain.gain.setValueAtTime(0.35, startTime)
-      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.35)
+      osc.type = 'triangle'
+      osc.frequency.value = freq
+      gain.gain.setValueAtTime(0.0001, startTime)
+      gain.gain.exponentialRampToValueAtTime(0.85, startTime + 0.02)
+      gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration)
       osc.connect(gain)
       gain.connect(ctx.destination)
       osc.start(startTime)
-      osc.stop(startTime + 0.35)
+      osc.stop(startTime + duration)
+    }
+    // "Дзынь-дзынь" — чередование двух тонов, как классический телефонный
+    // звонок, вместо одного повторяющегося бипа — узнаваемее и заметнее.
+    const ring = (t: number) => {
+      beep(t, 1200, 0.15)
+      beep(t + 0.15, 900, 0.15)
     }
     const now = ctx.currentTime
-    beep(now)
-    beep(now + 0.45)
-    beep(now + 0.9)
+    ring(now)
+    ring(now + 0.4)
+    ring(now + 0.8)
   } catch {
     // Контекст мог оказаться в неожиданном состоянии — не критично
   }
