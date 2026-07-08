@@ -47,6 +47,7 @@ self.addEventListener('push', (event) => {
       badge: '/icons/Waiter_logo-192.png',
       vibrate: [400, 200, 400, 200, 400], // Android; iOS игнорирует
       tag: 'waiter-call', // новое уведомление заменяет предыдущее, не копится стопкой
+      renotify: true, // без этого повтор с тем же tag заменяет молча — без звука и вибро
       requireInteraction: true,
       data: { callId: data.callId },
     })
