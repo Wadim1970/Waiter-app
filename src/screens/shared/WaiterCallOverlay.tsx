@@ -46,11 +46,13 @@ function unlockAudio() {
   }
 }
 
-// Вызывается один раз при монтировании — вешает разовые слушатели на первое
-// касание/клик где угодно в приложении, задолго до первого реального вызова.
+// Вызывается один раз при монтировании — но слушатели НЕ одноразовые:
+// iOS может повторно "усыпить" AudioContext (например, после сворачивания
+// приложения), и тогда нужно разблокировать его заново на следующее же
+// касание, а не только один раз при самом первом запуске.
 function unlockAudioOnFirstGesture() {
-  document.addEventListener('touchend', unlockAudio, { once: true, passive: true })
-  document.addEventListener('click', unlockAudio, { once: true })
+  document.addEventListener('touchend', unlockAudio, { passive: true })
+  document.addEventListener('click', unlockAudio)
 }
 
 function playCallSound() {
