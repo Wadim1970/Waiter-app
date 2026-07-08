@@ -4,6 +4,7 @@ import WelcomeScreen from './screens/Welcome/WelcomeScreen'
 import AuthCheck from './screens/Auth/AuthCheck'
 import JobDetailsScreenEager from './screens/Map/JobDetailsScreen'
 import WaiterCallOverlay from './screens/shared/WaiterCallOverlay'
+import AppBadgeSync from './screens/shared/AppBadgeSync'
 import './App.css'
 
 const RegisterScreen = lazy(() => import('./screens/Auth/RegisterScreen'))
@@ -93,6 +94,7 @@ function App() {
     <BrowserRouter>
       <AuthCheck />
       <WaiterCallOverlay />
+      <AppBadgeSync />
       <Suspense fallback={<Loader />}>
         <Routes>
           <Route path="/" element={<WelcomeScreen />} />
