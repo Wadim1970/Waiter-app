@@ -43,6 +43,15 @@ export const config = {
   n8nWebhookUrl: required('N8N_WEBHOOK_URL'),
   n8nWebhookSecret: required('N8N_WEBHOOK_SECRET'),
 
+  // ── Web Push (вызов официанта — доставка, пока приложение свёрнуто) ────
+  // Публичный ключ дублируется во фронте (VITE_VAPID_PUBLIC_KEY) — это
+  // не секрет, приватный не должен покидать этот сервис.
+  vapidPublicKey: required('VAPID_PUBLIC_KEY'),
+  vapidPrivateKey: required('VAPID_PRIVATE_KEY'),
+  // Контакт для push-сервисов (Apple/Google) на случай проблем с отправками —
+  // формат "mailto:..." или "https://...".
+  vapidSubject: required('VAPID_SUBJECT'),
+
   // ── SMS-коды (поведение) ────────────────────────────────────────────────
   smsCodeTtlSec: Number(optional('SMS_CODE_TTL_SEC', '300')),       // 5 минут
   smsResendCooldownSec: Number(optional('SMS_RESEND_COOLDOWN_SEC', '60')),
