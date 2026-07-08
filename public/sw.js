@@ -27,3 +27,43 @@ self.addEventListener('install', () => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(clients.claim())
 })
+
+// Вызов официанта — доставка, пока приложение полностью свёрнуто (не
+// просто вкладка в фоне: JS страницы в этот момент не выполняется
+// вообще, только push умеет разбудить именно Service Worker для показа
+// системного уведомления).
+self.addEventListener('push', (event) => {
+  let data = { title: 'Вызов официанта', body: '' }
+  try {
+    if (event.data) data = { ...data, ...event.data.json() }
+  } catch {
+    // payload не JSON — покажем хотя бы заголовок по умолчанию
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/icons/Waiter_logo-192.png',
+      badge: '/icons/Waiter_logo-192.png',
+      vibrate: [400, 200, 400, 200, 400], // Android; iOS игнорирует
+      tag: 'waiter-call', // новое уведомление заменяет предыдущее, не копится стопкой
+      requireInteraction: true,
+      data: { callId: data.callId },
+    })
+  )
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  event.waitUntil(
+    (async () => {
+      const allClients = await clients.matchAll({ type: 'window', includeUncontrolled: true })
+      const existing = allClients.find((c) => 'focus' in c)
+      if (existing) {
+        existing.focus()
+        return
+      }
+      await clients.openWindow('/')
+    })()
+  )
+})

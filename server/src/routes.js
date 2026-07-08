@@ -3,6 +3,7 @@ import crypto from 'node:crypto'
 import { config } from './config.js'
 import { supabaseAdmin } from './supabase.js'
 import { normalizePhone, getOrCreateAuthUserByPhone, linkWaiterToAuthUser, setUserPassword, passwordGrant, randomPassword } from './gotrue.js'
+import { sendPushForCall } from './webpush.js'
 
 // Разрешённые типы файлов для документов официанта
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf'])
@@ -253,6 +254,31 @@ export async function routes(app) {
       expires_in: session.expires_in,
       token_type: session.token_type ?? 'bearer',
       user: { id: authUser.id, phone, waiter_id: waiterId },
+    }
+  })
+
+  // ───────────────────────────────────────────────────────────────────────
+  // WEB PUSH (вызов официанта — доставка при полностью свёрнутом приложении)
+  // ───────────────────────────────────────────────────────────────────────
+  //
+  // Гостевое приложение дёргает это сразу после успешного call_waiter(),
+  // передавая id только что созданного вызова — вся логика "кому именно
+  // слать" (конкретный официант / широковещательно) читается из самой БД
+  // по этому id, здесь ничего не передаётся и не доверяется от клиента,
+  // кроме id. VAPID-приватник живёт только в этом сервисе.
+  app.post('/api/send-waiter-call-push', async (req, reply) => {
+    const callId = String(req.body?.callId || '').trim()
+    if (!callId) {
+      return reply.code(400).send({ error: 'callId обязателен' })
+    }
+    try {
+      const result = await sendPushForCall(callId)
+      return { ok: true, sent: result.sent }
+    } catch (e) {
+      req.log.error(e)
+      // Push — дополнительный канал поверх Realtime, не основной.
+      // Не роняем гостевое приложение из-за проблем с доставкой push.
+      return reply.code(200).send({ ok: false })
     }
   })
 }
