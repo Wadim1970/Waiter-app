@@ -15,8 +15,8 @@
 .modalBox {
   width: 100%;
   max-width: 20rem;
-  background: #102A45;
-  border: 2px solid #15B400;
+  background: #0B3563;
+  border: 2px solid #EB651A;
   border-radius: 1rem;
   padding: 2rem 1.8125rem 1.5rem;
   display: flex;
@@ -26,7 +26,7 @@
 }
 
 .bellIcon {
-  color: #15B400;
+  color: #EB651A;
   animation: bellShake 1s ease-in-out infinite;
 }
 
@@ -52,13 +52,13 @@
   font-family: 'Montserrat', sans-serif;
   font-weight: 700;
   font-size: 1.5rem;
-  color: #15B400;
+  color: #EB651A;
   text-align: center;
   margin: 0;
 }
 
 .queueHint {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   font-weight: 400;
   font-size: 0.8125rem;
   color: rgba(255, 255, 255, 0.7);
@@ -70,13 +70,13 @@
   width: 100%;
   height: 2.75rem;
   margin-top: 0.5rem;
-  background: #15B400;
+  background: #EB651A;
   color: white;
   border-radius: 2.75rem;
   border: none;
   font-family: 'Inter', sans-serif;
   font-weight: 700;
-  font-size: 0.9375rem;
+  font-size: 1.125rem;
   cursor: pointer;
   transition: opacity 0.2s;
 }

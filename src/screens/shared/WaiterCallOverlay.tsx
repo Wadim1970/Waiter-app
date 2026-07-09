@@ -229,7 +229,7 @@ export default function WaiterCallOverlay() {
           <p className={styles.queueHint}>Ещё вызовов в очереди: {queue.length - 1}</p>
         )}
         <button className={styles.comingButton} onClick={handleComing}>
-          Иду
+          Уже иду
         </button>
       </div>
     </div>
