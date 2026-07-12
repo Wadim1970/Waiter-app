@@ -13,19 +13,24 @@ export function generateSmsCode() {
 
 // Общая логика отправки кода — используется и для входа официанта
 // (/api/send-sms), и для регистрации гостя в викторине
-// (/api/guest/send-sms). sms_codes ничем не различает "тип" телефона —
-// это просто "код для этого номера", независимо от того, кто за ним.
+// (/api/guest/send-sms). Один и тот же номер телефона вполне может
+// принадлежать и официанту, и гостю одновременно — это разные
+// сущности, поэтому purpose ('waiter' | 'guest') обязателен и
+// участвует во всех проверках/операциях наравне с phone: код,
+// запрошенный для одной цели, не должен быть виден или затираться
+// запросом кода для другой.
 //
 // buildMessage — функция (code) => текст SMS: код генерируется ВНУТРИ
 // этой функции, вызывающий его заранее не знает, поэтому текст нельзя
 // собрать снаружи и передать готовой строкой.
-export async function sendSmsCode(phone, buildMessage) {
+export async function sendSmsCode(phone, buildMessage, purpose) {
   // Защита от спама: не чаще одного SMS в SMS_RESEND_COOLDOWN_SEC сек
   const cooldownAgo = new Date(Date.now() - config.smsResendCooldownSec * 1000).toISOString()
   const { data: recent } = await supabaseAdmin
     .from('sms_codes')
     .select('id')
     .eq('phone', phone)
+    .eq('purpose', purpose)
     .gt('created_at', cooldownAgo)
     .limit(1)
     .maybeSingle()
@@ -33,8 +38,9 @@ export async function sendSmsCode(phone, buildMessage) {
     return { ok: false, status: 429, error: 'Подождите перед повторной отправкой кода' }
   }
 
-  // Чистим все старые коды для этого телефона
-  await supabaseAdmin.from('sms_codes').delete().eq('phone', phone)
+  // Чистим старые коды для этого телефона и ЭТОЙ ЖЕ цели — код
+  // официанта для этого номера (если есть) не трогаем.
+  await supabaseAdmin.from('sms_codes').delete().eq('phone', phone).eq('purpose', purpose)
 
   const code = generateSmsCode()
   const codeHash = bcrypt.hashSync(code, 10)
@@ -42,7 +48,7 @@ export async function sendSmsCode(phone, buildMessage) {
 
   const { error: insErr } = await supabaseAdmin
     .from('sms_codes')
-    .insert({ phone, code_hash: codeHash, expires_at: expiresAt })
+    .insert({ phone, code_hash: codeHash, expires_at: expiresAt, purpose })
   if (insErr) {
     return { ok: false, status: 500, error: 'Не удалось сохранить код' }
   }
@@ -71,11 +77,12 @@ export async function sendSmsCode(phone, buildMessage) {
 // Общая логика проверки кода — только сверка/пометка использованным,
 // без того, что происходит ПОСЛЕ успеха (у официанта — сессия GoTrue,
 // у гостя — запись профиля), это остаётся в каждом роуте отдельно.
-export async function verifySmsCode(phone, code) {
+export async function verifySmsCode(phone, code, purpose) {
   const { data: row, error: selErr } = await supabaseAdmin
     .from('sms_codes')
     .select('id, code_hash, attempts, expires_at, consumed_at')
     .eq('phone', phone)
+    .eq('purpose', purpose)
     .is('consumed_at', null)
     .order('created_at', { ascending: false })
     .limit(1)
