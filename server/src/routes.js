@@ -1,9 +1,8 @@
-import bcrypt from 'bcryptjs'
-import crypto from 'node:crypto'
 import { config } from './config.js'
 import { supabaseAdmin } from './supabase.js'
 import { normalizePhone, getOrCreateAuthUserByPhone, linkWaiterToAuthUser, setUserPassword, passwordGrant, randomPassword } from './gotrue.js'
 import { sendPushForCall } from './webpush.js'
+import { sendSmsCode, verifySmsCode } from './sms.js'
 
 // Разрешённые типы файлов для документов официанта
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf'])
@@ -13,14 +12,6 @@ const ALLOWED_PATH = /^(passport|medical-book|personal_photos)\/[a-zA-Z0-9_\-/]+
 
 function randomId() {
   return Math.random().toString(36).slice(2, 9)
-}
-
-// Простой 4-значный SMS-код. Криптографически случайный.
-function generateSmsCode() {
-  // 0000..9999 равномерно
-  const buf = crypto.getRandomValues(new Uint32Array(1))
-  const n = buf[0] % 10000
-  return n.toString().padStart(4, '0')
 }
 
 // Считывает multipart-запрос в { fields, file }
@@ -121,59 +112,11 @@ export async function routes(app) {
       return reply.code(400).send({ error: 'Неверный формат телефона' })
     }
 
-    // Защита от спама: не чаще одного SMS в SMS_RESEND_COOLDOWN_SEC сек
-    const cooldownAgo = new Date(Date.now() - config.smsResendCooldownSec * 1000).toISOString()
-    const { data: recent } = await supabaseAdmin
-      .from('sms_codes')
-      .select('id')
-      .eq('phone', phone)
-      .gt('created_at', cooldownAgo)
-      .limit(1)
-      .maybeSingle()
-    if (recent) {
-      return reply.code(429).send({ error: 'Подождите перед повторной отправкой кода' })
+    const result = await sendSmsCode(phone, (code) => `Ваш код для входа: ${code}`)
+    if (!result.ok) {
+      if (result.status >= 500) req.log.error(result.error)
+      return reply.code(result.status).send({ error: result.error })
     }
-
-    // Чистим все старые коды для этого телефона
-    await supabaseAdmin.from('sms_codes').delete().eq('phone', phone)
-
-    const code = generateSmsCode()
-    const codeHash = bcrypt.hashSync(code, 10)
-    const expiresAt = new Date(Date.now() + config.smsCodeTtlSec * 1000).toISOString()
-
-    const { error: insErr } = await supabaseAdmin
-      .from('sms_codes')
-      .insert({ phone, code_hash: codeHash, expires_at: expiresAt })
-    if (insErr) {
-      req.log.error(insErr)
-      return reply.code(500).send({ error: 'Не удалось сохранить код' })
-    }
-
-    // Просим n8n отправить SMS. n8n теперь — просто транспорт.
-    try {
-      const res = await fetch(config.n8nWebhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Webhook-Secret': config.n8nWebhookSecret,
-        },
-        body: JSON.stringify({
-          phone,
-          text: `Ваш код для входа: ${code}`,
-          // Поля ниже для обратной совместимости со старым воркфлоу n8n,
-          // пока он их ещё ждёт. Можно удалить после обновления n8n.
-          code,
-        }),
-      })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        return reply.code(502).send({ error: data.message || 'Ошибка отправки SMS' })
-      }
-    } catch (e) {
-      req.log.error(e)
-      return reply.code(502).send({ error: 'Ошибка отправки SMS' })
-    }
-
     return { ok: true }
   })
 
@@ -184,38 +127,11 @@ export async function routes(app) {
       return reply.code(400).send({ error: 'phone и 4-значный code обязательны' })
     }
 
-    // Берём последний активный код
-    const { data: row, error: selErr } = await supabaseAdmin
-      .from('sms_codes')
-      .select('id, code_hash, attempts, expires_at, consumed_at')
-      .eq('phone', phone)
-      .is('consumed_at', null)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    if (selErr) {
-      req.log.error(selErr)
-      return reply.code(500).send({ error: 'Ошибка проверки кода' })
+    const codeCheck = await verifySmsCode(phone, code)
+    if (!codeCheck.ok) {
+      if (codeCheck.status >= 500) req.log.error(codeCheck.error)
+      return reply.code(codeCheck.status).send({ error: codeCheck.error })
     }
-    if (!row) {
-      return reply.code(400).send({ error: 'Код не запрашивался или уже использован' })
-    }
-    if (new Date(row.expires_at) < new Date()) {
-      return reply.code(400).send({ error: 'Код истёк, запросите новый' })
-    }
-    if (row.attempts >= config.smsMaxAttempts) {
-      return reply.code(429).send({ error: 'Слишком много попыток. Запросите новый код.' })
-    }
-
-    const ok = bcrypt.compareSync(code, row.code_hash)
-    if (!ok) {
-      await supabaseAdmin.from('sms_codes').update({ attempts: row.attempts + 1 }).eq('id', row.id)
-      return reply.code(401).send({ error: 'Неверный код' })
-    }
-
-    // Помечаем код использованным сразу — даже если что-то ниже упадёт,
-    // повторно по этому коду войти не получится.
-    await supabaseAdmin.from('sms_codes').update({ consumed_at: new Date().toISOString() }).eq('id', row.id)
 
     // Создаём/находим пользователя в auth.users
     let authUser
@@ -280,5 +196,77 @@ export async function routes(app) {
       // Не роняем гостевое приложение из-за проблем с доставкой push.
       return reply.code(200).send({ ok: false })
     }
+  })
+
+  // ───────────────────────────────────────────────────────────────────────
+  // ВИКТОРИНА ГОСТЯ (RestAI) — регистрация телефона для программы баллов.
+  // ───────────────────────────────────────────────────────────────────────
+  //
+  // В отличие от /api/verify-sms (официант, полноценная сессия GoTrue),
+  // тут нет входа/JWT — гость и так идентифицирован по device_id, SMS
+  // нужен только чтобы подтвердить, что телефон настоящий, прежде чем
+  // сохранять результат викторины и начислять баллы.
+  //
+  // Само начисление баллов (и повторная проверка правильности ответа —
+  // клиенту тут не доверяем) — внутри register_guest_and_credit_quiz,
+  // вызывается только отсюда, с сервисным ключом.
+
+  app.post('/api/guest/send-sms', async (req, reply) => {
+    const phone = normalizePhone(req.body?.phone)
+    if (!/^\+7\d{10}$/.test(phone)) {
+      return reply.code(400).send({ error: 'Неверный формат телефона' })
+    }
+
+    const result = await sendSmsCode(phone, (code) => `Ваш код для участия в викторине RestAI: ${code}`)
+    if (!result.ok) {
+      if (result.status >= 500) req.log.error(result.error)
+      return reply.code(result.status).send({ error: result.error })
+    }
+    return { ok: true }
+  })
+
+  app.post('/api/guest/verify-sms', async (req, reply) => {
+    const phone = normalizePhone(req.body?.phone)
+    const code = String(req.body?.code ?? '').trim()
+    const deviceId = String(req.body?.deviceId ?? '').trim()
+    const name = String(req.body?.name ?? '').trim()
+    const questionId = req.body?.questionId ? String(req.body.questionId).trim() : null
+    const selectedIndex = req.body?.selectedIndex != null ? Number(req.body.selectedIndex) : null
+
+    if (!/^\+7\d{10}$/.test(phone) || !/^\d{4}$/.test(code)) {
+      return reply.code(400).send({ error: 'phone и 4-значный code обязательны' })
+    }
+    if (!deviceId || !name) {
+      return reply.code(400).send({ error: 'deviceId и name обязательны' })
+    }
+
+    const codeCheck = await verifySmsCode(phone, code)
+    if (!codeCheck.ok) {
+      if (codeCheck.status >= 500) req.log.error(codeCheck.error)
+      return reply.code(codeCheck.status).send({ error: codeCheck.error })
+    }
+
+    const { data, error } = await supabaseAdmin.rpc('register_guest_and_credit_quiz', {
+      p_device_id: deviceId,
+      p_name: name,
+      p_phone: phone,
+      p_question_id: questionId,
+      p_selected_index: selectedIndex,
+    })
+
+    if (error) {
+      req.log.error(error)
+      return reply.code(502).send({ error: 'Не удалось сохранить регистрацию' })
+    }
+
+    const result = data?.[0]
+    if (result?.phone_taken) {
+      return reply.code(409).send({ error: 'Этот номер телефона уже зарегистрирован' })
+    }
+    if (!result?.ok) {
+      return reply.code(404).send({ error: 'Гость не найден — откройте меню заново' })
+    }
+
+    return { ok: true, points: result.points }
   })
 }
