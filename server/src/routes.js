@@ -112,7 +112,7 @@ export async function routes(app) {
       return reply.code(400).send({ error: 'Неверный формат телефона' })
     }
 
-    const result = await sendSmsCode(phone, (code) => `Ваш код для входа: ${code}`)
+    const result = await sendSmsCode(phone, (code) => `Ваш код для входа: ${code}`, 'waiter')
     if (!result.ok) {
       if (result.status >= 500) req.log.error(result.error)
       return reply.code(result.status).send({ error: result.error })
@@ -127,7 +127,7 @@ export async function routes(app) {
       return reply.code(400).send({ error: 'phone и 4-значный code обязательны' })
     }
 
-    const codeCheck = await verifySmsCode(phone, code)
+    const codeCheck = await verifySmsCode(phone, code, 'waiter')
     if (!codeCheck.ok) {
       if (codeCheck.status >= 500) req.log.error(codeCheck.error)
       return reply.code(codeCheck.status).send({ error: codeCheck.error })
@@ -217,7 +217,7 @@ export async function routes(app) {
       return reply.code(400).send({ error: 'Неверный формат телефона' })
     }
 
-    const result = await sendSmsCode(phone, (code) => `Ваш код для участия в викторине RestAI: ${code}`)
+    const result = await sendSmsCode(phone, (code) => `Ваш код для участия в викторине RestAI: ${code}`, 'guest')
     if (!result.ok) {
       if (result.status >= 500) req.log.error(result.error)
       return reply.code(result.status).send({ error: result.error })
@@ -240,7 +240,7 @@ export async function routes(app) {
       return reply.code(400).send({ error: 'deviceId и name обязательны' })
     }
 
-    const codeCheck = await verifySmsCode(phone, code)
+    const codeCheck = await verifySmsCode(phone, code, 'guest')
     if (!codeCheck.ok) {
       if (codeCheck.status >= 500) req.log.error(codeCheck.error)
       return reply.code(codeCheck.status).send({ error: codeCheck.error })
