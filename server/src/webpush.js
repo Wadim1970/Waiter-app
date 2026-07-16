@@ -12,7 +12,7 @@ webpush.setVapidDetails(config.vapidSubject, config.vapidPublicKey, config.vapid
 export async function sendPushForCall(callId) {
   const { data: call, error: callError } = await supabaseAdmin
     .from('waiter_calls')
-    .select('table_number')
+    .select('table_number, reason')
     .eq('id', callId)
     .maybeSingle()
   if (callError || !call) return { sent: 0 }
@@ -30,7 +30,7 @@ export async function sendPushForCall(callId) {
 
   const payload = JSON.stringify({
     title: 'Вызов официанта',
-    body: `Стол №${call.table_number}`,
+    body: call.reason ? `Стол №${call.table_number} — ${call.reason}` : `Стол №${call.table_number}`,
     callId,
   })
 
