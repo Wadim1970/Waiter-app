@@ -1,7 +1,7 @@
 import { supabase } from './supabase'
 
 export type TableZone = 'main' | 'veranda' | 'banquet'
-export type TableStatus = 'free' | 'preparing' | 'resting' | 'bill_requested' | 'call'
+export type TableStatus = 'free' | 'occupied' | 'preparing' | 'resting' | 'bill_requested' | 'call'
 
 export const ZONE_LABELS: Record<TableZone, string> = {
   main: 'основной',
@@ -11,6 +11,7 @@ export const ZONE_LABELS: Record<TableZone, string> = {
 
 export const STATUS_LABELS: Record<TableStatus, string> = {
   free: 'свободен',
+  occupied: 'занят',
   preparing: 'готовится',
   resting: 'отдыхают',
   bill_requested: 'ждут счет',
@@ -19,6 +20,8 @@ export const STATUS_LABELS: Record<TableStatus, string> = {
 
 export const STATUS_COLORS: Record<TableStatus, { bg: string; border: string }> = {
   free:           { bg: '#d2d3d8', border: '#8e9096' },
+  // «Занят» — гость отсканировал QR, но заказа ещё нет (mark_table_occupied).
+  occupied:       { bg: '#227B8F', border: '#185E6E' },
   preparing:      { bg: '#3d6afa', border: '#254ed4' },
   resting:        { bg: '#15b200', border: '#0f8100' },
   bill_requested: { bg: '#ae3bfb', border: '#7c06cc' },
