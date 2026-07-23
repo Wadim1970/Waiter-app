@@ -28,7 +28,13 @@ export default function GuestDescriptionScreen() {
   const navigate = useNavigate()
   const location = useLocation()
   const table = location.state?.table as TableWithSession | undefined
-  const initialGuests = (location.state?.guests ?? Array.from({ length: 8 }, emptyGuest)) as GuestData[]
+  // Всегда ровно 8 гостей (г1–г8). Раньше брали пришедший массив КАК ЕСТЬ:
+  // если он приходил ПУСТЫМ (стол открыт по заказу из приложения гостя —
+  // AllOrdersScreen шлёт guests: []), то `[] ?? fallback` возвращал [], и
+  // guests[activeGuest] был undefined → экран падал на currentGuest.gender
+  // при добавлении второго гостя. Дополняем недостающие места пустыми.
+  const rawGuests = (location.state?.guests ?? []) as GuestData[]
+  const initialGuests: GuestData[] = Array.from({ length: 8 }, (_, i) => rawGuests[i] ?? emptyGuest())
   const initialActiveGuest = location.state?.activeGuestIndex ?? 'all'
   const incomingOrderId = location.state?.orderId as string | undefined
   const seatsWithItems = (location.state?.seatsWithItems ?? []) as number[]
@@ -39,7 +45,7 @@ export default function GuestDescriptionScreen() {
   const touchStartX = useRef(0)
 
   const guestColor   = activeGuest !== 'all' ? GUEST_COLORS[activeGuest] : null
-  const currentGuest = activeGuest !== 'all' ? guests[activeGuest] : null
+  const currentGuest = activeGuest !== 'all' ? (guests[activeGuest] ?? emptyGuest()) : null
 
   const updateGuest = (field: keyof GuestData, value: string) => {
     if (activeGuest === 'all') return
