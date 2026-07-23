@@ -38,7 +38,7 @@ export async function clearTable(orderId: string): Promise<void> {
 
 export async function updateTableSessionStatus(
   tableId: string,
-  status: 'free' | 'preparing' | 'resting' | 'bill_requested' | 'call',
+  status: 'free' | 'occupied' | 'preparing' | 'resting' | 'bill_requested' | 'call',
   guestCount?: number,
 ): Promise<string | null> {
   const { data: existing } = await supabase
