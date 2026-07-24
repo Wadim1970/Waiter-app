@@ -104,6 +104,9 @@
   padding: 0 18px;
   gap: 8px;
   overflow-x: auto;
+  /* Скролл ленты не должен «перетекать» в браузерную навигацию «назад»
+     (иначе свайп вправо по вкладкам выкидывает со всего экрана). */
+  overscroll-behavior-x: contain;
   scrollbar-width: none;
 }
 
@@ -146,6 +149,8 @@
   padding: 0 18px;
   gap: 8px;
   overflow-x: auto;
+  /* см. .subsectionsBar — не отдаём горизонтальный скролл браузеру. */
+  overscroll-behavior-x: contain;
   scrollbar-width: none;
   animation: slideDownBar 0.25s ease-out;
 }

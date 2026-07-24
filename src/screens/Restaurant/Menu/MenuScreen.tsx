@@ -68,6 +68,9 @@ export default function MenuScreen() {
 
   const touchStartY = useRef(0)
   const touchStartX = useRef(0)
+  // Касание, начавшееся на горизонтальной ленте вкладок, — это её скролл,
+  // а не свайп-возврат со всего экрана (см. handleScreenSwipeEnd).
+  const swipeFromBar = useRef(false)
 
   // Фолбэк restaurantId: активной смены может не быть (переход по прямой
   // ссылке без старта смены) — тогда достаём ресторан из стола по id, иначе
@@ -246,6 +249,9 @@ export default function MenuScreen() {
   }
 
   const handleScreenSwipeEnd = (e: React.TouchEvent) => {
+    // Свайп по ленте вкладок = горизонтальный скролл ленты, а не возврат
+    // со всего экрана. Не даём такому жесту сработать как навигация.
+    if (swipeFromBar.current) { swipeFromBar.current = false; return }
     const dx = e.changedTouches[0].clientX - touchStartX.current
     if (dx > 80) goToOrder()
   }
@@ -264,7 +270,12 @@ export default function MenuScreen() {
   return (
     <div
       className={styles.screen}
-      onTouchStart={e => { touchStartX.current = e.touches[0].clientX }}
+      onTouchStart={e => {
+        touchStartX.current = e.touches[0].clientX
+        // Лента вкладок (подразделы/под-подразделы) помечена data-hscroll:
+        // жест по ней — её скролл, экран не свайпаем.
+        swipeFromBar.current = !!(e.target as HTMLElement)?.closest?.('[data-hscroll]')
+      }}
       onTouchEnd={handleScreenSwipeEnd}
     >
 
@@ -286,7 +297,7 @@ export default function MenuScreen() {
 
       {/* ── Subsections ── */}
       {subsections.length > 0 && (
-        <div className={styles.subsectionsBar}>
+        <div className={styles.subsectionsBar} data-hscroll>
           <button
             className={`${styles.subBtn} ${activeSubsectionId === 'all' ? styles.subBtnActive : ''}`}
             onClick={() => setActiveSubsectionId('all')}
@@ -307,7 +318,7 @@ export default function MenuScreen() {
 
       {/* ── Sub-subsections ── */}
       {hasSubSubsections && (
-        <div className={styles.subSubsectionsBar}>
+        <div className={styles.subSubsectionsBar} data-hscroll>
           <button
             className={`${styles.subSubBtn} ${activeSubSubsectionId === 'all' ? styles.subSubBtnActive : ''}`}
             onClick={() => setActiveSubSubsectionId('all')}
