@@ -291,7 +291,7 @@ export default function MenuScreen() {
             className={`${styles.subBtn} ${activeSubsectionId === 'all' ? styles.subBtnActive : ''}`}
             onClick={() => setActiveSubsectionId('all')}
           >
-            Популярные
+            Все
           </button>
           {subsections.map(sub => (
             <button
