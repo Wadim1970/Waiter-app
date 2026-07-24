@@ -40,7 +40,6 @@ export default function MenuScreen() {
   const navigate = useNavigate()
   const location = useLocation()
   const table = location.state?.table as TableWithSession | undefined
-  const restaurantId = getActiveShift()?.restaurantId ?? ''
   const orderId = location.state?.orderId as string | undefined
   const activeGuestIndex = (location.state?.activeGuestIndex ?? 0) as number
 
@@ -62,18 +61,34 @@ export default function MenuScreen() {
   const [infoDish, setInfoDish] = useState<MenuItem | null>(null)
   const [cart, setCart] = useState<CartItem[]>([])
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(orderId ?? null)
+  // restaurantId берём из активной смены; если её нет (напр. переход по
+  // прямой ссылке без старта смены) — резолвим из стола (эффект ниже),
+  // иначе menu_sections по пустому restaurant_id вернёт 0 и меню будет пустым.
+  const [restaurantId, setRestaurantId] = useState<string>(getActiveShift()?.restaurantId ?? '')
 
   const touchStartY = useRef(0)
   const touchStartX = useRef(0)
 
+  // Фолбэк restaurantId: активной смены может не быть (переход по прямой
+  // ссылке без старта смены) — тогда достаём ресторан из стола по id, иначе
+  // разделы/блюда меню не загрузятся ("Блюда не найдены").
+  useEffect(() => {
+    if (restaurantId || !table?.id) return
+    supabase
+      .from('tables')
+      .select('restaurant_id')
+      .eq('id', table.id)
+      .single()
+      .then(({ data }) => { if (data?.restaurant_id) setRestaurantId(data.restaurant_id) })
+  }, [table, restaurantId])
+
   // Ensure order exists; create if missing
   useEffect(() => {
-    if (currentOrderId || !table) return
-    const restaurantId = getActiveShift()?.restaurantId ?? ''
+    if (currentOrderId || !table || !restaurantId) return
     getOrCreateOrder(table.id, table.number, restaurantId)
       .then(id => setCurrentOrderId(id))
       .catch(err => console.error('getOrCreateOrder failed:', err))
-  }, [table, currentOrderId])
+  }, [table, currentOrderId, restaurantId])
 
   // Load existing cart for this guest from DB
   useEffect(() => {
