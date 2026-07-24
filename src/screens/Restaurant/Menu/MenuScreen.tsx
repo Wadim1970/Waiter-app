@@ -17,7 +17,7 @@ type MenuItem = {
   cost_rub: number
   cook_time_min: number
   weight_g: number
-  nutritional_info: { calories?: number; proteins?: number; fats?: number; carbs?: number } | null
+  nutritional_info: { calories_kcal?: number; protein_g?: number; fat_g?: number; carbs_g?: number } | null
   ingredients: string | string[]
   image_url: string | null
   section_id: string
@@ -345,9 +345,9 @@ export default function MenuScreen() {
         {dishes.map(dish => {
           const qty = getQuantity(dish.id)
           return (
-            <div key={dish.id} className={styles.dishRow}>
+            <div key={dish.id} className={styles.dishRow} onClick={() => setInfoDish(dish)}>
               <div className={styles.dishLeft}>
-                <p className={styles.dishName} onClick={() => setInfoDish(dish)}>
+                <p className={styles.dishName}>
                   {dish.dish_name}
                 </p>
                 <p className={styles.dishTime}>
@@ -358,12 +358,12 @@ export default function MenuScreen() {
                 <span className={styles.dishPrice}>{dish.cost_rub} руб</span>
                 <div className={styles.dishActions}>
                   {qty === 0 ? (
-                    <button className={styles.addBtn} onClick={() => handleAdd(dish)}>+</button>
+                    <button className={styles.addBtn} onClick={e => { e.stopPropagation(); handleAdd(dish) }}>+</button>
                   ) : (
                     <div className={styles.counter}>
-                      <button className={styles.minusBtn} onClick={() => removeFromCart(dish.id)}>−</button>
+                      <button className={styles.minusBtn} onClick={e => { e.stopPropagation(); removeFromCart(dish.id) }}>−</button>
                       <span className={styles.qty}>{qty}</span>
-                      <button className={styles.addBtn} onClick={() => handleAdd(dish)}>+</button>
+                      <button className={styles.addBtn} onClick={e => { e.stopPropagation(); handleAdd(dish) }}>+</button>
                     </div>
                   )}
                 </div>
@@ -466,10 +466,10 @@ export default function MenuScreen() {
             {infoDish.nutritional_info && (
               <InfoSection title="Пищевая ценность">
                 <div className={styles.nutrition}>
-                  <NutrCell value={infoDish.nutritional_info.calories} label="ккал" />
-                  <NutrCell value={infoDish.nutritional_info.proteins} label="белки" />
-                  <NutrCell value={infoDish.nutritional_info.fats} label="жиры" />
-                  <NutrCell value={infoDish.nutritional_info.carbs} label="углеводы" />
+                  <NutrCell value={infoDish.nutritional_info.calories_kcal} label="ккал" />
+                  <NutrCell value={infoDish.nutritional_info.protein_g} label="белки" />
+                  <NutrCell value={infoDish.nutritional_info.fat_g} label="жиры" />
+                  <NutrCell value={infoDish.nutritional_info.carbs_g} label="углеводы" />
                 </div>
               </InfoSection>
             )}
@@ -495,9 +495,10 @@ function InfoSection({ title, children }: { title: string; children: React.React
 
 function NutrCell({ value, label }: { value?: number; label: string }) {
   if (value == null) return null
+  const text = Number.isInteger(value) ? String(value) : value.toFixed(1)
   return (
     <div style={{ textAlign: 'center' }}>
-      <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: 16 }}>{value.toFixed(2)}</div>
+      <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: 16 }}>{text}</div>
       <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 12, color: '#999' }}>{label}</div>
     </div>
   )
