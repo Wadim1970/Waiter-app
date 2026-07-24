@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { supabase } from '../../../lib/supabase'
+import { supabase, supabaseRestaurants } from '../../../lib/supabase'
 import { getActiveShift } from '../QRScanner/QRScannerScreen'
 import { getOrCreateOrder, addOrderItem, removeOrderItem, loadOrderItems } from '../../../lib/orders'
 import type { TableWithSession } from '../../../lib/tables'
@@ -107,7 +107,7 @@ export default function MenuScreen() {
   // Load sections
   useEffect(() => {
     if (!restaurantId) return
-    supabase
+    supabaseRestaurants
       .from('menu_sections')
       .select('*')
       .eq('restaurant_id', restaurantId)
@@ -123,7 +123,7 @@ export default function MenuScreen() {
   // Load subsections when section changes
   useEffect(() => {
     if (!activeSectionId) return
-    supabase
+    supabaseRestaurants
       .from('menu_subsections')
       .select('*')
       .eq('section_id', activeSectionId)
@@ -143,7 +143,7 @@ export default function MenuScreen() {
       setSubSubsections([])
       return
     }
-    supabase
+    supabaseRestaurants
       .from('menu_sub_subsections')
       .select('*')
       .eq('subsection_id', activeSubsectionId)
@@ -154,7 +154,7 @@ export default function MenuScreen() {
   // Load dishes
   useEffect(() => {
     if (!activeSectionId) return
-    let query = supabase
+    let query = supabaseRestaurants
       .from('menu_items')
       .select('*')
       .eq('section_id', activeSectionId)
@@ -168,14 +168,14 @@ export default function MenuScreen() {
   }, [activeSectionId, activeSubsectionId, activeSubSubsectionId])
 
   const handleAdd = async (dish: MenuItem) => {
-    const { data: groups } = await supabase
+    const { data: groups } = await supabaseRestaurants
       .from('modifier_groups')
       .select('*')
       .eq('item_id', dish.id)
       .order('sort_order')
 
     if (groups && groups.length > 0) {
-      const { data: mods } = await supabase
+      const { data: mods } = await supabaseRestaurants
         .from('modifiers')
         .select('*')
         .in('group_id', groups.map((g: ModifierGroup) => g.id))
