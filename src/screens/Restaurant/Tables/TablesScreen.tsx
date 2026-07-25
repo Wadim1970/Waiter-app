@@ -132,10 +132,16 @@ export default function TablesScreen() {
         state: { table, guests: [], orderId: order.id }
       })
     } else {
-      // Стол «Занят», но заказа в БД ещё нет: гость отсканировал QR и пока
-      // ничего не отправил (корзина у него на устройстве). Ведём официанта на
-      // тот же экран, что и по свободному столу (гости → меню), а не в пустоту.
-      navigate(`/restaurant/table/${table.id}/guests`, { state: { table } })
+      // Стол «Занят», но заказа в БД ещё нет. Смотрим черновики корзин гостей:
+      // если кто-то уже что-то набрал (даже не отправив на кухню) — открываем
+      // экран с корзиной каждого гостя; если ни у кого ничего — ведём на тот же
+      // экран, что и по свободному столу (гости → меню).
+      const { data: drafts } = await supabase.rpc('get_table_cart_drafts', { p_table_id: table.id })
+      if (Array.isArray(drafts) && drafts.length > 0) {
+        navigate(`/restaurant/table/${table.id}/guest-carts`, { state: { table, drafts } })
+      } else {
+        navigate(`/restaurant/table/${table.id}/guests`, { state: { table } })
+      }
     }
   }
 
