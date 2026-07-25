@@ -131,6 +131,11 @@ export default function TablesScreen() {
       navigate(`/restaurant/table/${table.id}/all-orders`, {
         state: { table, guests: [], orderId: order.id }
       })
+    } else {
+      // Стол «Занят», но заказа в БД ещё нет: гость отсканировал QR и пока
+      // ничего не отправил (корзина у него на устройстве). Ведём официанта на
+      // тот же экран, что и по свободному столу (гости → меню), а не в пустоту.
+      navigate(`/restaurant/table/${table.id}/guests`, { state: { table } })
     }
   }
 
