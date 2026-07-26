@@ -1,0 +1,154 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  background: rgba(16, 42, 69, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  font-family: 'Montserrat', sans-serif;
+  animation: fade 0.2s ease;
+}
+
+@keyframes fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal {
+  width: 100%;
+  max-width: 380px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 24px 22px 20px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  animation: pop 0.24s ease;
+}
+
+@keyframes pop {
+  from { transform: scale(0.94); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.title {
+  margin: 0 0 10px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #102A45;
+  text-align: center;
+}
+
+.text {
+  margin: 0 0 18px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #4a5568;
+  text-align: center;
+}
+
+.text b {
+  color: #102A45;
+}
+
+/* ── Stars ── */
+.stars {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.starBtn {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.starOn,
+.starOff {
+  font-size: 40px;
+  line-height: 1;
+  transition: color 0.12s, transform 0.12s;
+}
+
+.starOn {
+  color: #ff9500;
+}
+
+.starOff {
+  color: #d9dde3;
+}
+
+.starBtn:active .starOn,
+.starBtn:active .starOff {
+  transform: scale(1.15);
+}
+
+/* ── Comment ── */
+.comment {
+  width: 100%;
+  min-height: 76px;
+  border: 1px solid #d9dde3;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  color: #102A45;
+  resize: none;
+  outline: none;
+  box-sizing: border-box;
+  margin-bottom: 16px;
+}
+
+.comment:focus {
+  border-color: #15b400;
+}
+
+/* ── Buttons ── */
+.submitBtn {
+  width: 100%;
+  height: 50px;
+  border: none;
+  border-radius: 25px;
+  background: #15b400;
+  color: #fff;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.submitBtn:disabled {
+  background: #c3c7cd;
+  cursor: default;
+}
+
+.submitBtn:not(:disabled):active {
+  opacity: 0.85;
+}
+
+.secondaryRow {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding: 0 6px;
+}
+
+.textBtn {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #8e9096;
+  cursor: pointer;
+  padding: 6px 4px;
+}
+
+.textBtn:active {
+  color: #102A45;
+}

@@ -112,11 +112,11 @@ export default function TablesScreen() {
   }, [restaurantId, loadTables])
 
   const handleTableClick = async (table: TableWithSession) => {
-    if (table.status === 'free') {
-      navigate(`/restaurant/table/${table.id}/guests`, { state: { table } })
-      return
-    }
-    // Для занятых столов — найти активный заказ и открыть общую корзину
+    // Сначала ищем активный (не оплаченный) заказ стола — В НЁМ МОГУТ БЫТЬ И
+    // НЕотправленные позиции (status 'new'), которые официант набрал в корзину,
+    // но ещё не отправил на кухню. Раньше «свободный» стол сразу вёл на экран
+    // гостей без orderId, и такой набранный заказ пропадал из виду (казалось,
+    // что корзина «забыла» блюда). Теперь при наличии заказа открываем его.
     const { data: order } = await supabase
       .from('orders')
       .select('id')
@@ -131,6 +131,13 @@ export default function TablesScreen() {
       navigate(`/restaurant/table/${table.id}/all-orders`, {
         state: { table, guests: [], orderId: order.id }
       })
+      return
+    }
+
+    // Заказа нет. Свободный стол — на экран гостей; занятый (гость отсканировал
+    // QR) с непустыми черновиками корзин — на экран корзин гостей.
+    if (table.status === 'free') {
+      navigate(`/restaurant/table/${table.id}/guests`, { state: { table } })
     } else {
       // Стол «Занят», но заказа в БД ещё нет. Смотрим черновики корзин гостей:
       // если кто-то уже что-то набрал (даже не отправив на кухню) — открываем
