@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getMyShifts, markApprovedSeen, ShiftWithDetails } from '../../lib/bookings'
-import { getWaiterId } from '../../lib/supabase'
+import { getWaiterId, supabaseWaiter } from '../../lib/supabase'
 import ShiftCard from './ShiftCard'
 import WorkingShiftCard from './WorkingShiftCard'
 import WorkingShiftsSlider from './WorkingShiftsSlider' 
@@ -35,6 +35,37 @@ export default function MyShiftsScreen() {
       markApprovedSeen(waiterId)
     }
   }, [subTab, waiterId])
+
+  // Мгновенное обновление списка: ресторан меняет статус брони на своей
+  // стороне (applied -> approved и т.п.), официант этого действия не
+  // совершает, поэтому без подписки карточка не переезжала между разделами
+  // до перезагрузки. Ловим изменения bookings по Realtime (bookings уже в
+  // публикации supabase_realtime, миграция 20260708010000) и перечитываем
+  // список. Плюс refetch при возврате на вкладку — на случай, если событие
+  // не долетело, пока приложение было в фоне.
+  useEffect(() => {
+    if (!waiterId) return
+
+    const channel = supabaseWaiter
+      .channel(`my_bookings:${waiterId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'bookings',
+        filter: `worker_id=eq.${waiterId}`,
+      }, () => { loadShifts() })
+      .subscribe()
+
+    const refetch = () => { if (document.visibilityState === 'visible') loadShifts() }
+    window.addEventListener('focus', loadShifts)
+    document.addEventListener('visibilitychange', refetch)
+
+    return () => {
+      supabaseWaiter.removeChannel(channel)
+      window.removeEventListener('focus', loadShifts)
+      document.removeEventListener('visibilitychange', refetch)
+    }
+  }, [waiterId])
 
   const loadShifts = async () => {
   if (!waiterId) {
