@@ -6,6 +6,7 @@ import JobDetailsScreenEager from './screens/Map/JobDetailsScreen'
 import WaiterCallOverlay from './screens/shared/WaiterCallOverlay'
 import AppBadgeSync from './screens/shared/AppBadgeSync'
 import PushPermissionPrompt from './screens/shared/PushPermissionPrompt'
+import StaffReviewGate from './screens/shared/StaffReviewGate'
 import './App.css'
 
 const RegisterScreen = lazy(() => import('./screens/Auth/RegisterScreen'))
@@ -98,6 +99,7 @@ function App() {
       <WaiterCallOverlay />
       <AppBadgeSync />
       <PushPermissionPrompt />
+      <StaffReviewGate />
       <Suspense fallback={<Loader />}>
         <Routes>
           <Route path="/" element={<WelcomeScreen />} />
