@@ -34,6 +34,8 @@ type CartItem = {
   itemId: string
   quantity: number
   modifierNames: string[]
+  unitPrice: number
+  modDelta: number
 }
 
 export default function MenuScreen() {
@@ -65,6 +67,10 @@ export default function MenuScreen() {
   // прямой ссылке без старта смены) — резолвим из стола (эффект ниже),
   // иначе menu_sections по пустому restaurant_id вернёт 0 и меню будет пустым.
   const [restaurantId, setRestaurantId] = useState<string>(getActiveShift()?.restaurantId ?? '')
+  // Цвета берём из брендинга ресторана (динамически). Фолбэк — фирменные цвета
+  // Сыроварни: тёмно-зелёный + светло-бежевый. Подставляются в CSS-переменные
+  // на .screen, из них выводится вся палитра меню.
+  const [brand, setBrand] = useState<{ green: string; beige: string }>({ green: '#304D22', beige: '#E5E0D4' })
 
   const touchStartY = useRef(0)
   const touchStartX = useRef(0)
@@ -85,6 +91,23 @@ export default function MenuScreen() {
       .then(({ data }) => { if (data?.restaurant_id) setRestaurantId(data.restaurant_id) })
   }, [table, restaurantId])
 
+  // Брендинг ресторана: тянем фирменные цвета. Если не прочитались — остаёмся
+  // на фолбэке (зелёный + бежевый Сыроварни), меню всё равно оформлено верно.
+  useEffect(() => {
+    if (!restaurantId) return
+    supabaseRestaurants
+      .from('restaurants')
+      .select('branding_primary_color, branding_price_bg_color, branding_background_color')
+      .eq('restaurantId', restaurantId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setBrand({
+          green: data.branding_primary_color || '#304D22',
+          beige: data.branding_price_bg_color || data.branding_background_color || '#E5E0D4',
+        })
+      })
+  }, [restaurantId])
+
   // Ensure order exists; create if missing
   useEffect(() => {
     if (currentOrderId || !table || !restaurantId) return
@@ -103,6 +126,8 @@ export default function MenuScreen() {
         itemId: i.item_id,
         quantity: i.quantity,
         modifierNames: i.modifiers.map(m => m.name),
+        unitPrice: i.unit_price,
+        modDelta: i.modifiers.reduce((s, m) => s + (m.price_delta || 0), 0),
       })))
     })
   }, [currentOrderId, activeGuestIndex])
@@ -219,7 +244,11 @@ export default function MenuScreen() {
           return prev.map(i => i.dbId === existing.dbId ? { ...i, dbId, quantity: i.quantity + 1 } : i)
         }
       }
-      return [...prev, { dbId, itemId: dish.id, quantity: 1, modifierNames }]
+      return [...prev, {
+        dbId, itemId: dish.id, quantity: 1, modifierNames,
+        unitPrice: dish.cost_rub,
+        modDelta: modifiersList.reduce((s, m) => s + (m.priceDelta || 0), 0),
+      }]
     })
     setPendingDish(null)
   }
@@ -265,11 +294,17 @@ export default function MenuScreen() {
   const activeSection = sections.find(s => s.id === activeSectionId)
   const showVolume = activeSection?.name === 'Напитки' || activeSection?.name === 'Алкоголь'
   const hasSubSubsections = subSubsections.length > 0
-  const contentTop = 164 + (hasSubSubsections ? 52 + 4 : 0)
+  const cartCount = cart.reduce((s, i) => s + i.quantity, 0)
+  const cartTotal = cart.reduce((s, i) => s + (i.unitPrice + i.modDelta) * i.quantity, 0)
+
+  const dishWord = (n: number) =>
+    n % 10 === 1 && n % 100 !== 11 ? 'блюдо'
+      : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'блюда' : 'блюд')
 
   return (
     <div
       className={styles.screen}
+      style={{ '--brand-green': brand.green, '--brand-beige': brand.beige } as React.CSSProperties}
       onTouchStart={e => {
         touchStartX.current = e.touches[0].clientX
         // Лента вкладок (подразделы/под-подразделы) помечена data-hscroll:
@@ -279,20 +314,30 @@ export default function MenuScreen() {
       onTouchEnd={handleScreenSwipeEnd}
     >
 
-      {/* ── Header: decorative МЕНЮ + sections ── */}
-      <div className={styles.header}>
-        <span className={styles.menuDecor}>МЕНЮ</span>
-        <div className={styles.sectionsRow}>
-          {sections.map(sec => (
-            <button
-              key={sec.id}
-              className={`${styles.sectionBtn} ${activeSectionId === sec.id ? styles.sectionBtnActive : ''}`}
-              onClick={() => setActiveSectionId(sec.id)}
-            >
-              {sec.name}
-            </button>
-          ))}
+      {/* ── App bar (назад к столам + контекст стола/гостя) ── */}
+      <div className={styles.appbar}>
+        <button className={styles.backBtn} onClick={() => navigate('/restaurant/tables')} aria-label="К столам">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 5l-7 7 7 7" /></svg>
+        </button>
+        <div className={styles.appbarMid}>
+          <span className={styles.appbarTitle}>Меню</span>
+          <span className={styles.appbarSub}>
+            <span className={styles.guestDot} /> Стол {table?.number ?? '—'} · Гость {activeGuestIndex + 1}
+          </span>
         </div>
+      </div>
+
+      {/* ── Sections (вкладки) ── */}
+      <div className={styles.sectionsRow}>
+        {sections.map(sec => (
+          <button
+            key={sec.id}
+            className={`${styles.sectionBtn} ${activeSectionId === sec.id ? styles.sectionBtnActive : ''}`}
+            onClick={() => setActiveSectionId(sec.id)}
+          >
+            {sec.name}
+          </button>
+        ))}
       </div>
 
       {/* ── Subsections ── */}
@@ -337,8 +382,8 @@ export default function MenuScreen() {
         </div>
       )}
 
-      {/* ── Dishes ── */}
-      <div className={styles.content} style={{ marginTop: contentTop }}>
+      {/* ── Dishes (карточки, без картинок) ── */}
+      <div className={styles.content}>
         {dishes.length === 0 && (
           <p className={styles.empty}>Блюда не найдены</p>
         )}
@@ -347,15 +392,14 @@ export default function MenuScreen() {
           return (
             <div key={dish.id} className={styles.dishRow} onClick={() => setInfoDish(dish)}>
               <div className={styles.dishLeft}>
-                <p className={styles.dishName}>
-                  {dish.dish_name}
-                </p>
+                <p className={styles.dishName}>{dish.dish_name}</p>
+                {dish.description && <p className={styles.dishDesc}>{dish.description}</p>}
                 <p className={styles.dishTime}>
-                  {showVolume ? dish.weight_g : `${dish.cook_time_min} мин`}
+                  {showVolume ? dish.weight_g : `${dish.cook_time_min} мин · ${dish.weight_g} г`}
                 </p>
               </div>
               <div className={styles.dishRight}>
-                <span className={styles.dishPrice}>{dish.cost_rub} руб</span>
+                <span className={styles.dishPrice}>{dish.cost_rub} ₽</span>
                 <div className={styles.dishActions}>
                   {qty === 0 ? (
                     <button className={styles.addBtn} onClick={e => { e.stopPropagation(); handleAdd(dish) }}>+</button>
@@ -373,14 +417,21 @@ export default function MenuScreen() {
         })}
       </div>
 
-      {/* ── Left СТОЛ tab ── */}
-      <div className={styles.stolTab} onClick={() => navigate('/restaurant/tables')}>
-        <span className={styles.stolTabText}>СТОЛ</span>
-      </div>
-
-      {/* ── К СТОЛУ button ── */}
+      {/* ── Панель заказа (кол-во · сумма · К заказу). Свайп вправо и эта
+          кнопка ведут на экран заказа; стрелка вверху — к столам. ── */}
       <div className={styles.footer}>
-        <button className={styles.toTableBtn} onClick={goToOrder}>К СТОЛУ</button>
+        {cartCount > 0 ? (
+          <div className={styles.orderInfo}>
+            <span className={styles.orderCount}>{cartCount} {dishWord(cartCount)} · Гость {activeGuestIndex + 1}</span>
+            <span className={styles.orderTotal}>{cartTotal} ₽</span>
+          </div>
+        ) : (
+          <span className={styles.orderEmpty}>Выберите блюда для гостя</span>
+        )}
+        <button className={styles.toTableBtn} onClick={goToOrder}>
+          К заказу
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5l7 7-7 7" /></svg>
+        </button>
       </div>
 
       {/* ── Modifier modal ── */}
