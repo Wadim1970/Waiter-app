@@ -408,6 +408,71 @@
 }
 .okBtn:active { opacity: 0.9; }
 
-/* Dish info modal text */
-.infoText { font-family: inherit; font-size: 14px; color: var(--muted); line-height: 1.55; margin: 0; }
-.nutrition { display: flex; gap: 8px; padding: 2px 0; }
+/* ── Dish info sheet (подробная карточка блюда) ── */
+.sheetName {
+  margin: 0 0 4px;
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.sheetRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 6px 0 14px;
+}
+.sheetPrice { font-size: 20px; font-weight: 800; color: var(--green); font-variant-numeric: tabular-nums; }
+.sheetMeta { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.sheetDesc { font-family: inherit; font-size: 14px; line-height: 1.55; color: var(--muted); margin: 0 0 16px; }
+.sheetBlock { margin: 0 0 16px; }
+.sheetBlockLabel {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--faint);
+  margin-bottom: 5px;
+}
+
+.nutrition { display: flex; gap: 8px; margin: 2px 0 18px; }
+.nutrCell {
+  flex: 1;
+  text-align: center;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 9px 4px;
+}
+.nutrValue { display: block; font-size: 15px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.nutrLabel {
+  display: block;
+  font-size: 10.5px;
+  color: var(--faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+
+.sheetAdd {
+  width: 100%;
+  border: none;
+  border-radius: 16px;
+  background: var(--green);
+  color: var(--on-green);
+  padding: 15px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 750;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+.sheetAdd:active { transform: scale(0.99); }
+.sheetAddPrice { font-variant-numeric: tabular-nums; opacity: 0.9; }
