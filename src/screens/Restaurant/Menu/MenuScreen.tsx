@@ -483,7 +483,7 @@ export default function MenuScreen() {
         </div>
       )}
 
-      {/* ── Dish info modal ── */}
+      {/* ── Dish info sheet (подробная карточка блюда, дизайн из макета) ── */}
       {infoDish && (
         <div
           className={styles.overlay}
@@ -493,37 +493,38 @@ export default function MenuScreen() {
         >
           <div className={styles.modal}>
             <div className={styles.modalHandle} />
-            <InfoSection title="Описание">
-              <p className={styles.infoText}>{infoDish.description}</p>
-            </InfoSection>
-            {infoDish.ingredients && (
-              <InfoSection title="Состав">
-                <p className={styles.infoText}>
-                  {(() => {
-                    try {
-                      const arr = typeof infoDish.ingredients === 'string'
-                        ? JSON.parse(infoDish.ingredients)
-                        : infoDish.ingredients
-                      return Array.isArray(arr)
-                        ? arr.map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')
-                        : String(infoDish.ingredients)
-                    } catch {
-                      return String(infoDish.ingredients)
-                    }
-                  })()}
-                </p>
-              </InfoSection>
-            )}
-            {infoDish.nutritional_info && (
-              <InfoSection title="Пищевая ценность">
-                <div className={styles.nutrition}>
-                  <NutrCell value={infoDish.nutritional_info.calories_kcal} label="ккал" />
-                  <NutrCell value={infoDish.nutritional_info.protein_g} label="белки" />
-                  <NutrCell value={infoDish.nutritional_info.fat_g} label="жиры" />
-                  <NutrCell value={infoDish.nutritional_info.carbs_g} label="углеводы" />
+            <h3 className={styles.sheetName}>{infoDish.dish_name}</h3>
+            <div className={styles.sheetRow}>
+              <span className={styles.sheetPrice}>{infoDish.cost_rub} ₽</span>
+              <span className={styles.sheetMeta}>
+                {showVolume ? `${infoDish.weight_g}` : `${infoDish.cook_time_min} мин · ${infoDish.weight_g} г`}
+              </span>
+            </div>
+            {infoDish.description && <p className={styles.sheetDesc}>{infoDish.description}</p>}
+            {(() => {
+              const composition = formatIngredients(infoDish.ingredients)
+              return composition ? (
+                <div className={styles.sheetBlock}>
+                  <span className={styles.sheetBlockLabel}>Состав</span>
+                  <p className={styles.sheetDesc} style={{ margin: 0 }}>{composition}</p>
                 </div>
-              </InfoSection>
+              ) : null
+            })()}
+            {infoDish.nutritional_info && (
+              <div className={styles.nutrition}>
+                <NutrCell value={infoDish.nutritional_info.calories_kcal} label="ккал" />
+                <NutrCell value={infoDish.nutritional_info.protein_g} label="белки" />
+                <NutrCell value={infoDish.nutritional_info.fat_g} label="жиры" />
+                <NutrCell value={infoDish.nutritional_info.carbs_g} label="углев." />
+              </div>
             )}
+            <button
+              className={styles.sheetAdd}
+              onClick={() => { const d = infoDish; setInfoDish(null); handleAdd(d) }}
+            >
+              <span>Добавить в заказ</span>
+              <span className={styles.sheetAddPrice}>{infoDish.cost_rub} ₽</span>
+            </button>
           </div>
         </div>
       )}
@@ -531,26 +532,28 @@ export default function MenuScreen() {
   )
 }
 
-function InfoSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div style={{ marginBottom: 16 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <div style={{ flex: 1, height: 1, background: '#e0e0e0' }} />
-        <span style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600, fontSize: 14, color: '#000' }}>{title}</span>
-        <div style={{ flex: 1, height: 1, background: '#e0e0e0' }} />
-      </div>
-      {children}
-    </div>
-  )
+// Состав приходит либо JSON-строкой массива, либо массивом, либо простой
+// строкой. Возвращаем читаемую строку «Ингредиент, ингредиент…» или '' .
+function formatIngredients(raw: string | string[] | null | undefined): string {
+  if (!raw) return ''
+  try {
+    const arr = typeof raw === 'string' ? JSON.parse(raw) : raw
+    if (Array.isArray(arr)) {
+      return arr.map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')
+    }
+    return String(raw)
+  } catch {
+    return String(raw)
+  }
 }
 
 function NutrCell({ value, label }: { value?: number; label: string }) {
   if (value == null) return null
   const text = Number.isInteger(value) ? String(value) : value.toFixed(1)
   return (
-    <div style={{ textAlign: 'center' }}>
-      <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: 16 }}>{text}</div>
-      <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 12, color: '#999' }}>{label}</div>
+    <div className={styles.nutrCell}>
+      <span className={styles.nutrValue}>{text}</span>
+      <span className={styles.nutrLabel}>{label}</span>
     </div>
   )
 }
