@@ -4,6 +4,7 @@ import { supabase, supabaseRestaurants } from '../../../lib/supabase'
 import { getActiveShift } from '../QRScanner/QRScannerScreen'
 import { getOrCreateOrder, addOrderItem, removeOrderItem, loadOrderItems } from '../../../lib/orders'
 import type { TableWithSession } from '../../../lib/tables'
+import AiAssistantLayer from './AiAssistantLayer'
 import styles from './MenuScreen.module.css'
 
 type MenuSection = { id: string; name: string; sort_order: number }
@@ -220,6 +221,22 @@ export default function MenuScreen() {
     }
   }
 
+  // Добавление по id (из AI-помощника): блюдо может быть не из текущего
+  // раздела, поэтому если его нет в загруженных — дотягиваем из меню.
+  // Дальше — обычный handleAdd (с модификаторами, если они есть).
+  const handleAddById = async (dishId: string) => {
+    let dish = dishes.find(d => d.id === dishId)
+    if (!dish) {
+      const { data } = await supabaseRestaurants
+        .from('menu_items')
+        .select('*')
+        .eq('id', dishId)
+        .maybeSingle()
+      if (data) dish = data as MenuItem
+    }
+    if (dish) handleAdd(dish)
+  }
+
   const addToCart = async (dish: MenuItem, mods: Record<string, string>) => {
     if (!currentOrderId) return
 
@@ -433,6 +450,17 @@ export default function MenuScreen() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5l7 7-7 7" /></svg>
         </button>
       </div>
+
+      {/* ── AI-помощник официанта (шторка поверх меню) ── */}
+      {restaurantId && (
+        <AiAssistantLayer
+          restaurantId={restaurantId}
+          orderId={currentOrderId}
+          seat={activeGuestIndex + 1}
+          cartCount={cartCount}
+          onAddDish={handleAddById}
+        />
+      )}
 
       {/* ── Modifier modal ── */}
       {pendingDish && (
