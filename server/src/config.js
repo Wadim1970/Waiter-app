@@ -56,6 +56,13 @@ export const config = {
   smsCodeTtlSec: Number(optional('SMS_CODE_TTL_SEC', '300')),       // 5 минут
   smsResendCooldownSec: Number(optional('SMS_RESEND_COOLDOWN_SEC', '60')),
   smsMaxAttempts: Number(optional('SMS_MAX_ATTEMPTS', '5')),
+
+  // ── DeepSeek (AI-коуч официанта, текстовые подсказки апсейла) ──────────────
+  // Ключ ОПЦИОНАЛЕН: без него /api/waiter/suggest отдаёт шаблонные подсказки
+  // (деградация, а не отказ). DeepSeek OpenAI-совместим.
+  deepseekApiKey: optional('DEEPSEEK_API_KEY', ''),
+  deepseekBaseUrl: optional('DEEPSEEK_BASE_URL', 'https://api.deepseek.com'),
+  deepseekModel: optional('DEEPSEEK_MODEL', 'deepseek-chat'),
 }
 
 if (hasMissing) {
