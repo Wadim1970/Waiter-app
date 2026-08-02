@@ -1,37 +1,44 @@
-// AI-коуч официанта — I/O и оркестрация.
-// buildDigest — компактный «дайджест» меню с маржой и флагами дня (читаем под
-// service_role, поэтому себестоимость не покидает сервер). callDeepSeek — сам
-// вызов модели. suggest — собирает кандидатов (детерминированно) и просит
-// DeepSeek написать скрипт; без ключа/при сбое отдаёт шаблонные подсказки.
+import { createClient } from '@supabase/supabase-js'
+import { rankCandidates, badgesFor, templatePitch, buildMessages, parsePitches } from '../_lib/suggestCore.js'
 
-import { config } from './config.js'
-import { supabaseAdmin } from './supabase.js'
-import { rankCandidates, badgesFor, templatePitch, buildMessages, parsePitches } from './aiSuggestCore.js'
+// AI-коуч официанта — Vercel serverless-функция (same-origin с приложением
+// официанта). Ключ DeepSeek и сервисный ключ Supabase живут в Vercel env,
+// в браузер не попадают (имена БЕЗ префикса VITE_).
+//
+// Костинг (menu_item_costing / dish_daily_flags) под RLS без клиентских
+// политик → читаем под service_role, поэтому себестоимость не покидает сервер.
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY,
+  { auth: { autoRefreshToken: false, persistSession: false } },
+)
 
-// Приоритет флага, если у блюда их несколько на день (стоп важнее всего).
+const DEEPSEEK_KEY = process.env.DEEPSEEK_API_KEY || ''
+const DEEPSEEK_BASE = process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com'
+const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-chat'
+
 const FLAG_PRI = { stop: 3, expiring: 2, special: 1 }
 
-// Дайджест меню ресторана: блюдо + маржа/приоритет + флаг дня. Три быстрых
-// запроса и склейка в памяти — прозрачнее, чем вложенные select, и на ~200
-// блюдах дёшево.
+// Дайджест меню: блюдо + маржа/приоритет + флаг дня. Три быстрых запроса и
+// склейка в памяти.
 async function buildDigest(restaurantId) {
   const today = new Date().toISOString().slice(0, 10)
   const [items, costing, flags] = await Promise.all([
-    supabaseAdmin.from('menu_items')
+    supabase.from('menu_items')
       .select('id, dish_name, description, cost_rub, menu_section, product_type, is_available')
       .eq('restaurant_id', restaurantId)
       .eq('is_available', true),
-    supabaseAdmin.from('menu_item_costing')
+    supabase.from('menu_item_costing')
       .select('dish_id, margin_abs, margin_pct, push_priority, push_reason')
       .eq('restaurant_id', restaurantId),
-    supabaseAdmin.from('dish_daily_flags')
+    supabase.from('dish_daily_flags')
       .select('dish_id, flag, note')
       .eq('restaurant_id', restaurantId)
       .eq('day', today),
   ])
   if (items.error) throw items.error
 
-  const costMap = new Map((costing.data || []).map(c => [c.dish_id, c]))
+  const costMap = new Map((costing.data || []).map((c) => [c.dish_id, c]))
   const flagMap = new Map()
   for (const f of flags.data || []) {
     const cur = flagMap.get(f.dish_id)
@@ -59,20 +66,20 @@ async function buildDigest(restaurantId) {
   })
 }
 
-// Вызов DeepSeek (OpenAI-совместимый). Жёсткий таймаут — коуч не должен ждать
-// модель дольше пары секунд; при сбое возвращаем null → сработает фолбэк.
+// Вызов DeepSeek (OpenAI-совместимый) с жёстким таймаутом. При сбое → null,
+// сработает шаблонный фолбэк.
 async function callDeepSeek({ candidates, stage, tag, guest }) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 6000)
   try {
-    const res = await fetch(`${config.deepseekBaseUrl.replace(/\/$/, '')}/chat/completions`, {
+    const res = await fetch(`${DEEPSEEK_BASE.replace(/\/$/, '')}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${config.deepseekApiKey}`,
+        Authorization: `Bearer ${DEEPSEEK_KEY}`,
       },
       body: JSON.stringify({
-        model: config.deepseekModel,
+        model: DEEPSEEK_MODEL,
         messages: buildMessages({ candidates, stage, tag, guest }),
         response_format: { type: 'json_object' },
         temperature: 0.6,
@@ -88,14 +95,13 @@ async function callDeepSeek({ candidates, stage, tag, guest }) {
   }
 }
 
-// Главная функция: подсказки апсейла для стадии/тега/гостя.
-export async function suggest({ restaurantId, stage, tag, guest, exclude, limit }) {
+async function suggest({ restaurantId, stage, tag, guest, exclude, limit }) {
   const digest = await buildDigest(restaurantId)
   const candidates = rankCandidates(digest, { tag, exclude, limit })
   if (candidates.length === 0) return { suggestions: [], source: 'empty' }
 
   let pitches = null
-  if (config.deepseekApiKey) {
+  if (DEEPSEEK_KEY) {
     pitches = await callDeepSeek({ candidates, stage, tag, guest }).catch(() => null)
   }
 
@@ -113,4 +119,35 @@ export async function suggest({ restaurantId, stage, tag, guest, exclude, limit 
   })
 
   return { suggestions, source: pitches ? 'llm' : 'fallback' }
+}
+
+function safeParse(s) {
+  try { return JSON.parse(s) } catch { return {} }
+}
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: 'Только POST' })
+    return
+  }
+  const body = typeof req.body === 'string' ? safeParse(req.body) : (req.body || {})
+  const restaurantId = String(body.restaurantId || '').trim()
+  if (!restaurantId) {
+    res.status(400).json({ error: 'restaurantId обязателен' })
+    return
+  }
+  try {
+    const result = await suggest({
+      restaurantId,
+      stage: body.stage,
+      tag: body.tag,
+      guest: body.guest,
+      exclude: Array.isArray(body.exclude) ? body.exclude : [],
+      limit: body.limit,
+    })
+    res.status(200).json(result)
+  } catch (err) {
+    console.error('waiter/suggest failed:', err)
+    res.status(502).json({ error: 'Не удалось получить подсказку' })
+  }
 }

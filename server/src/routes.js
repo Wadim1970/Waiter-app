@@ -1,6 +1,5 @@
 import { config } from './config.js'
 import { supabaseAdmin } from './supabase.js'
-import { suggest } from './aiSuggest.js'
 import { normalizePhone, getOrCreateAuthUserByPhone, linkWaiterToAuthUser, setUserPassword, passwordGrant, randomPassword } from './gotrue.js'
 import { sendPushForCall } from './webpush.js'
 import { sendSmsCode, verifySmsCode } from './sms.js'
@@ -269,29 +268,5 @@ export async function routes(app) {
     }
 
     return { ok: true, points: result.points }
-  })
-
-  // ── AI-коуч официанта: подсказки апсейла ──────────────────────────────────
-  // Тап по тегу на экране меню → 1–3 подсказки (что предложить + что сказать).
-  // «Другой вариант» — повторный вызов с exclude = уже показанные dishId.
-  app.post('/api/waiter/suggest', async (req, reply) => {
-    const body = req.body || {}
-    const restaurantId = String(body.restaurantId || '').trim()
-    if (!restaurantId) {
-      return reply.code(400).send({ error: 'restaurantId обязателен' })
-    }
-    try {
-      return await suggest({
-        restaurantId,
-        stage: body.stage,
-        tag: body.tag,
-        guest: body.guest,
-        exclude: Array.isArray(body.exclude) ? body.exclude : [],
-        limit: body.limit,
-      })
-    } catch (err) {
-      req.log.error(err)
-      return reply.code(502).send({ error: 'Не удалось получить подсказку' })
-    }
   })
 }

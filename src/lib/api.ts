@@ -91,8 +91,9 @@ export type AiSuggestion = {
 export type AiSuggestGuest = { gender?: string | null; age?: string | null; occasion?: string | null }
 
 // Подсказки апсейла для стадии/тега/гостя. exclude — уже показанные dishId
-// (для «другой вариант»). Бэкенд серверный, ключ DeepSeek опционален (без него
-// приходят шаблонные подсказки).
+// (для «другой вариант»). Эндпоинт — Vercel serverless-функция, same-origin
+// (/api/waiter/suggest), поэтому НЕ через VITE_API_URL. Ключ DeepSeek
+// опционален (без него приходят шаблонные подсказки).
 export async function getSuggestions(payload: {
   restaurantId: string
   stage?: string
@@ -101,7 +102,7 @@ export async function getSuggestions(payload: {
   exclude?: string[]
   limit?: number
 }): Promise<{ suggestions: AiSuggestion[]; source: string }> {
-  const res = await fetch(apiUrl('/api/waiter/suggest'), {
+  const res = await fetch('/api/waiter/suggest', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
