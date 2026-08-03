@@ -7,8 +7,13 @@ import { rankCandidates, badgesFor, templatePitch, buildMessages, parsePitches }
 //
 // Костинг (menu_item_costing / dish_daily_flags) под RLS без клиентских
 // политик → читаем под service_role, поэтому себестоимость не покидает сервер.
+//
+// URL берём из уже существующей VITE_SUPABASE_WAITER_URL (её видно и функции),
+// чтобы не плодить переменную. А вот КЛЮЧ обязан быть service_role и БЕЗ
+// префикса VITE_ — иначе Vite вшил бы его в браузерный бандл (утечка сервисного
+// ключа = полный доступ к базе у любого гостя). Поэтому SUPABASE_SERVICE_KEY.
 const supabase = createClient(
-  process.env.SUPABASE_URL,
+  process.env.SUPABASE_URL || process.env.VITE_SUPABASE_WAITER_URL,
   process.env.SUPABASE_SERVICE_KEY,
   { auth: { autoRefreshToken: false, persistSession: false } },
 )
