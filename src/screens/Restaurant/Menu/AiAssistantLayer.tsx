@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { getSuggestions, type AiSuggestion } from '../../../lib/api'
+import { getSuggestions, warmSuggestions, type AiSuggestion } from '../../../lib/api'
 import { loadGuestAttributes } from '../../../lib/orders'
 import styles from './AiAssistantLayer.module.css'
 
@@ -41,16 +41,31 @@ export default function AiAssistantLayer({ restaurantId, orderId, seat, cartItem
   const tags = hasCart ? TAGS_S2 : TAGS_S1
   const current = chain[idx] || null
 
-  // Атрибуты активного гостя (для персонализации подсказки).
+  const warmedRef = useRef(false)
+
+  // Прогрев кэша один раз при открытии гостя: подсказки текущей стадии
+  // считаются заранее, чтобы первый тап по тегу был мгновенным.
+  function warmOnce(g: { gender?: string | null; age?: string | null }) {
+    if (warmedRef.current || !restaurantId) return
+    warmedRef.current = true
+    const st = cartItemIds.length ? 'S2' : 'S1'
+    const tg = cartItemIds.length ? TAGS_S2 : TAGS_S1
+    warmSuggestions({ restaurantId, stage: st, guest: g, cartItemIds, tags: tg })
+  }
+
+  // Атрибуты активного гостя (для персонализации подсказки) + прогрев.
   useEffect(() => {
-    if (!orderId) return
+    if (!orderId) { warmOnce({}); return }
     loadGuestAttributes(orderId)
       .then(map => {
         const a = map[seat]
-        if (a) setGuest({ gender: a.gender, age: a.age })
+        const g = a ? { gender: a.gender, age: a.age } : {}
+        if (a) setGuest(g)
+        warmOnce(g)
       })
-      .catch(() => {})
-  }, [orderId, seat])
+      .catch(() => warmOnce({}))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderId, seat, restaurantId])
 
   async function fetchFor(selectedTag: string, exclude: string[]) {
     if (!restaurantId) return

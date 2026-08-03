@@ -114,3 +114,25 @@ export async function getSuggestions(payload: {
   }
   return data as { suggestions: AiSuggestion[]; source: string }
 }
+
+// Прогрев кэша подсказок при открытии гостя (fire-and-forget). Считает
+// подсказки тегов стадии заранее, чтобы первый тап был мгновенным. Ошибки
+// не важны — прогрев не критичный путь.
+export async function warmSuggestions(payload: {
+  restaurantId: string
+  stage?: string
+  guest?: AiSuggestGuest
+  cartItemIds?: string[]
+  tags: string[]
+  limit?: number
+}): Promise<void> {
+  try {
+    await fetch('/api/waiter/warm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+  } catch {
+    // прогрев не критичен — молча игнорируем
+  }
+}
