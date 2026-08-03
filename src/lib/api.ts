@@ -136,3 +136,19 @@ export async function warmSuggestions(payload: {
     // прогрев не критичен — молча игнорируем
   }
 }
+
+// Рекомендательный набор для виджета «Подсказка от RestAI» — один связный текст.
+export async function getRecommendation(payload: {
+  restaurantId: string
+  cartItemIds: string[]
+  guest?: AiSuggestGuest
+}): Promise<{ text: string | null; source: string }> {
+  const res = await fetch('/api/waiter/recommend', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || 'Не удалось получить рекомендацию')
+  return data as { text: string | null; source: string }
+}

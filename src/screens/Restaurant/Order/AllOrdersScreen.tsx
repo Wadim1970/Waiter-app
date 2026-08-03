@@ -4,6 +4,8 @@ import type { TableWithSession } from '../../../lib/tables'
 import { loadOrderItems, loadGuestAttributes, getOrderStatus, getGuestPaidStatus, sendToKitchen, requestBill, clearTable, updateTableSessionStatus } from '../../../lib/orders'
 import type { LoadedOrderItem, GuestAttrs } from '../../../lib/orders'
 import { supabase } from '../../../lib/supabase'
+import { getActiveShift } from '../QRScanner/QRScannerScreen'
+import { useRestaiHint } from '../../../lib/useRestaiHint'
 import styles from './AllOrdersScreen.module.css'
 
 const GUEST_COLORS = ['#02a826','#ce00b9','#ff9500','#003daf','#6c03ed','#0f929c','#700061','#979200']
@@ -71,6 +73,14 @@ export default function AllOrdersScreen() {
   const [btnLoading, setBtnLoading] = useState(false)
   const [aiExpanded, setAiExpanded] = useState(false)
   const [tick, setTick] = useState(0)
+
+  // Виджет «Подсказка от RestAI»: ИИ смотрит весь заказ стола и советует
+  // оптимальный набор дополнений с обоснованием сочетаний.
+  const restaurantId = getActiveShift()?.restaurantId ?? ''
+  const { text: hintText, loading: hintLoading } = useRestaiHint(
+    restaurantId,
+    [...new Set(orderItems.map(i => i.item_id))],
+  )
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const refreshOrder = useCallback(async () => {
@@ -322,7 +332,9 @@ export default function AllOrdersScreen() {
           </div>
           <div className={`${styles.aiBody} ${aiExpanded ? styles.aiBodyExpanded : ''}`}>
             <p className={styles.aiText}>
-              Гости заказали сытные блюда — предложите лёгкий десерт или дижестив. Уточните у гостей, всё ли в порядке с заказом.
+              {hintLoading
+                ? 'Секунду, подбираю рекомендацию…'
+                : (hintText || 'Уточните у гостей, всё ли в порядке с заказом.')}
             </p>
           </div>
         </div>

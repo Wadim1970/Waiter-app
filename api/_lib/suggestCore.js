@@ -128,3 +128,95 @@ export function parsePitches(content, candidates) {
     }))
   return out.length ? out : null
 }
+
+// ── Рекомендательный НАБОР (виджет «Подсказка от RestAI» на экране заказа) ──
+// Не карточки, а один связный текст: по одному дополнению из подходящих
+// категорий. Ниже — разбивка меню по категориям и промпт для набора.
+
+// Категория блюда для набора-дополнения.
+export function categoryOf(item) {
+  const t = `${item.name || ''} ${item.section || ''}`
+  if (item.productType === 'alcohol' || /вино|бокал|игрист|просекко|шампан|виски|коньяк|аперол/i.test(t)) return 'alco'
+  if (item.productType === 'drink' || /сок|лимонад|морс|смузи|компот|кофе|чай|раф|коктейл|тоник|вода/i.test(t)) return 'soft'
+  if (/десерт|торт|чизкейк|тирамису|морож|панакот|штрудел|сырник|пирог|наполеон/i.test(t)) return 'dessert'
+  if (/пицц|паст|ризотто|горяч|стейк|бургер|котлет|рагу|филе|шашлык|запечён|гриль|мяс|рыб|том ям|плов/i.test(t)) return 'main'
+  return null
+}
+
+// Пулы кандидатов-дополнений по категориям, каждый отсортирован по приоритету
+// (маржа/флаги дня) и обрезан до top-N. Стоп-лист/недоступные/уже в корзине —
+// исключаем.
+export function pickPools(digest, { exclude = [], perCategory = 3 } = {}) {
+  const ex = new Set(exclude)
+  const cats = { main: [], alco: [], soft: [], dessert: [] }
+  for (const it of digest || []) {
+    if (!it.available || it.dailyFlag === 'stop' || ex.has(it.id)) continue
+    const c = categoryOf(it)
+    if (c && cats[c]) cats[c].push(it)
+  }
+  for (const k of Object.keys(cats)) {
+    cats[k].sort((a, b) => scoreOf(b) - scoreOf(a))
+    cats[k] = cats[k].slice(0, perCategory)
+  }
+  return cats
+}
+
+// Промпт для единого текста-набора.
+export function buildRecommendMessages({ cart, pools, guest }) {
+  const compact = (arr) => (arr || []).map((c) => ({
+    name: c.name,
+    price: c.price,
+    why: [
+      c.pushReason,
+      c.dailyFlag === 'expiring' ? 'последний день реализации' : null,
+      c.dailyFlag === 'special' ? 'спец дня' : null,
+    ].filter(Boolean).join('; ') || null,
+  }))
+  const menu = {
+    основное: compact(pools.main),
+    алкоголь: compact(pools.alco),
+    безалкогольное: compact(pools.soft),
+    десерт: compact(pools.dessert),
+  }
+  const g = guest || {}
+  const guestLine = [g.gender && `пол: ${g.gender}`, g.age && `возраст: ${g.age}`]
+    .filter(Boolean).join(', ') || 'не указан'
+
+  const system = `Ты — наставник-официант и сомелье. Гость уже выбрал блюда. Составь ОДИН короткий связный совет официанту (3–5 предложений, живой текст) — какой оптимальный НАБОР предложить в дополнение: по одному из ПОДХОДЯЩИХ категорий (основное, напиток алкогольный, напиток безалкогольный, десерт).
+Правила:
+- бери ТОЛЬКО из предложенных кандидатов, по их названиям; не выдумывай блюд;
+- для каждого — короткое УБЕДИТЕЛЬНОЕ обоснование сочетания по вкусу (подчёркивает / освежает / дополняет), связанное с выбором гостя;
+- включай не все категории подряд, а только те, что реально уместны к заказу; не перегружай;
+- у кандидатов есть пометки why (маржа/срок) — при равной уместности предпочитай их (это выгодно ресторану), но гостю про выгоду/маржу/себестоимость НЕ говори;
+- пиши единым абзацем, как живую рекомендацию, которую официант произнесёт гостю.
+Верни СТРОГО JSON: {"text":"<готовый совет одним абзацем>"}.`
+
+  const user = `Гость выбрал: ${(cart || []).join(', ') || '—'}. Профиль гостя: ${guestLine}.
+Кандидаты по категориям (по убыванию приоритета):
+${JSON.stringify(menu)}`
+
+  return [
+    { role: 'system', content: system },
+    { role: 'user', content: user },
+  ]
+}
+
+export function parseRecommendText(content) {
+  if (!content) return null
+  let obj
+  try { obj = JSON.parse(content) } catch { return typeof content === 'string' && content.trim() ? content.trim() : null }
+  const t = obj?.text ?? obj?.recommendation ?? null
+  return typeof t === 'string' && t.trim() ? t.trim() : null
+}
+
+// Фолбэк без ИИ: детерминированный набор одним предложением.
+export function templateSet(pools) {
+  const first = (arr) => (arr && arr[0] ? arr[0].name : null)
+  const parts = []
+  if (first(pools.main)) parts.push(`из основного — «${first(pools.main)}»`)
+  const drink = first(pools.alco) || first(pools.soft)
+  if (drink) parts.push(`из напитков — «${drink}»`)
+  if (first(pools.dessert)) parts.push(`на десерт — «${first(pools.dessert)}»`)
+  if (parts.length === 0) return null
+  return `К заказу хорошо подойдёт: ${parts.join(', ')}. Уточните у гостей, всё ли в порядке с заказом.`
+}
