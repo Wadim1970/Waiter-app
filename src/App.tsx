@@ -22,7 +22,6 @@ const GuestDescriptionScreen = lazy(() => import('./screens/Restaurant/TableSess
 const MenuScreen = lazy(() => import('./screens/Restaurant/Menu/MenuScreen'))
 const OrderScreen = lazy(() => import('./screens/Restaurant/Order/OrderScreen'))
 const AllOrdersScreen = lazy(() => import('./screens/Restaurant/Order/AllOrdersScreen'))
-const GuestCartsScreen = lazy(() => import('./screens/Restaurant/Order/GuestCartsScreen'))
 const IncomeScreen = lazy(() => import('./screens/Income/IncomeScreen'))
 
 const Loader = () => (
@@ -118,7 +117,6 @@ function App() {
           <Route path="/restaurant/menu" element={<MenuScreen />} />
           <Route path="/restaurant/table/:tableId/order" element={<OrderScreen />} />
           <Route path="/restaurant/table/:tableId/all-orders" element={<AllOrdersScreen />} />
-          <Route path="/restaurant/table/:tableId/guest-carts" element={<GuestCartsScreen />} />
 
           <Route path="/search" element={<PlaceholderScreen title="🔍 Поиск" />} />
           <Route path="/orders" element={<PlaceholderScreen title="📋 Заказы" />} />
