@@ -76,3 +76,40 @@ export async function verifySms(phone: string, code: string): Promise<VerifySmsR
   }
   return data as VerifySmsResult
 }
+
+// ── AI-коуч официанта ──────────────────────────────────────────────────────
+export type AiSuggestion = {
+  dishId: string
+  name: string
+  price: number
+  pitch: string
+  addon: string | null
+  badges: string[]
+  reason?: string | null
+}
+
+export type AiSuggestGuest = { gender?: string | null; age?: string | null; occasion?: string | null }
+
+// Подсказки апсейла для стадии/тега/гостя. exclude — уже показанные dishId
+// (для «другой вариант»). Эндпоинт — Vercel serverless-функция, same-origin
+// (/api/waiter/suggest), поэтому НЕ через VITE_API_URL. Ключ DeepSeek
+// опционален (без него приходят шаблонные подсказки).
+export async function getSuggestions(payload: {
+  restaurantId: string
+  stage?: string
+  tag?: string
+  guest?: AiSuggestGuest
+  exclude?: string[]
+  limit?: number
+}): Promise<{ suggestions: AiSuggestion[]; source: string }> {
+  const res = await fetch('/api/waiter/suggest', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    throw new Error(data.error || 'Не удалось получить подсказку')
+  }
+  return data as { suggestions: AiSuggestion[]; source: string }
+}
