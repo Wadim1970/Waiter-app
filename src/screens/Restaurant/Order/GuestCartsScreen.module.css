@@ -206,3 +206,21 @@
 .grandTotal {
   color: #eb651a;
 }
+
+/* CTA «взять корзину гостя» → открыть редактируемый экран меню */
+.openBtn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  background: #304D22;
+  color: #fff;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.openBtn:disabled { opacity: 0.55; cursor: default; }
+.openBtn:active { transform: scale(0.99); }
