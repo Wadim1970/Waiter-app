@@ -7,7 +7,7 @@ type Props = {
   restaurantId: string
   orderId: string | null
   seat: number
-  cartCount: number
+  cartItemIds: string[]
   onAddDish: (dishId: string) => void
 }
 
@@ -25,7 +25,7 @@ const BADGE_LABEL: Record<string, string> = {
   margin: '💰 маржа', hit: '🔥 хит', expiring: '⏳ последний день', special: '⭐ спец дня',
 }
 
-export default function AiAssistantLayer({ restaurantId, orderId, seat, cartCount, onAddDish }: Props) {
+export default function AiAssistantLayer({ restaurantId, orderId, seat, cartItemIds, onAddDish }: Props) {
   const [open, setOpen] = useState(false)
   const [guest, setGuest] = useState<{ gender?: string | null; age?: string | null }>({})
   const [tag, setTag] = useState<string | null>(null)
@@ -36,8 +36,9 @@ export default function AiAssistantLayer({ restaurantId, orderId, seat, cartCoun
   const [added, setAdded] = useState<Set<string>>(new Set())
   const shownRef = useRef<Set<string>>(new Set())
 
-  const stage = cartCount > 0 ? 'S2' : 'S1'
-  const tags = cartCount > 0 ? TAGS_S2 : TAGS_S1
+  const hasCart = cartItemIds.length > 0
+  const stage = hasCart ? 'S2' : 'S1'
+  const tags = hasCart ? TAGS_S2 : TAGS_S1
   const current = chain[idx] || null
 
   // Атрибуты активного гостя (для персонализации подсказки).
@@ -57,7 +58,7 @@ export default function AiAssistantLayer({ restaurantId, orderId, seat, cartCoun
     setError(false)
     try {
       const { suggestions } = await getSuggestions({
-        restaurantId, stage, tag: selectedTag, guest, exclude, limit: 3,
+        restaurantId, stage, tag: selectedTag, guest, exclude, cartItemIds, limit: 3,
       })
       if (suggestions.length === 0) {
         setChain([])

@@ -457,7 +457,7 @@ export default function MenuScreen() {
           restaurantId={restaurantId}
           orderId={currentOrderId}
           seat={activeGuestIndex + 1}
-          cartCount={cartCount}
+          cartItemIds={[...new Set(cart.map(i => i.itemId))]}
           onAddDish={handleAddById}
         />
       )}

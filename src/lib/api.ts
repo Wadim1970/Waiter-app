@@ -100,6 +100,7 @@ export async function getSuggestions(payload: {
   tag?: string
   guest?: AiSuggestGuest
   exclude?: string[]
+  cartItemIds?: string[]
   limit?: number
 }): Promise<{ suggestions: AiSuggestion[]; source: string }> {
   const res = await fetch('/api/waiter/suggest', {

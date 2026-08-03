@@ -73,7 +73,7 @@ async function buildDigest(restaurantId) {
 
 // Вызов DeepSeek (OpenAI-совместимый) с жёстким таймаутом. При сбое → null,
 // сработает шаблонный фолбэк.
-async function callDeepSeek({ candidates, stage, tag, guest }) {
+async function callDeepSeek({ candidates, stage, tag, guest, cart }) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 6000)
   try {
@@ -85,7 +85,7 @@ async function callDeepSeek({ candidates, stage, tag, guest }) {
       },
       body: JSON.stringify({
         model: DEEPSEEK_MODEL,
-        messages: buildMessages({ candidates, stage, tag, guest }),
+        messages: buildMessages({ candidates, stage, tag, guest, cart }),
         response_format: { type: 'json_object' },
         temperature: 0.6,
         max_tokens: 700,
@@ -100,14 +100,19 @@ async function callDeepSeek({ candidates, stage, tag, guest }) {
   }
 }
 
-async function suggest({ restaurantId, stage, tag, guest, exclude, limit }) {
+async function suggest({ restaurantId, stage, tag, guest, exclude, limit, cartItemIds }) {
   const digest = await buildDigest(restaurantId)
-  const candidates = rankCandidates(digest, { tag, exclude, limit })
+  // Уже выбранные блюда: исключаем из кандидатов (не дублировать) и передаём
+  // ИИ как контекст, чтобы он предлагал дополнение к выбранному.
+  const cartSet = new Set(cartItemIds || [])
+  const cartNames = digest.filter((d) => cartSet.has(d.id)).map((d) => d.name)
+  const fullExclude = [...(exclude || []), ...(cartItemIds || [])]
+  const candidates = rankCandidates(digest, { tag, exclude: fullExclude, limit })
   if (candidates.length === 0) return { suggestions: [], source: 'empty' }
 
   let pitches = null
   if (DEEPSEEK_KEY) {
-    pitches = await callDeepSeek({ candidates, stage, tag, guest }).catch(() => null)
+    pitches = await callDeepSeek({ candidates, stage, tag, guest, cart: cartNames }).catch(() => null)
   }
 
   const suggestions = candidates.map((item) => {
@@ -148,6 +153,7 @@ export default async function handler(req, res) {
       tag: body.tag,
       guest: body.guest,
       exclude: Array.isArray(body.exclude) ? body.exclude : [],
+      cartItemIds: Array.isArray(body.cartItemIds) ? body.cartItemIds : [],
       limit: body.limit,
     })
     res.status(200).json(result)

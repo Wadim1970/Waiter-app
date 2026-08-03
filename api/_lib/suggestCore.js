@@ -58,7 +58,7 @@ export function templatePitch(item) {
 
 // Сборка сообщений для DeepSeek. Кандидатам режем описание, чтобы промпт был
 // коротким (скорость). Маржу/себестоимость модели не показываем — только «why».
-export function buildMessages({ candidates, stage, tag, guest }) {
+export function buildMessages({ candidates, stage, tag, guest, cart }) {
   const menu = candidates.map(c => ({
     id: c.id,
     name: c.name,
@@ -81,12 +81,16 @@ export function buildMessages({ candidates, stage, tag, guest }) {
 Правила:
 - рекомендуй ТОЛЬКО из списка кандидатов, по их id;
 - учитывай профиль гостя (пол, возраст, повод) и стадию визита;
+- если гость УЖЕ что-то выбрал (см. «Уже в заказе») — предлагай то, что ДОПОЛНЯЕТ выбранное (напиток, соус, гарнир, десерт), а не повторяет его;
 - НИКОГДА не упоминай гостю маржу, себестоимость или выгоду ресторана;
 - pitch — это короткая живая фраза (1–2 предложения), которую официант скажет гостю;
 - addon — необязательная пара к блюду (бокал вина, соус, гарнир) или null.
 Верни СТРОГО JSON: {"suggestions":[{"dishId":"<id>","pitch":"<что сказать гостю>","addon":"<пара или null>"}]} — по одному объекту на каждого кандидата, в том же порядке.`
 
-  const user = `Стадия: ${stage || 'консультация'}. Тег/запрос: ${tag || 'общий совет'}. Гость: ${guestLine}.
+  const cartLine = Array.isArray(cart) && cart.length
+    ? `\nУже в заказе у гостя: ${cart.join(', ')}.`
+    : ''
+  const user = `Стадия: ${stage || 'консультация'}. Тег/запрос: ${tag || 'общий совет'}. Гость: ${guestLine}.${cartLine}
 Кандидаты (по убыванию приоритета):
 ${JSON.stringify(menu)}`
 
