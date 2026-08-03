@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import type { TableWithSession } from '../../../lib/tables'
 import { loadOrderItems, loadGuestAttributes, removeOrderItem, markItemReady, updateTableSessionStatus } from '../../../lib/orders'
 import type { LoadedOrderItem, GuestAttrs } from '../../../lib/orders'
+import { getActiveShift } from '../QRScanner/QRScannerScreen'
+import { useRestaiHint } from '../../../lib/useRestaiHint'
 import styles from './OrderScreen.module.css'
 
 const GUEST_COLORS = ['#02a826','#ce00b9','#ff9500','#003daf','#6c03ed','#0f929c','#700061','#979200']
@@ -70,6 +72,15 @@ export default function OrderScreen() {
   const currentItems = orderItems.filter(i => i.seat_number === activeGuest + 1)
   const totalPrice = currentItems.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
   const tableNumber = table?.number ?? '—'
+
+  // Виджет «Подсказка от RestAI»: ИИ смотрит корзину активного гостя и советует
+  // оптимальный набор дополнений с обоснованием сочетаний.
+  const restaurantId = getActiveShift()?.restaurantId ?? ''
+  const { text: hintText, loading: hintLoading } = useRestaiHint(
+    restaurantId,
+    currentItems.map(i => i.item_id),
+    dbAttrs ?? undefined,
+  )
 
   const goToMenu = () => {
     navigate('/restaurant/menu', {
@@ -260,7 +271,9 @@ export default function OrderScreen() {
           </div>
           <div className={styles.aiBody}>
             <p className={styles.aiText}>
-              Гости заказали сытные блюда — предложите лёгкий десерт или дижестив. Уточните у гостей, всё ли в порядке с заказом.
+              {hintLoading
+                ? 'Секунду, подбираю рекомендацию…'
+                : (hintText || 'Уточните у гостей, всё ли в порядке с заказом.')}
             </p>
           </div>
         </div>

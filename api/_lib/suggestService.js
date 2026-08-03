@@ -7,7 +7,10 @@
 
 import crypto from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
-import { rankCandidates, badgesFor, templatePitch, buildMessages, parsePitches } from './suggestCore.js'
+import {
+  rankCandidates, badgesFor, templatePitch, buildMessages, parsePitches,
+  pickPools, buildRecommendMessages, parseRecommendText, templateSet,
+} from './suggestCore.js'
 
 const supabase = createClient(
   process.env.SUPABASE_URL || process.env.VITE_SUPABASE_WAITER_URL,
@@ -68,28 +71,54 @@ export async function buildDigest(restaurantId) {
   })
 }
 
-async function callDeepSeek({ candidates, stage, tag, guest, cart }) {
+// Один вызов DeepSeek (JSON-режим). Возвращает сырой content; при сбое бросает.
+async function deepseekChat(messages, { maxTokens = 700, timeoutMs = 6000 } = {}) {
   const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), 6000)
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {
     const res = await fetch(`${DEEPSEEK_BASE.replace(/\/$/, '')}/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${DEEPSEEK_KEY}` },
       body: JSON.stringify({
         model: DEEPSEEK_MODEL,
-        messages: buildMessages({ candidates, stage, tag, guest, cart }),
+        messages,
         response_format: { type: 'json_object' },
         temperature: 0.6,
-        max_tokens: 700,
+        max_tokens: maxTokens,
       }),
       signal: controller.signal,
     })
     if (!res.ok) throw new Error(`DeepSeek HTTP ${res.status}`)
     const data = await res.json()
-    return parsePitches(data?.choices?.[0]?.message?.content, candidates)
+    return data?.choices?.[0]?.message?.content
   } finally {
     clearTimeout(timer)
   }
+}
+
+async function callDeepSeek({ candidates, stage, tag, guest, cart }) {
+  const content = await deepseekChat(buildMessages({ candidates, stage, tag, guest, cart }))
+  return parsePitches(content, candidates)
+}
+
+// Рекомендательный набор для виджета «Подсказка от RestAI» — один связный текст.
+export async function recommendSet({ restaurantId, cartItemIds, guest }) {
+  const digest = await buildDigest(restaurantId)
+  const cartSet = new Set(cartItemIds || [])
+  const cartNames = digest.filter((d) => cartSet.has(d.id)).map((d) => d.name)
+  const pools = pickPools(digest, { exclude: cartItemIds || [] })
+
+  const hasAny = pools.main.length || pools.alco.length || pools.soft.length || pools.dessert.length
+  if (!hasAny) return { text: null, source: 'empty' }
+
+  if (!DEEPSEEK_KEY) return { text: templateSet(pools), source: 'fallback' }
+
+  const raw = await deepseekChat(
+    buildRecommendMessages({ cart: cartNames, pools, guest }),
+    { maxTokens: 500, timeoutMs: 9000 },
+  ).catch(() => null)
+  const text = parseRecommendText(raw)
+  return text ? { text, source: 'llm' } : { text: templateSet(pools), source: 'fallback' }
 }
 
 // Считает подсказки с нуля. Можно передать готовый digest (чтобы /warm строил
