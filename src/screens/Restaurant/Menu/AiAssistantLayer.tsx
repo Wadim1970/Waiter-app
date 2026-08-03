@@ -14,11 +14,12 @@ type Props = {
 // Теги по стадии: S1 — консультация (гость ничего не выбрал), S2 — уже собирает
 // корзину (дополнения). Тег → как бэкенд отфильтрует меню.
 const TAGS_S1 = ['топ-совет', 'мясное', 'рыбное', 'вегетарианское', 'бокал к столу']
-const TAGS_S2 = ['бокал к столу', 'десерт', 'топ-совет']
+// S2 — корзина уже собрана: первым идёт «дополнение» (сочетания к выбранному).
+const TAGS_S2 = ['дополнение', 'бокал к столу', 'десерт', 'топ-совет']
 
 const TAG_ICON: Record<string, string> = {
   'топ-совет': '⭐', 'мясное': '🥩', 'рыбное': '🐟',
-  'вегетарианское': '🥗', 'бокал к столу': '🍷', 'десерт': '🍰',
+  'вегетарианское': '🥗', 'бокал к столу': '🍷', 'десерт': '🍰', 'дополнение': '✨',
 }
 // Бейджи объясняют официанту, почему стоит предложить (гостю их не показываем).
 const BADGE_LABEL: Record<string, string> = {
@@ -66,6 +67,13 @@ export default function AiAssistantLayer({ restaurantId, orderId, seat, cartItem
       .catch(() => warmOnce({}))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId, seat, restaurantId])
+
+  // Раскрыли окно, а в корзине уже есть блюда → сразу показываем подсказку-
+  // сочетание, не заставляя официанта выбирать тег.
+  useEffect(() => {
+    if (open && hasCart && !tag && !loading) pickTag('дополнение')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, hasCart])
 
   async function fetchFor(selectedTag: string, exclude: string[]) {
     if (!restaurantId) return
@@ -118,7 +126,7 @@ export default function AiAssistantLayer({ restaurantId, orderId, seat, cartItem
   if (!open) {
     return (
       <button className={styles.pill} onClick={() => setOpen(true)} aria-label="AI-помощник официанта">
-        <span className={styles.pillIcon} aria-hidden="true">🤖</span> Помощник
+        <span className={styles.pillIcon} aria-hidden="true">🤖</span> {hasCart ? 'Совет к заказу' : 'Помощник'}
       </button>
     )
   }
