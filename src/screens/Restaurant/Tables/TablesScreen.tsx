@@ -146,8 +146,11 @@ export default function TablesScreen() {
       const { data: drafts } = await supabase.rpc('get_table_cart_drafts', { p_table_id: table.id })
       if (Array.isArray(drafts) && drafts.length > 0) {
         // Материализуем черновики гостей в заказ (status 'new') и открываем
-        // СРАЗУ редактируемое меню — тот же экран, что и когда официант сам
-        // набирает корзину, без промежуточного просмотра.
+        // КОРЗИНУ СТОЛА (AllOrdersScreen): официант сперва видит, что гости уже
+        // набрали, и оттуда либо редактирует (тап по гостю → экран заказа),
+        // либо сам отправляет на кухню. Тот же экран, что и для стола с уже
+        // существующим заказом (ветка order?.id выше). Раньше отсюда сразу
+        // проваливались в меню, минуя просмотр корзины — это и убираем.
         const seats = (drafts as { seat_number: number }[])
           .map(d => d.seat_number)
           .sort((a, b) => a - b)
@@ -156,8 +159,8 @@ export default function TablesScreen() {
           const { data } = await supabase.rpc('take_guest_cart', { p_table_id: table.id, p_seat_number: s })
           orderId = Array.isArray(data) ? data[0]?.order_id : (data as { order_id?: string })?.order_id
         }
-        navigate('/restaurant/menu', {
-          state: { table, orderId, activeGuestIndex: seats[0] - 1, seatsWithItems: seats },
+        navigate(`/restaurant/table/${table.id}/all-orders`, {
+          state: { table, guests: [], orderId },
         })
       } else {
         navigate(`/restaurant/table/${table.id}/guests`, { state: { table } })
