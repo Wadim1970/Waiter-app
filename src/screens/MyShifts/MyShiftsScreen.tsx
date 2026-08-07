@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { getMyShifts, markApprovedSeen, ShiftWithDetails } from '../../lib/bookings'
 import { getWaiterId, supabaseWaiter } from '../../lib/supabase'
 import ShiftCard from './ShiftCard'
@@ -20,6 +20,9 @@ export default function MyShiftsScreen() {
   const [confirmedShifts, setConfirmedShifts] = useState<ShiftWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedShift, setSelectedShift] = useState<ShiftWithDetails | null>(null)
+
+  // Дефолтную под-вкладку выбираем один раз при первом входе (см. loadShifts).
+  const didInitTab = useRef(false)
 
   const waiterId = getWaiterId()
 
@@ -86,6 +89,15 @@ export default function MyShiftsScreen() {
     if (waiting.data) setWaitingShifts(waiting.data)
     if (approved.data) setApprovedShifts(approved.data)
     if (confirmed.data) setConfirmedShifts(confirmed.data)
+
+    // При ПЕРВОМ входе: если ресторан уже одобрил хоть одну смену — открываем
+    // сразу вкладку «ОДОБРЕНЫ», иначе остаёмся на «ОЖИДАЮТ». Дальше вкладку не
+    // переставляем (realtime/focus перечитывают список, но уважают выбор
+    // официанта).
+    if (!didInitTab.current) {
+      didInitTab.current = true
+      if (approved.data && approved.data.length > 0) setSubTab('approved')
+    }
   } catch (error) {
     console.error('Ошибка загрузки смен:', error)
   } finally {
