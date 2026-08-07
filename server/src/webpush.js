@@ -42,7 +42,11 @@ export async function sendPushForCall(callId) {
         keys: { p256dh: sub.p256dh, auth: sub.auth },
       }
       try {
-        await webpush.sendNotification(pushSubscription, payload)
+        // Urgency: high — критично для доставки в фоне/doze (иначе FCM и
+        // особенно Samsung придерживают push, и вызов не приходит, пока
+        // приложение свёрнуто). TTL коротким — устаревший вызов (гость уже
+        // не ждёт) не должен всплыть спустя минуты.
+        await webpush.sendNotification(pushSubscription, payload, { urgency: 'high', TTL: 120 })
         sent += 1
       } catch (err) {
         // 404/410 — подписка больше не существует на стороне push-сервиса
