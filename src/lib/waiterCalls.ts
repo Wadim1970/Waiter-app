@@ -6,7 +6,11 @@ export interface WaiterCall {
   table_id: string
   table_number: string
   target_waiter_id: string | null
-  status: 'pending' | 'acknowledged' | 'cancelled'
+  // 'service'   — обычный вызов (кнопка-колокольчик у гостя);
+  // 'age_check' — гость заказал алкоголь, нужно подтвердить возраст.
+  kind: 'service' | 'age_check'
+  status: 'pending' | 'acknowledged' | 'cancelled' | 'confirmed' | 'declined'
+  reason: string | null
   created_at: string
 }
 
@@ -63,6 +67,28 @@ export function subscribeToWaiterCalls(
 // случае), но полезно для логов/отладки.
 export async function acknowledgeWaiterCall(callId: string, waiterId: string): Promise<boolean> {
   const { data, error } = await supabaseWaiter.rpc('acknowledge_waiter_call', {
+    p_call_id: callId,
+    p_waiter_id: waiterId,
+  })
+  if (error) throw error
+  return !!data
+}
+
+// Подтверждение возраста (kind='age_check'): официант проверил возраст гостя.
+// confirm → статус 'confirmed', устройство гостя по Realtime отправляет заказ
+// на кухню; decline → 'declined', гость убирает алкоголь и оформляет заново.
+// Гонка как у acknowledge: побеждает первый, остальным вернётся false.
+export async function confirmAgeCheck(callId: string, waiterId: string): Promise<boolean> {
+  const { data, error } = await supabaseWaiter.rpc('confirm_age_check', {
+    p_call_id: callId,
+    p_waiter_id: waiterId,
+  })
+  if (error) throw error
+  return !!data
+}
+
+export async function declineAgeCheck(callId: string, waiterId: string): Promise<boolean> {
+  const { data, error } = await supabaseWaiter.rpc('decline_age_check', {
     p_call_id: callId,
     p_waiter_id: waiterId,
   })
