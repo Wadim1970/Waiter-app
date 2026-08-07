@@ -88,3 +88,53 @@
 .comingButton:active {
   transform: scale(0.98);
 }
+
+.ageHint {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.85);
+  text-align: center;
+  margin: 0;
+}
+
+.ageButtons {
+  display: flex;
+  gap: 0.625rem;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.confirmButton,
+.declineButton {
+  flex: 1;
+  height: 2.75rem;
+  border-radius: 2.75rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 1.0625rem;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.confirmButton {
+  background: #2FA84F;
+  color: white;
+  border: none;
+}
+
+.declineButton {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+}
+
+.confirmButton:hover,
+.declineButton:hover {
+  opacity: 0.9;
+}
+
+.confirmButton:active,
+.declineButton:active {
+  transform: scale(0.98);
+}

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { getActiveShift } from '../Restaurant/QRScanner/QRScannerScreen'
 import { resolveWaiterId } from '../../lib/supabase'
-import { subscribeToWaiterCalls, acknowledgeWaiterCall, fetchPendingCalls, isCallForMe, type WaiterCall } from '../../lib/waiterCalls'
+import { subscribeToWaiterCalls, acknowledgeWaiterCall, confirmAgeCheck, declineAgeCheck, fetchPendingCalls, isCallForMe, type WaiterCall } from '../../lib/waiterCalls'
 import styles from './WaiterCallOverlay.module.css'
 
 function BellIcon() {
@@ -227,20 +227,61 @@ export default function WaiterCallOverlay() {
     // Realtime и закроет модалку у всех официантов, кому прилетел этот вызов.
   }
 
+  // Подтверждение возраста: гость заказал алкоголь. «Подтвердить» → заказ у
+  // гостя уходит на кухню; «Отказать» → гость убирает алкоголь. И там, и там
+  // приходит UPDATE-событие, которое закроет модалку (как у handleComing).
+  const handleConfirmAge = async () => {
+    if (!activeCall || !waiterId) return
+    unlockAudio() // настоящее касание — заодно гарантированно разблокирует звук
+    try {
+      await confirmAgeCheck(activeCall.id, waiterId)
+    } catch (err) {
+      console.error('Не удалось подтвердить возраст:', err)
+    }
+  }
+
+  const handleDeclineAge = async () => {
+    if (!activeCall || !waiterId) return
+    unlockAudio()
+    try {
+      await declineAgeCheck(activeCall.id, waiterId)
+    } catch (err) {
+      console.error('Не удалось отклонить подтверждение возраста:', err)
+    }
+  }
+
   if (!activeCall) return null
+
+  const isAgeCheck = activeCall.kind === 'age_check'
 
   return (
     <div className={styles.overlay}>
       <div className={styles.modalBox}>
         <BellIcon />
-        <h2 className={styles.title}>Вызов официанта</h2>
+        <h2 className={styles.title}>
+          {isAgeCheck ? 'Требуется подтвердить возраст' : 'Вызов официанта'}
+        </h2>
         <p className={styles.tableNumber}>Стол №{activeCall.table_number}</p>
+        {isAgeCheck && (
+          <p className={styles.ageHint}>Гость заказал алкоголь</p>
+        )}
         {queue.length > 1 && (
           <p className={styles.queueHint}>Ещё вызовов в очереди: {queue.length - 1}</p>
         )}
-        <button className={styles.comingButton} onClick={handleComing}>
-          Уже иду
-        </button>
+        {isAgeCheck ? (
+          <div className={styles.ageButtons}>
+            <button className={styles.declineButton} onClick={handleDeclineAge}>
+              Отказать
+            </button>
+            <button className={styles.confirmButton} onClick={handleConfirmAge}>
+              Подтвердить
+            </button>
+          </div>
+        ) : (
+          <button className={styles.comingButton} onClick={handleComing}>
+            Уже иду
+          </button>
+        )}
       </div>
     </div>
   )
