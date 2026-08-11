@@ -342,7 +342,10 @@
 }
 
 .aiBodyExpanded {
-  max-height: 200px;
+  max-height: 240px;
+  /* Без этого длинный текст обрезался и не прокручивался (overflow унаследован
+     hidden от .aiBody для анимации сворачивания) — включаем скролл внутри. */
+  overflow-y: auto;
 }
 
 .aiText {
