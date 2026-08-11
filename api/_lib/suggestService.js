@@ -157,6 +157,10 @@ export async function computeSuggestions({ restaurantId, stage, tag, guest, excl
 export function cacheKey({ restaurantId, stage, tag, guest, cartItemIds }) {
   const g = guest || {}
   const norm = {
+    // Версия промта. Бампать при смене формулировок — иначе в waiter_ai_cache
+    // залипает текст, сгенерированный старым промтом. v2 — переход на короткую
+    // директивную подсказку с прямой цитатой.
+    v: 2,
     r: restaurantId,
     s: stage || '',
     t: tag || '',
