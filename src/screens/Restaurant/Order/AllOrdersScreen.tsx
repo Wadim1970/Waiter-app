@@ -6,6 +6,7 @@ import type { LoadedOrderItem, GuestAttrs } from '../../../lib/orders'
 import { supabase } from '../../../lib/supabase'
 import { getActiveShift } from '../QRScanner/QRScannerScreen'
 import { useRestaiHint } from '../../../lib/useRestaiHint'
+import AiHintText from '../../shared/AiHintText'
 import styles from './AllOrdersScreen.module.css'
 
 const GUEST_COLORS = ['#02a826','#ce00b9','#ff9500','#003daf','#6c03ed','#0f929c','#700061','#979200']
@@ -334,7 +335,9 @@ export default function AllOrdersScreen() {
             <p className={styles.aiText}>
               {hintLoading
                 ? 'Секунду, подбираю рекомендацию…'
-                : (hintText || 'Уточните у гостей, всё ли в порядке с заказом.')}
+                : (hintText
+                    ? <AiHintText text={hintText} />
+                    : 'Уточните у гостей, всё ли в порядке с заказом.')}
             </p>
           </div>
         </div>
