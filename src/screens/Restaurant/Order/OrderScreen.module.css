@@ -371,13 +371,14 @@
 .aiText {
   margin: 0;
   font-family: 'Montserrat', sans-serif;
-  font-size: 26px;
+  font-size: 18px;
   color: #444;
-  line-height: 1.5;
+  line-height: 1.2;
 }
 
-/* Реплика официанту (текст в кавычках «…») — жирным. */
+/* Реплика официанту (текст в кавычках «…») — крупнее и жирным. */
 .aiText strong {
+  font-size: 26px;
   font-weight: 800;
 }
 
