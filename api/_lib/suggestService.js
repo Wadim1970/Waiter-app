@@ -9,7 +9,7 @@ import crypto from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 import {
   rankCandidates, badgesFor, templatePitch, buildMessages, parsePitches,
-  pickPools, buildRecommendMessages, parseRecommendText, templateSet,
+  pickPools, buildRecommendMessages, parseRecommendText, templateSet, categoryOf,
 } from './suggestCore.js'
 
 const supabase = createClient(
@@ -128,7 +128,11 @@ export async function computeSuggestions({ restaurantId, stage, tag, guest, excl
   const cartSet = new Set(cartItemIds || [])
   const cartNames = dg.filter((d) => cartSet.has(d.id)).map((d) => d.name)
   const fullExclude = [...(exclude || []), ...(cartItemIds || [])]
-  const candidates = rankCandidates(dg, { tag, exclude: fullExclude, limit })
+  // В заказе уже есть основное блюдо? Тогда для тега по умолчанию (ХИТ) не
+  // предлагаем второе конкурирующее горячее — только дополнения к нему.
+  const cartHasMain = dg.some((d) => cartSet.has(d.id) && categoryOf(d) === 'main')
+  const excludeMain = (!tag || tag === 'хит') && cartHasMain
+  const candidates = rankCandidates(dg, { tag, exclude: fullExclude, limit, excludeMain })
   if (candidates.length === 0) return { suggestions: [], source: 'empty' }
 
   let pitches = null
@@ -160,8 +164,9 @@ export function cacheKey({ restaurantId, stage, tag, guest, cartItemIds }) {
     // Версия промта. Бампать при смене формулировок — иначе в waiter_ai_cache
     // залипает текст, сгенерированный старым промтом. v2 — короткая директивная
     // подсказка; v3 — реплика строго в одних кавычках «…»; v4 — новые теги на
-    // меню (ХИТ=еда), учёт числа гостей и повода.
-    v: 4,
+    // меню (ХИТ=еда), учёт числа гостей и повода; v5 — не конкурируем с
+    // основным блюдом в заказе.
+    v: 5,
     r: restaurantId,
     s: stage || '',
     t: tag || '',
