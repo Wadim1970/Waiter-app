@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getWaiterId, resolveWaiterId } from '../../lib/supabase'
 import { isPushSupported, getNotificationPermission, subscribeToPush } from '../../lib/pushSubscription'
 import styles from './PushPermissionPrompt.module.css'
@@ -17,6 +17,22 @@ export default function PushPermissionPrompt() {
 
   useEffect(() => {
     if (!isPushSupported()) return
+
+    // Разрешение уже выдано → ТИХО переподписываемся при каждом открытии.
+    // Push-подписка со временем протухает/сбрасывается (браузер меняет
+    // endpoint, ОС чистит), сервер удаляет её по 404/410 — и вызов
+    // переставал доходить в фоне, всплывая лишь при возврате в приложение.
+    // subscribeToPush идемпотентна: берёт текущую подписку (или создаёт
+    // новую) и заново сохраняет её на сервере. Баннер при этом не нужен.
+    if (getNotificationPermission() === 'granted') {
+      let cancelled = false
+      ;(async () => {
+        const id = getWaiterId() ?? (await resolveWaiterId())
+        if (!cancelled && id) subscribeToPush(id).catch(() => {})
+      })()
+      return () => { cancelled = true }
+    }
+
     if (getNotificationPermission() !== 'default') return
     if (localStorage.getItem(DISMISSED_KEY)) return
 
@@ -31,6 +47,28 @@ export default function PushPermissionPrompt() {
     return () => {
       cancelled = true
     }
+  }, [])
+
+  // Освежаем push-подписку при ВОЗВРАТЕ в приложение из фона (resume) — не
+  // только при холодном старте. Именно тогда официант «будит» приложение
+  // после сна, и подписка должна быть валидной. Троттлинг — не чаще раза в
+  // минуту, чтобы не дёргать сервер на каждое переключение.
+  const lastPushRefreshRef = useRef(0)
+  useEffect(() => {
+    if (!isPushSupported()) return
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return
+      if (getNotificationPermission() !== 'granted') return
+      const now = Date.now()
+      if (now - lastPushRefreshRef.current < 60000) return
+      lastPushRefreshRef.current = now
+      ;(async () => {
+        const id = getWaiterId() ?? (await resolveWaiterId())
+        if (id) subscribeToPush(id).catch(() => {})
+      })()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
   }, [])
 
   const dismiss = () => {
