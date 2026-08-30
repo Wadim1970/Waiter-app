@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { TableWithSession } from '../../../lib/tables'
 import { getOrCreateOrder, saveGuestAttributes } from '../../../lib/orders'
+import { saveTableCtx, readTableCtx } from '../../../lib/tableContext'
 import { getActiveShift } from '../QRScanner/QRScannerScreen'
 import styles from './GuestDescriptionScreen.module.css'
 
@@ -19,7 +20,8 @@ const GUEST_COLORS = [
 const GENDER_OPTIONS = ['Муж', 'Жен']
 const AGE_OPTIONS    = ['3-5', '6-9', '10-14', '15-18', '19-30', '30-40', '40-50', '50-60', '60+']
 const BODY_OPTIONS   = ['Худое', 'Спортивное', 'Полное']
-const HAIR_OPTIONS   = ['Темные', 'Светлые', 'Длинные', 'Рыжие', 'Кучерявые', 'Короткие', 'Лысый', 'Хвост', 'Каре', 'Седые']
+// Повод / тип стола — свойство стола (одно на стол), сильный сигнал для ИИ.
+const OCCASION_OPTIONS = ['Один', 'Романтическая встреча', 'Деловая встреча', 'Семья', 'Дружеская компания', 'Праздник']
 
 type GuestData = { gender: string | null; age: string | null; body: string | null; hair: string | null }
 const emptyGuest = (): GuestData => ({ gender: null, age: null, body: null, hair: null })
@@ -42,7 +44,17 @@ export default function GuestDescriptionScreen() {
   const [activeGuest, setActiveGuest] = useState<number | 'all'>(initialActiveGuest)
   const [guests, setGuests] = useState<GuestData[]>(initialGuests)
   const [loading, setLoading] = useState(false)
+  const [occasion, setOccasion] = useState<string | null>(() => readTableCtx(table?.id).occasion)
   const touchStartX = useRef(0)
+
+  // Число гостей за столом = сколько гостей отмечено (хотя бы один признак).
+  const partySize = guests.filter(g => g.gender || g.age || g.body).length
+
+  const selectOccasion = (v: string) => {
+    const next = occasion === v ? null : v
+    setOccasion(next)
+    saveTableCtx(table?.id, { occasion: next, partySize })
+  }
 
   const guestColor   = activeGuest !== 'all' ? GUEST_COLORS[activeGuest] : null
   const currentGuest = activeGuest !== 'all' ? (guests[activeGuest] ?? emptyGuest()) : null
@@ -67,14 +79,16 @@ export default function GuestDescriptionScreen() {
         try { await saveGuestAttributes(orderId, activeGuest + 1, guests[activeGuest]) }
         catch (e) { console.error('saveGuestAttributes error:', e) }
       }
+      // Контекст стола (повод + число гостей) — в бэкап и в nav-state для меню.
+      saveTableCtx(table.id, { occasion, partySize })
       navigate('/restaurant/menu', {
-        state: { table, guests, orderId, activeGuestIndex: guestIndex }
+        state: { table, guests, orderId, activeGuestIndex: guestIndex, occasion, partySize }
       })
     } catch (err) {
       console.error('goToMenu error:', err)
       const guestIndex = activeGuest === 'all' ? 0 : activeGuest
       navigate('/restaurant/menu', {
-        state: { table, guests, orderId: incomingOrderId ?? null, activeGuestIndex: guestIndex }
+        state: { table, guests, orderId: incomingOrderId ?? null, activeGuestIndex: guestIndex, occasion, partySize }
       })
     } finally {
       setLoading(false)
@@ -155,18 +169,25 @@ export default function GuestDescriptionScreen() {
       <div className={styles.content}>
         {activeGuest === 'all' ? (
 
-          <div className={styles.instructions}>
-            <p className={styles.instructionText}>Чтобы не перепутать заказы, кратко опишите каждого гостя.</p>
-            <p className={styles.instructionText}>&nbsp;</p>
-            <ol className={styles.instructionList}>
-              <li>Нажмите на кнопку гостя — г1, г2, г3…</li>
-              <li>Выберите подходящие признаки: пол, возраст и другие характеристики.</li>
-              <li>Если одного признака достаточно для идентификации — сразу переходите в меню.</li>
-              <li>Повторите для каждого гостя за столом.</li>
-            </ol>
-            <p className={styles.instructionText}>&nbsp;</p>
-            <p className={styles.instructionText}>Чем точнее описание — тем проще будет принять и подать заказ!</p>
-          </div>
+          <>
+            {/* Повод / тип стола — одно на стол, сильный сигнал для ИИ-подсказок */}
+            <div className={styles.form}>
+              <Section label="Повод / тип стола" options={OCCASION_OPTIONS} selected={occasion} color="#0B3563" onSelect={selectOccasion} />
+            </div>
+
+            <div className={styles.instructions}>
+              <p className={styles.instructionText}>Чтобы не перепутать заказы, кратко опишите каждого гостя.</p>
+              <p className={styles.instructionText}>&nbsp;</p>
+              <ol className={styles.instructionList}>
+                <li>Укажите повод — по нему ИИ точнее подберёт рекомендации.</li>
+                <li>Нажмите на кнопку гостя — г1, г2, г3…</li>
+                <li>Выберите подходящие признаки: пол, возраст, телосложение.</li>
+                <li>Повторите для каждого гостя за столом.</li>
+              </ol>
+              <p className={styles.instructionText}>&nbsp;</p>
+              <p className={styles.instructionText}>Чем точнее описание — тем проще будет принять и подать заказ!</p>
+            </div>
+          </>
 
         ) : (
 
@@ -174,7 +195,6 @@ export default function GuestDescriptionScreen() {
             <Section icon="/icons/Gender.png"    label="Пол"           options={GENDER_OPTIONS} selected={currentGuest!.gender} color={guestColor!} onSelect={v => updateGuest('gender', v)} />
             <Section icon="/icons/Age.png"       label="Возраст"       options={AGE_OPTIONS}    selected={currentGuest!.age}    color={guestColor!} onSelect={v => updateGuest('age', v)} />
             <Section icon="/icons/Body_type.png" label="Телосложение"  options={BODY_OPTIONS}   selected={currentGuest!.body}   color={guestColor!} onSelect={v => updateGuest('body', v)} />
-            <Section icon="/icons/Hair.png"      label="Волосы"        options={HAIR_OPTIONS}   selected={currentGuest!.hair}   color={guestColor!} onSelect={v => updateGuest('hair', v)} />
           </div>
         )}
       </div>
@@ -195,13 +215,13 @@ export default function GuestDescriptionScreen() {
 }
 
 function Section({ icon, label, options, selected, color, onSelect }: {
-  icon: string; label: string; options: string[]
+  icon?: string; label: string; options: string[]
   selected: string | null; color: string; onSelect: (v: string) => void
 }) {
   return (
     <div className={styles.section}>
       <div className={styles.sectionHeader}>
-        <img src={icon} alt={label} className={styles.sectionIcon} />
+        {icon && <img src={icon} alt={label} className={styles.sectionIcon} />}
         <span className={styles.sectionLabel}>{label}</span>
       </div>
       <div className={styles.tags}>

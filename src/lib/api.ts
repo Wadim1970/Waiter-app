@@ -88,7 +88,7 @@ export type AiSuggestion = {
   reason?: string | null
 }
 
-export type AiSuggestGuest = { gender?: string | null; age?: string | null; occasion?: string | null }
+export type AiSuggestGuest = { gender?: string | null; age?: string | null; occasion?: string | null; partySize?: number | null }
 
 // Подсказки апсейла для стадии/тега/гостя. exclude — уже показанные dishId
 // (для «другой вариант»). Эндпоинт — Vercel serverless-функция, same-origin

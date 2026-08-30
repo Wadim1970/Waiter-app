@@ -5,6 +5,7 @@ import { getActiveShift } from '../QRScanner/QRScannerScreen'
 import { getOrCreateOrder, addOrderItem, removeOrderItem, loadOrderItems } from '../../../lib/orders'
 import type { TableWithSession } from '../../../lib/tables'
 import AiAssistantLayer from './AiAssistantLayer'
+import { readTableCtx } from '../../../lib/tableContext'
 import styles from './MenuScreen.module.css'
 
 type MenuSection = { id: string; name: string; sort_order: number }
@@ -45,6 +46,11 @@ export default function MenuScreen() {
   const table = location.state?.table as TableWithSession | undefined
   const orderId = location.state?.orderId as string | undefined
   const activeGuestIndex = (location.state?.activeGuestIndex ?? 0) as number
+  // Контекст стола для ИИ: повод + число гостей. Основной канал — nav-state
+  // (пришли с экрана признаков), запасной — localStorage по столу.
+  const tableCtx = readTableCtx(table?.id)
+  const occasion = (location.state?.occasion as string | undefined) ?? tableCtx.occasion
+  const partySize = (location.state?.partySize as number | undefined) ?? tableCtx.partySize ?? table?.guestCount ?? null
 
   const [sections, setSections] = useState<MenuSection[]>([])
   const [subsections, setSubsections] = useState<MenuSubsection[]>([])
@@ -459,6 +465,8 @@ export default function MenuScreen() {
           seat={activeGuestIndex + 1}
           cartItemIds={[...new Set(cart.map(i => i.itemId))]}
           onAddDish={handleAddById}
+          occasion={occasion}
+          partySize={partySize}
         />
       )}
 
