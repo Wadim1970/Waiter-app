@@ -74,6 +74,18 @@ export default function AiAssistantLayer({ restaurantId, orderId, seat, cartItem
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
+  // Корзина изменилась (добавили/убрали блюдо) → пересобираем подсказку по
+  // текущему тегу с учётом нового состава: не рекомендуем уже взятое и не
+  // конкурируем с заказом (заказал стейк — не предлагаем второе горячее).
+  const cartKey = [...cartItemIds].sort().join(',')
+  useEffect(() => {
+    if (open && tag) {
+      shownRef.current = new Set()
+      fetchFor(tag, [])
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartKey])
+
   async function fetchFor(selectedTag: string, exclude: string[]) {
     if (!restaurantId) return
     setLoading(true)
@@ -101,6 +113,11 @@ export default function AiAssistantLayer({ restaurantId, orderId, seat, cartItem
 
   function pickTag(t: string) {
     setTag(t)
+    // Сбрасываем прошлую подсказку СРАЗУ, чтобы не мигал старый совет чужого
+    // раздела, пока грузится новый.
+    setChain([])
+    setIdx(0)
+    setError(false)
     shownRef.current = new Set()
     fetchFor(t, [])
   }
