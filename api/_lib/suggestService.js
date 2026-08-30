@@ -159,12 +159,13 @@ export function cacheKey({ restaurantId, stage, tag, guest, cartItemIds }) {
   const norm = {
     // Версия промта. Бампать при смене формулировок — иначе в waiter_ai_cache
     // залипает текст, сгенерированный старым промтом. v2 — короткая директивная
-    // подсказка; v3 — реплика строго в одних кавычках «…» (фронт её жирнит).
-    v: 3,
+    // подсказка; v3 — реплика строго в одних кавычках «…»; v4 — новые теги на
+    // меню (ХИТ=еда), учёт числа гостей и повода.
+    v: 4,
     r: restaurantId,
     s: stage || '',
     t: tag || '',
-    g: { gender: g.gender || '', age: g.age || '', occasion: g.occasion || '' },
+    g: { gender: g.gender || '', age: g.age || '', occasion: g.occasion || '', partySize: g.partySize || '' },
     c: [...(cartItemIds || [])].sort(),
   }
   return crypto.createHash('sha1').update(JSON.stringify(norm)).digest('hex')

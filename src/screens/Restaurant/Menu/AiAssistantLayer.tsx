@@ -9,24 +9,23 @@ type Props = {
   seat: number
   cartItemIds: string[]
   onAddDish: (dishId: string) => void
+  // Контекст стола (одно на стол): повод и число гостей — уходят в ИИ.
+  occasion?: string | null
+  partySize?: number | null
 }
 
-// Теги по стадии: S1 — консультация (гость ничего не выбрал), S2 — уже собирает
-// корзину (дополнения). Тег → как бэкенд отфильтрует меню.
-const TAGS_S1 = ['топ-совет', 'мясное', 'рыбное', 'вегетарианское', 'бокал к столу']
-// S2 — корзина уже собрана: первым идёт «дополнение» (сочетания к выбранному).
-const TAGS_S2 = ['дополнение', 'бокал к столу', 'десерт', 'топ-совет']
+// Единый список тегов. ХИТ (по умолчанию) — лучшие сочетания-ЕДА к уже
+// выбранному, с учётом маржи/списания. Секции — еда по категориям. Напитки и
+// алкоголь предлагаются ТОЛЬКО по своему явному тегу.
+const TAGS = ['хит', 'супы', 'мясо', 'рыба', 'морепродукты', 'десерты', 'напитки', 'алкоголь']
+const DEFAULT_TAG = 'хит'
 
 const TAG_ICON: Record<string, string> = {
-  'топ-совет': '⭐', 'мясное': '🥩', 'рыбное': '🐟',
-  'вегетарианское': '🥗', 'бокал к столу': '🍷', 'десерт': '🍰', 'дополнение': '✨',
-}
-// Бейджи объясняют официанту, почему стоит предложить (гостю их не показываем).
-const BADGE_LABEL: Record<string, string> = {
-  margin: '💰 маржа', hit: '🔥 хит', expiring: '⏳ последний день', special: '⭐ спец дня',
+  'хит': '🔥', 'супы': '🍲', 'мясо': '🥩', 'рыба': '🐟', 'морепродукты': '🦐',
+  'десерты': '🍰', 'напитки': '🥤', 'алкоголь': '🍷',
 }
 
-export default function AiAssistantLayer({ restaurantId, orderId, seat, cartItemIds, onAddDish }: Props) {
+export default function AiAssistantLayer({ restaurantId, orderId, seat, cartItemIds, onAddDish, occasion, partySize }: Props) {
   const [open, setOpen] = useState(false)
   const [guest, setGuest] = useState<{ gender?: string | null; age?: string | null }>({})
   const [tag, setTag] = useState<string | null>(null)
@@ -39,7 +38,7 @@ export default function AiAssistantLayer({ restaurantId, orderId, seat, cartItem
 
   const hasCart = cartItemIds.length > 0
   const stage = hasCart ? 'S2' : 'S1'
-  const tags = hasCart ? TAGS_S2 : TAGS_S1
+  const tags = TAGS
   const current = chain[idx] || null
 
   const warmedRef = useRef(false)
@@ -50,8 +49,8 @@ export default function AiAssistantLayer({ restaurantId, orderId, seat, cartItem
     if (warmedRef.current || !restaurantId) return
     warmedRef.current = true
     const st = cartItemIds.length ? 'S2' : 'S1'
-    const tg = cartItemIds.length ? TAGS_S2 : TAGS_S1
-    warmSuggestions({ restaurantId, stage: st, guest: g, cartItemIds, tags: tg })
+    // Прогреваем только тег по умолчанию (ХИТ) — остальные считаются по тапу.
+    warmSuggestions({ restaurantId, stage: st, guest: { ...g, occasion, partySize }, cartItemIds, tags: [DEFAULT_TAG] })
   }
 
   // Атрибуты активного гостя (для персонализации подсказки) + прогрев.
@@ -68,12 +67,12 @@ export default function AiAssistantLayer({ restaurantId, orderId, seat, cartItem
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId, seat, restaurantId])
 
-  // Раскрыли окно, а в корзине уже есть блюда → сразу показываем подсказку-
-  // сочетание, не заставляя официанта выбирать тег.
+  // Раскрыли окно → сразу показываем ХИТ (тег по умолчанию): лучшие
+  // сочетания-еда к выбранному, не заставляя официанта выбирать тег.
   useEffect(() => {
-    if (open && hasCart && !tag && !loading) pickTag('дополнение')
+    if (open && !tag && !loading) pickTag(DEFAULT_TAG)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, hasCart])
+  }, [open])
 
   async function fetchFor(selectedTag: string, exclude: string[]) {
     if (!restaurantId) return
@@ -81,7 +80,7 @@ export default function AiAssistantLayer({ restaurantId, orderId, seat, cartItem
     setError(false)
     try {
       const { suggestions } = await getSuggestions({
-        restaurantId, stage, tag: selectedTag, guest, exclude, cartItemIds, limit: 3,
+        restaurantId, stage, tag: selectedTag, guest: { ...guest, occasion, partySize }, exclude, cartItemIds, limit: 3,
       })
       if (suggestions.length === 0) {
         setChain([])
@@ -164,15 +163,6 @@ export default function AiAssistantLayer({ restaurantId, orderId, seat, cartItem
               <span className={styles.name}>{current.name}</span>
               <span className={styles.price}>{current.price} ₽</span>
             </div>
-            {current.badges.length > 0 && (
-              <div className={styles.badges}>
-                {current.badges.map(b => (
-                  <span key={b} className={`${styles.badge} ${styles['b_' + b] || ''}`}>
-                    {BADGE_LABEL[b] || b}
-                  </span>
-                ))}
-              </div>
-            )}
             <p className={styles.pitch}>{current.pitch}</p>
             {current.addon && <div className={styles.addon}>＋ {current.addon}</div>}
             <div className={styles.acts}>
