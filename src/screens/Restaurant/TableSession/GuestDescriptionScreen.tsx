@@ -169,25 +169,18 @@ export default function GuestDescriptionScreen() {
       <div className={styles.content}>
         {activeGuest === 'all' ? (
 
-          <>
-            {/* Повод / тип стола — одно на стол, сильный сигнал для ИИ-подсказок */}
-            <div className={styles.form}>
-              <Section label="Повод / тип стола" options={OCCASION_OPTIONS} selected={occasion} color="#0B3563" onSelect={selectOccasion} />
-            </div>
-
-            <div className={styles.instructions}>
-              <p className={styles.instructionText}>Чтобы не перепутать заказы, кратко опишите каждого гостя.</p>
-              <p className={styles.instructionText}>&nbsp;</p>
-              <ol className={styles.instructionList}>
-                <li>Укажите повод — по нему ИИ точнее подберёт рекомендации.</li>
-                <li>Нажмите на кнопку гостя — г1, г2, г3…</li>
-                <li>Выберите подходящие признаки: пол, возраст, телосложение.</li>
-                <li>Повторите для каждого гостя за столом.</li>
-              </ol>
-              <p className={styles.instructionText}>&nbsp;</p>
-              <p className={styles.instructionText}>Чем точнее описание — тем проще будет принять и подать заказ!</p>
-            </div>
-          </>
+          <div className={styles.instructions}>
+            <p className={styles.instructionText}>Чтобы не перепутать заказы, кратко опишите каждого гостя.</p>
+            <p className={styles.instructionText}>&nbsp;</p>
+            <ol className={styles.instructionList}>
+              <li>Нажмите на кнопку гостя — г1, г2, г3…</li>
+              <li>Выберите признаки: пол, возраст, телосложение — и укажите повод / тип стола.</li>
+              <li>Повод задаётся один раз и действует на весь стол.</li>
+              <li>Повторите описание для каждого гостя.</li>
+            </ol>
+            <p className={styles.instructionText}>&nbsp;</p>
+            <p className={styles.instructionText}>Чем точнее описание — тем проще будет принять и подать заказ!</p>
+          </div>
 
         ) : (
 
@@ -195,6 +188,9 @@ export default function GuestDescriptionScreen() {
             <Section icon="/icons/Gender.png"    label="Пол"           options={GENDER_OPTIONS} selected={currentGuest!.gender} color={guestColor!} onSelect={v => updateGuest('gender', v)} />
             <Section icon="/icons/Age.png"       label="Возраст"       options={AGE_OPTIONS}    selected={currentGuest!.age}    color={guestColor!} onSelect={v => updateGuest('age', v)} />
             <Section icon="/icons/Body_type.png" label="Телосложение"  options={BODY_OPTIONS}   selected={currentGuest!.body}   color={guestColor!} onSelect={v => updateGuest('body', v)} />
+            {/* Повод / тип стола — одно на стол (держится до закрытия счёта), но
+                задаётся прямо здесь, на карточке гостя, где раньше были «Волосы». */}
+            <Section label="Повод / тип стола" options={OCCASION_OPTIONS} selected={occasion} color="#0B3563" onSelect={selectOccasion} />
           </div>
         )}
       </div>
