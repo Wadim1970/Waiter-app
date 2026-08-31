@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { getSuggestions, warmSuggestions, type AiSuggestion } from '../../../lib/api'
 import { loadGuestAttributes } from '../../../lib/orders'
+import { logSuggestionOutcome } from '../../../lib/aiEvents'
 import AiHintText from '../../shared/AiHintText'
 import styles from './AiAssistantLayer.module.css'
 
@@ -37,9 +38,19 @@ export default function AiAssistantLayer({ restaurantId, orderId, seat, cartItem
   const [error, setError] = useState(false)
   const [added, setAdded] = useState<Set<string>>(new Set())
   const shownRef = useRef<Set<string>>(new Set())
+  const sourceRef = useRef<string>('llm')
 
   const hasCart = cartItemIds.length > 0
   const stage = hasCart ? 'S2' : 'S1'
+
+  // Логируем исход подсказки (принял/отклонил) для самообучающейся модели.
+  function logOutcome(s: AiSuggestion, outcome: 'accepted' | 'rejected') {
+    logSuggestionOutcome({
+      restaurantId, orderId, seat, dishId: s.dishId, category: s.category, tag, stage,
+      technique: s.technique, source: sourceRef.current,
+      guest: { ...guest, occasion, partySize }, outcome,
+    })
+  }
   const tags = TAGS
   const current = chain[idx] || null
 
@@ -93,9 +104,10 @@ export default function AiAssistantLayer({ restaurantId, orderId, seat, cartItem
     setLoading(true)
     setError(false)
     try {
-      const { suggestions } = await getSuggestions({
+      const { suggestions, source } = await getSuggestions({
         restaurantId, stage, tag: selectedTag, guest: { ...guest, occasion, partySize }, exclude, cartItemIds, limit: 3,
       })
+      sourceRef.current = source || 'llm'
       if (suggestions.length === 0) {
         setChain([])
         setIdx(0)
@@ -126,6 +138,8 @@ export default function AiAssistantLayer({ restaurantId, orderId, seat, cartItem
 
   async function next() {
     if (!current) return
+    // «Другой вариант» = официант отклонил текущую подсказку (сигнал обучения).
+    if (!added.has(current.dishId)) logOutcome(current, 'rejected')
     shownRef.current.add(current.dishId)
     if (idx + 1 < chain.length) {
       setIdx(idx + 1)
@@ -137,6 +151,8 @@ export default function AiAssistantLayer({ restaurantId, orderId, seat, cartItem
 
   function add() {
     if (!current) return
+    // «В корзину» = официант принял подсказку (сигнал обучения).
+    logOutcome(current, 'accepted')
     onAddDish(current.dishId)
     setAdded(prev => new Set(prev).add(current.dishId))
   }

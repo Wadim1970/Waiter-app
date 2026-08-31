@@ -169,11 +169,12 @@ export async function computeSuggestions({ restaurantId, stage, tag, guest, excl
   // Иначе (нет ключа / сбой / пусто) — топ по выгоде из того же чистого пула
   // (мейны уже исключены, так что случайного «второго горячего» не будет).
   const byId = new Map(pool.map((i) => [i.id, i]))
+  // fallback-приём = социальное доказательство (его использует templatePitch).
   const chosen = (picks && picks.length)
-    ? picks.map((p) => ({ item: byId.get(p.dishId), pitch: p.pitch, addon: p.addon })).filter((x) => x.item)
-    : pool.slice(0, finalLimit).map((item) => ({ item, pitch: templatePitch(item), addon: null }))
+    ? picks.map((p) => ({ item: byId.get(p.dishId), pitch: p.pitch, addon: p.addon, technique: p.technique })).filter((x) => x.item)
+    : pool.slice(0, finalLimit).map((item) => ({ item, pitch: templatePitch(item), addon: null, technique: 'social_proof' }))
 
-  const suggestions = chosen.slice(0, finalLimit).map(({ item, pitch, addon }) => ({
+  const suggestions = chosen.slice(0, finalLimit).map(({ item, pitch, addon, technique }) => ({
     dishId: item.id,
     name: item.name,
     price: item.price,
@@ -181,6 +182,8 @@ export async function computeSuggestions({ restaurantId, stage, tag, guest, excl
     addon: addon || null,
     reason: item.pushReason || null,
     badges: badgesFor(item),
+    technique: technique || (picks && picks.length ? null : 'social_proof'),
+    category: categoryOf(item),
   }))
 
   return { suggestions, source: (picks && picks.length) ? 'llm' : 'fallback' }
