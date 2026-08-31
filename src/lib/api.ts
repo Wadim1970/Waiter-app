@@ -86,6 +86,9 @@ export type AiSuggestion = {
   addon: string | null
   badges: string[]
   reason?: string | null
+  // Для самообучения: приём продаж и категория блюда — логируются с исходом.
+  technique?: string | null
+  category?: string | null
 }
 
 export type AiSuggestGuest = { gender?: string | null; age?: string | null; occasion?: string | null; partySize?: number | null; preferences?: string | null }
