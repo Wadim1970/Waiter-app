@@ -28,7 +28,7 @@ const TAG_ICON: Record<string, string> = {
 
 export default function AiAssistantLayer({ restaurantId, orderId, seat, cartItemIds, onAddDish, occasion, partySize }: Props) {
   const [open, setOpen] = useState(false)
-  const [guest, setGuest] = useState<{ gender?: string | null; age?: string | null }>({})
+  const [guest, setGuest] = useState<{ gender?: string | null; age?: string | null; preferences?: string | null }>({})
   const [tag, setTag] = useState<string | null>(null)
   const [chain, setChain] = useState<AiSuggestion[]>([])
   const [idx, setIdx] = useState(0)
@@ -46,7 +46,7 @@ export default function AiAssistantLayer({ restaurantId, orderId, seat, cartItem
 
   // Прогрев кэша один раз при открытии гостя: подсказки текущей стадии
   // считаются заранее, чтобы первый тап по тегу был мгновенным.
-  function warmOnce(g: { gender?: string | null; age?: string | null }) {
+  function warmOnce(g: { gender?: string | null; age?: string | null; preferences?: string | null }) {
     if (warmedRef.current || !restaurantId) return
     warmedRef.current = true
     const st = cartItemIds.length ? 'S2' : 'S1'
@@ -60,7 +60,7 @@ export default function AiAssistantLayer({ restaurantId, orderId, seat, cartItem
     loadGuestAttributes(orderId)
       .then(map => {
         const a = map[seat]
-        const g = a ? { gender: a.gender, age: a.age } : {}
+        const g = a ? { gender: a.gender, age: a.age, preferences: a.preferences ?? null } : {}
         if (a) setGuest(g)
         warmOnce(g)
       })

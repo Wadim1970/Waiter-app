@@ -23,8 +23,8 @@ const BODY_OPTIONS   = ['Худое', 'Спортивное', 'Полное']
 // Повод / тип стола — свойство стола (одно на стол), сильный сигнал для ИИ.
 const OCCASION_OPTIONS = ['Один', 'Романтическая встреча', 'Деловая встреча', 'Семья', 'Дружеская компания', 'Праздник']
 
-type GuestData = { gender: string | null; age: string | null; body: string | null; hair: string | null }
-const emptyGuest = (): GuestData => ({ gender: null, age: null, body: null, hair: null })
+type GuestData = { gender: string | null; age: string | null; body: string | null; hair: string | null; preferences?: string | null }
+const emptyGuest = (): GuestData => ({ gender: null, age: null, body: null, hair: null, preferences: null })
 
 export default function GuestDescriptionScreen() {
   const navigate = useNavigate()
@@ -64,6 +64,16 @@ export default function GuestDescriptionScreen() {
     setGuests(prev => {
       const next = [...prev]
       next[activeGuest] = { ...next[activeGuest], [field]: next[activeGuest][field] === value ? null : value }
+      return next
+    })
+  }
+
+  // Предпочтения — свободный текст (не тег-переключатель): просто пишем значение.
+  const setPreferences = (value: string) => {
+    if (activeGuest === 'all') return
+    setGuests(prev => {
+      const next = [...prev]
+      next[activeGuest] = { ...next[activeGuest], preferences: value }
       return next
     })
   }
@@ -188,6 +198,21 @@ export default function GuestDescriptionScreen() {
             <Section icon="/icons/Gender.png"    label="Пол"           options={GENDER_OPTIONS} selected={currentGuest!.gender} color={guestColor!} onSelect={v => updateGuest('gender', v)} />
             <Section icon="/icons/Age.png"       label="Возраст"       options={AGE_OPTIONS}    selected={currentGuest!.age}    color={guestColor!} onSelect={v => updateGuest('age', v)} />
             <Section icon="/icons/Body_type.png" label="Телосложение"  options={BODY_OPTIONS}   selected={currentGuest!.body}   color={guestColor!} onSelect={v => updateGuest('body', v)} />
+            {/* Предпочтения / ограничения — свободный текст на гостя. Уходит в
+                ИИ-помощника меню: такие блюда не предлагаются («без чеснока»). */}
+            <div className={styles.section}>
+              <div className={styles.sectionHeader}>
+                <span className={styles.sectionLabel}>Предпочтения / ограничения</span>
+              </div>
+              <textarea
+                className={styles.prefInput}
+                style={{ borderColor: guestColor! }}
+                rows={2}
+                value={currentGuest!.preferences ?? ''}
+                onChange={e => setPreferences(e.target.value)}
+                placeholder="без чеснока, аллергия на орехи, не любит острое…"
+              />
+            </div>
             {/* Повод / тип стола — одно на стол (держится до закрытия счёта), но
                 задаётся прямо здесь, на карточке гостя, где раньше были «Волосы». */}
             <Section label="Повод / тип стола" options={OCCASION_OPTIONS} selected={occasion} color="#0B3563" onSelect={selectOccasion} />

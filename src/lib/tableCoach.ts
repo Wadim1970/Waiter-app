@@ -14,8 +14,12 @@ export type CoachSignal = {
   id: string
   level: CoachLevel
   icon: string
-  // Текст официанту. Прямую реплику гостю берём в «…» — фронт выделит её жирным.
+  // Директива официанту (что сделать). Названия блюд — без кавычек.
   text: string
+  // Необязательная произносимая гостю реплика (БЕЗ кавычек). Фронт добавит «…»
+  // и выделит жирным; ИИ-полировка переписывает именно её. Держим отдельным
+  // полем, чтобы не путать с названием блюда в тексте директивы.
+  quote?: string | null
 }
 
 export type CoachItem = {
@@ -32,6 +36,9 @@ export type CoachInput = {
   items: CoachItem[]
   sessionStartedAt: string | null
   orderStatus?: string | null
+  // created_at активного вызова официанта (kind='service', status='pending')
+  // по этому столу — если гость сейчас зовёт. null/нет → вызова нет.
+  activeCallAt?: string | null
   now?: number
 }
 
@@ -76,13 +83,28 @@ function fmtDwell(min: number): string {
 
 // Главная функция: из состояния стола → ранжированный список сигналов.
 export function buildTableSignals(input: CoachInput): CoachSignal[] {
-  const { items, sessionStartedAt, orderStatus } = input
+  const { items, sessionStartedAt, orderStatus, activeCallAt } = input
   const now = input.now ?? Date.now()
   const list = Array.isArray(items) ? items : []
   const signals: CoachSignal[] = []
 
   // Стол закрывается — сервисные сигналы ещё важны, но апселл-возможности молчат.
   const closing = orderStatus === 'bill_requested' || orderStatus === 'paid'
+
+  // Порядок push внутри одного уровня = приоритет: sort стабильна, равные level
+  // сохраняют порядок вставки. Поэтому вызов кладём ПЕРВЫМ среди 🔴.
+
+  // ── 🔴 Гость зовёт официанта: самое срочное — человек ждёт прямо сейчас.
+  const callMin = minutesSince(activeCallAt ?? null, now)
+  if (callMin != null) {
+    const waited = callMin < 1 ? 'только что' : `${fmtDwell(callMin)} назад`
+    signals.push({
+      id: 'call',
+      level: 'red',
+      icon: '🔔',
+      text: `Гость вызвал официанта (${waited}) — подойдите к столу.`,
+    })
+  }
 
   // ── 🔴 Опоздание блюда: отбито на кухню (sent), не готово, прошло больше нормы.
   // cook_time_min ещё не проставлен (0) → SLA молчит, ложных тревог нет.
@@ -103,7 +125,8 @@ export function buildTableSignals(input: CoachInput): CoachSignal[] {
       id: 'late',
       level: 'red',
       icon: '⏱️',
-      text: `«${top.name}» готовится дольше нормы: +${top.over} мин${more}. Подойдите к столу и предупредите: «Извините, кухня сейчас загружена — ваше блюдо вынесем через пару минут».`,
+      text: `${top.name}: готовится дольше нормы, +${top.over} мин${more}. Подойдите к столу и предупредите:`,
+      quote: 'Извините, кухня сейчас загружена — ваше блюдо вынесем через пару минут.',
     })
   }
 
@@ -117,7 +140,7 @@ export function buildTableSignals(input: CoachInput): CoachSignal[] {
       id: 'ready',
       level: 'yellow',
       icon: '🍽️',
-      text: `Готово к подаче: «${head}»${more} — заберите с раздачи, пока не остыло.`,
+      text: `Готово к подаче: ${head}${more} — заберите с раздачи, пока не остыло.`,
     })
   }
 
@@ -130,7 +153,8 @@ export function buildTableSignals(input: CoachInput): CoachSignal[] {
       id: 'dwell-dessert',
       level: 'green',
       icon: '☕',
-      text: `Гости за столом уже ${fmtDwell(dwell)} — самое время предложить десерт или кофе: «Как насчёт десерта к чаю?».`,
+      text: `Гости за столом уже ${fmtDwell(dwell)} — самое время предложить десерт или кофе:`,
+      quote: 'Как насчёт десерта к чаю?',
     })
   }
 
@@ -148,7 +172,8 @@ export function buildTableSignals(input: CoachInput): CoachSignal[] {
         id: 'refill',
         level: 'green',
         icon: '🥤',
-        text: `Напитки брали ${fmtDwell(oldestDrink)} назад — предложите повторить: «Обновить напитки?».`,
+        text: `Напитки брали ${fmtDwell(oldestDrink)} назад — предложите повторить:`,
+        quote: 'Обновить напитки?',
       })
     }
   }
