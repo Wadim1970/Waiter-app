@@ -128,32 +128,42 @@ export async function computeSuggestions({ restaurantId, stage, tag, guest, excl
   const cartSet = new Set(cartItemIds || [])
   const cartNames = dg.filter((d) => cartSet.has(d.id)).map((d) => d.name)
   const fullExclude = [...(exclude || []), ...(cartItemIds || [])]
-  // В заказе уже есть основное блюдо? Тогда для тега по умолчанию (ХИТ) не
-  // предлагаем второе конкурирующее горячее — только дополнения к нему.
+  const finalLimit = Math.max(1, Math.min(Number(limit) || 3, 3))
+  // В заказе уже есть основное блюдо? Тогда для тега по умолчанию («к заказу»)
+  // не предлагаем второе конкурирующее горячее — только дополнения к нему.
   const cartHasMain = dg.some((d) => cartSet.has(d.id) && categoryOf(d) === 'main')
-  const excludeMain = (!tag || tag === 'хит') && cartHasMain
-  const candidates = rankCandidates(dg, { tag, exclude: fullExclude, limit, excludeMain })
-  if (candidates.length === 0) return { suggestions: [], source: 'empty' }
+  const excludeMain = (!tag || tag === 'к заказу') && cartHasMain
 
-  let pitches = null
+  // Широкий пул (ранжирован по марже/флагам дня) — из него ИИ САМ выбирает
+  // сочетания к заказу. Пул шире, чем показываем: даём модели простор выбора,
+  // а не навязываем ей топ-3 по марже.
+  const pool = rankCandidates(dg, { tag, exclude: fullExclude, limit: 12, excludeMain })
+  if (pool.length === 0) return { suggestions: [], source: 'empty' }
+
+  let picks = null
   if (DEEPSEEK_KEY) {
-    pitches = await callDeepSeek({ candidates, stage, tag, guest, cart: cartNames }).catch(() => null)
+    picks = await callDeepSeek({ candidates: pool, stage, tag, guest, cart: cartNames }).catch(() => null)
   }
 
-  const suggestions = candidates.map((item) => {
-    const p = pitches?.find((x) => x.dishId === item.id)
-    return {
-      dishId: item.id,
-      name: item.name,
-      price: item.price,
-      pitch: p?.pitch || templatePitch(item),
-      addon: p?.addon || null,
-      reason: item.pushReason || null,
-      badges: badgesFor(item),
-    }
-  })
+  // ИИ выбрал сочетания → строим из ЕГО выбора, в его порядке предпочтения.
+  // Иначе (нет ключа / сбой / пусто) — топ по выгоде из того же чистого пула
+  // (мейны уже исключены, так что случайного «второго горячего» не будет).
+  const byId = new Map(pool.map((i) => [i.id, i]))
+  const chosen = (picks && picks.length)
+    ? picks.map((p) => ({ item: byId.get(p.dishId), pitch: p.pitch, addon: p.addon })).filter((x) => x.item)
+    : pool.slice(0, finalLimit).map((item) => ({ item, pitch: templatePitch(item), addon: null }))
 
-  return { suggestions, source: pitches ? 'llm' : 'fallback' }
+  const suggestions = chosen.slice(0, finalLimit).map(({ item, pitch, addon }) => ({
+    dishId: item.id,
+    name: item.name,
+    price: item.price,
+    pitch: pitch || templatePitch(item),
+    addon: addon || null,
+    reason: item.pushReason || null,
+    badges: badgesFor(item),
+  }))
+
+  return { suggestions, source: (picks && picks.length) ? 'llm' : 'fallback' }
 }
 
 // Стабильный ключ кэша: sha1 нормализованных входных данных БЕЗ exclude
@@ -165,8 +175,9 @@ export function cacheKey({ restaurantId, stage, tag, guest, cartItemIds }) {
     // залипает текст, сгенерированный старым промтом. v2 — короткая директивная
     // подсказка; v3 — реплика строго в одних кавычках «…»; v4 — новые теги на
     // меню (ХИТ=еда), учёт числа гостей и повода; v5 — не конкурируем с
-    // основным блюдом в заказе.
-    v: 5,
+    // основным блюдом в заказе; v6 — ИИ САМ выбирает сочетания из широкого пула
+    // (а не пишет фразы к топ-3 по марже), тег «хит» → «к заказу».
+    v: 6,
     r: restaurantId,
     s: stage || '',
     t: tag || '',

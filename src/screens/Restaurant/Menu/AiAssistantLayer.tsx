@@ -14,14 +14,15 @@ type Props = {
   partySize?: number | null
 }
 
-// Единый список тегов. ХИТ (по умолчанию) — лучшие сочетания-ЕДА к уже
-// выбранному, с учётом маржи/списания. Секции — еда по категориям. Напитки и
-// алкоголь предлагаются ТОЛЬКО по своему явному тегу.
-const TAGS = ['хит', 'супы', 'мясо', 'рыба', 'морепродукты', 'десерты', 'напитки', 'алкоголь']
-const DEFAULT_TAG = 'хит'
+// Единый список тегов. «К заказу» (по умолчанию) — ИИ сам выбирает лучшие
+// сочетания-ЕДА к тому, что уже в корзине гостя, с учётом маржи/списания как
+// тай-брейка. Секции — еда по категориям. Напитки и алкоголь предлагаются
+// ТОЛЬКО по своему явному тегу.
+const TAGS = ['к заказу', 'супы', 'мясо', 'рыба', 'морепродукты', 'десерты', 'напитки', 'алкоголь']
+const DEFAULT_TAG = 'к заказу'
 
 const TAG_ICON: Record<string, string> = {
-  'хит': '🔥', 'супы': '🍲', 'мясо': '🥩', 'рыба': '🐟', 'морепродукты': '🦐',
+  'к заказу': '🍽️', 'супы': '🍲', 'мясо': '🥩', 'рыба': '🐟', 'морепродукты': '🦐',
   'десерты': '🍰', 'напитки': '🥤', 'алкоголь': '🍷',
 }
 
@@ -49,7 +50,7 @@ export default function AiAssistantLayer({ restaurantId, orderId, seat, cartItem
     if (warmedRef.current || !restaurantId) return
     warmedRef.current = true
     const st = cartItemIds.length ? 'S2' : 'S1'
-    // Прогреваем только тег по умолчанию (ХИТ) — остальные считаются по тапу.
+    // Прогреваем только тег по умолчанию («к заказу») — остальные по тапу.
     warmSuggestions({ restaurantId, stage: st, guest: { ...g, occasion, partySize }, cartItemIds, tags: [DEFAULT_TAG] })
   }
 
@@ -67,8 +68,8 @@ export default function AiAssistantLayer({ restaurantId, orderId, seat, cartItem
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId, seat, restaurantId])
 
-  // Раскрыли окно → сразу показываем ХИТ (тег по умолчанию): лучшие
-  // сочетания-еда к выбранному, не заставляя официанта выбирать тег.
+  // Раскрыли окно → сразу показываем «к заказу» (тег по умолчанию): ИИ сам
+  // подбирает лучшие сочетания-еду к корзине, не заставляя выбирать тег.
   useEffect(() => {
     if (open && !tag && !loading) pickTag(DEFAULT_TAG)
     // eslint-disable-next-line react-hooks/exhaustive-deps
