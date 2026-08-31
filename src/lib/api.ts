@@ -88,7 +88,7 @@ export type AiSuggestion = {
   reason?: string | null
 }
 
-export type AiSuggestGuest = { gender?: string | null; age?: string | null; occasion?: string | null; partySize?: number | null }
+export type AiSuggestGuest = { gender?: string | null; age?: string | null; occasion?: string | null; partySize?: number | null; preferences?: string | null }
 
 // Подсказки апсейла для стадии/тега/гостя. exclude — уже показанные dishId
 // (для «другой вариант»). Эндпоинт — Vercel serverless-функция, same-origin
@@ -151,4 +151,25 @@ export async function getRecommendation(payload: {
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data.error || 'Не удалось получить рекомендацию')
   return data as { text: string | null; source: string }
+}
+
+// ИИ-полировка реплик «коуча стола»: шлём готовые тексты сигналов + профиль
+// гостя, получаем более тёплые произносимые фразы { [signalId]: 'фраза' }.
+// Необязательное улучшение — на любой сбой возвращаем null, клиент оставляет
+// свой детерминированный текст.
+export async function polishCoachSignals(payload: {
+  signals: { id: string; text: string; quote: string }[]
+  guest?: AiSuggestGuest
+}): Promise<Record<string, string> | null> {
+  try {
+    const res = await fetch('/api/waiter/coach', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    const data = await res.json().catch(() => ({}))
+    return (data && data.polished) || null
+  } catch {
+    return null
+  }
 }

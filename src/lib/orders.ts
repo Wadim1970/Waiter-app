@@ -183,28 +183,38 @@ export async function removeOrderItem(dbId: string, currentQuantity: number): Pr
   }
 }
 
-export type GuestAttrs = { gender: string | null; age: string | null; body: string | null; hair: string | null }
+export type GuestAttrs = { gender: string | null; age: string | null; body: string | null; hair: string | null; preferences?: string | null }
 
 export async function saveGuestAttributes(
   orderId: string,
   seatNumber: number,
   attrs: GuestAttrs,
 ): Promise<void> {
-  await supabase.from('order_guests').upsert(
-    { order_id: orderId, seat_number: seatNumber, ...attrs },
-    { onConflict: 'order_id,seat_number' },
-  )
+  const row = { order_id: orderId, seat_number: seatNumber, ...attrs }
+  const { error } = await supabase.from('order_guests').upsert(row, { onConflict: 'order_id,seat_number' })
+  // Защита на время выката: если миграция guest_preferences ещё НЕ применена,
+  // колонки preferences нет и upsert падает — повторяем без неё, чтобы базовые
+  // атрибуты гостя всё равно сохранились. После миграции ветка не срабатывает.
+  if (error) {
+    const { preferences, ...core } = row
+    void preferences
+    await supabase.from('order_guests').upsert(core, { onConflict: 'order_id,seat_number' })
+  }
 }
 
 export async function loadGuestAttributes(orderId: string): Promise<Record<number, GuestAttrs>> {
-  const { data } = await supabase
-    .from('order_guests')
-    .select('seat_number, gender, age, body, hair')
-    .eq('order_id', orderId)
-
-  if (!data?.length) return {}
+  const CORE = 'seat_number, gender, age, body, hair'
+  // Пробуем с preferences; если колонки ещё нет (миграция не применена) —
+  // перечитываем без неё. После миграции — один запрос.
+  let rows = (await supabase.from('order_guests').select(`${CORE}, preferences`).eq('order_id', orderId)).data
+  if (!rows) {
+    rows = (await supabase.from('order_guests').select(CORE).eq('order_id', orderId)).data
+  }
+  if (!rows?.length) return {}
   return Object.fromEntries(
-    data.map(r => [r.seat_number, { gender: r.gender, age: r.age, body: r.body, hair: r.hair }])
+    rows.map((r: any) => [r.seat_number, {
+      gender: r.gender, age: r.age, body: r.body, hair: r.hair, preferences: r.preferences ?? null,
+    }])
   )
 }
 

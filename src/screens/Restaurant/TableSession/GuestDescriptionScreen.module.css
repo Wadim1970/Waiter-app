@@ -217,6 +217,30 @@
   transition: background-color 0.12s, color 0.12s;
 }
 
+/* Предпочтения / ограничения гостя — свободный текст. */
+.prefInput {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d1d3d8;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  color: #000;
+  background: #fff;
+  resize: none;
+  line-height: 1.35;
+}
+
+.prefInput::placeholder {
+  color: #b3b6bd;
+}
+
+.prefInput:focus {
+  outline: none;
+}
+
 /* ── Right-edge green МЕНЮ tab ── */
 .menuTab {
   position: fixed;

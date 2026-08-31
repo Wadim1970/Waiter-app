@@ -10,6 +10,7 @@ import { createClient } from '@supabase/supabase-js'
 import {
   rankCandidates, badgesFor, templatePitch, buildMessages, parsePitches,
   pickPools, buildRecommendMessages, parseRecommendText, templateSet, categoryOf,
+  buildCoachMessages, parseCoachPolish,
 } from './suggestCore.js'
 
 const supabase = createClient(
@@ -121,6 +122,25 @@ export async function recommendSet({ restaurantId, cartItemIds, guest }) {
   return text ? { text, source: 'llm' } : { text: templateSet(pools), source: 'fallback' }
 }
 
+// ИИ-полировка реплик «коуча стола». Детерминированные сигналы считаются на
+// клиенте; сюда прилетают уже готовые тексты, а мы лишь переписываем живую
+// реплику гостю (в «…») теплее и с учётом предпочтений. Нет ключа/сбой → null,
+// клиент оставляет свой детерминированный текст.
+export async function polishCoachSignals({ signals, guest }) {
+  const withQuote = (Array.isArray(signals) ? signals : [])
+    .filter((s) => s && s.id && typeof s.quote === 'string' && s.quote.trim())
+  if (!withQuote.length) return { polished: null, source: 'empty' }
+  if (!DEEPSEEK_KEY) return { polished: null, source: 'fallback' }
+
+  const ids = withQuote.map((s) => s.id)
+  const raw = await deepseekChat(
+    buildCoachMessages({ signals: withQuote, guest }),
+    { maxTokens: 400, timeoutMs: 6000 },
+  ).catch(() => null)
+  const polished = parseCoachPolish(raw, ids)
+  return { polished: polished || null, source: polished ? 'llm' : 'fallback' }
+}
+
 // Считает подсказки с нуля. Можно передать готовый digest (чтобы /warm строил
 // его один раз на все теги).
 export async function computeSuggestions({ restaurantId, stage, tag, guest, exclude, limit, cartItemIds, digest }) {
@@ -176,12 +196,13 @@ export function cacheKey({ restaurantId, stage, tag, guest, cartItemIds }) {
     // подсказка; v3 — реплика строго в одних кавычках «…»; v4 — новые теги на
     // меню (ХИТ=еда), учёт числа гостей и повода; v5 — не конкурируем с
     // основным блюдом в заказе; v6 — ИИ САМ выбирает сочетания из широкого пула
-    // (а не пишет фразы к топ-3 по марже), тег «хит» → «к заказу».
-    v: 6,
+    // (а не пишет фразы к топ-3 по марже), тег «хит» → «к заказу»; v7 — учёт
+    // предпочтений/ограничений гостя (исключаем неподходящее).
+    v: 7,
     r: restaurantId,
     s: stage || '',
     t: tag || '',
-    g: { gender: g.gender || '', age: g.age || '', occasion: g.occasion || '', partySize: g.partySize || '' },
+    g: { gender: g.gender || '', age: g.age || '', occasion: g.occasion || '', partySize: g.partySize || '', preferences: g.preferences || '' },
     c: [...(cartItemIds || [])].sort(),
   }
   return crypto.createHash('sha1').update(JSON.stringify(norm)).digest('hex')

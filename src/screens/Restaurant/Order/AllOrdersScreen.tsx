@@ -7,6 +7,9 @@ import { supabase } from '../../../lib/supabase'
 import { getActiveShift } from '../QRScanner/QRScannerScreen'
 import { useRestaiHint } from '../../../lib/useRestaiHint'
 import { buildTableSignals } from '../../../lib/tableCoach'
+import { fetchPendingCalls } from '../../../lib/waiterCalls'
+import { polishCoachSignals } from '../../../lib/api'
+import { readTableCtx } from '../../../lib/tableContext'
 import AiHintText from '../../shared/AiHintText'
 import styles from './AllOrdersScreen.module.css'
 
@@ -75,6 +78,13 @@ export default function AllOrdersScreen() {
   const [btnLoading, setBtnLoading] = useState(false)
   const [aiExpanded, setAiExpanded] = useState(false)
   const [tick, setTick] = useState(0)
+  // created_at активного вызова официанта по этому столу (kind='service') — для
+  // сигнала коуча «гость зовёт». null, если стол сейчас никого не вызывает.
+  const [activeCallAt, setActiveCallAt] = useState<string | null>(null)
+  // ИИ-полировка реплик коуча: { signalId: тёплая фраза }. Накладывается поверх
+  // детерминированного текста, когда официант разворачивает подсказку.
+  const [polished, setPolished] = useState<Record<string, string>>({})
+  const lastPolishKeyRef = useRef<string>('')
 
   // Виджет «Подсказка от RestAI»: ИИ смотрит весь заказ стола и советует
   // оптимальный набор дополнений с обоснованием сочетаний.
@@ -89,10 +99,10 @@ export default function AllOrdersScreen() {
   // поэтому «дозревает» без перезагрузки. Приоритетнее апселла: сервис-факап
   // гасим раньше, чем что-то допродаём.
   const coachSignals = useMemo(
-    () => buildTableSignals({ items: orderItems, sessionStartedAt, orderStatus }),
+    () => buildTableSignals({ items: orderItems, sessionStartedAt, orderStatus, activeCallAt }),
     // tick — намеренно в зависимостях: он тикает по таймеру и освежает время.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [orderItems, sessionStartedAt, orderStatus, tick],
+    [orderItems, sessionStartedAt, orderStatus, activeCallAt, tick],
   )
 
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -155,6 +165,49 @@ export default function AllOrdersScreen() {
     tickRef.current = setInterval(() => setTick(t => t + 1), 30000)
     return () => { if (tickRef.current) clearInterval(tickRef.current) }
   }, [orderItems, sessionStartedAt, orderStatus])
+
+  // Активный вызов официанта по этому столу — для сигнала коуча «гость зовёт».
+  // Тянем при открытии и по тику (fetchPendingCalls отдаёт только status=pending,
+  // поэтому как только официант принял вызов — сигнал сам гаснет). age_check
+  // обрабатывается отдельным оверлеем возраста, здесь только 'service'.
+  useEffect(() => {
+    const tid = table?.id
+    if (!restaurantId || !tid) return
+    let cancelled = false
+    fetchPendingCalls(restaurantId)
+      .then(calls => {
+        if (cancelled) return
+        const mine = calls
+          .filter(c => c.table_id === tid && c.kind === 'service')
+          .sort((a, b) => a.created_at.localeCompare(b.created_at))[0]
+        setActiveCallAt(mine ? mine.created_at : null)
+      })
+      .catch(() => { if (!cancelled) setActiveCallAt(null) })
+    return () => { cancelled = true }
+  }, [restaurantId, table?.id, tick])
+
+  // ИИ-полировка реплик коуча — только когда официант РАЗВЕРНУЛ подсказку (экономно:
+  // не жжём вызовы модели на фоне). Запрашиваем один раз на набор сигналов+гостя;
+  // реплики без чисел, поэтому набор стабилен и по тику не дёргается. На сбой —
+  // остаётся детерминированный текст.
+  useEffect(() => {
+    if (!aiExpanded) return
+    const quoted = coachSignals.filter(s => s.quote)
+    if (!quoted.length) return
+    // Профиль стола для полировки: объединённые предпочтения гостей + повод/число.
+    const prefs = [...new Set(Object.values(guestAttrs).map(a => a.preferences).filter(Boolean))].join('; ')
+    const ctx = readTableCtx(table?.id)
+    const key = quoted.map(s => s.id).sort().join('|') + '::' + prefs + '::' + (ctx.occasion ?? '')
+    if (key === lastPolishKeyRef.current) return
+    lastPolishKeyRef.current = key
+    let cancelled = false
+    polishCoachSignals({
+      signals: quoted.map(s => ({ id: s.id, text: s.text, quote: s.quote as string })),
+      guest: { preferences: prefs || null, occasion: ctx.occasion, partySize: ctx.partySize },
+    }).then(map => { if (!cancelled && map) setPolished(prev => ({ ...prev, ...map })) })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aiExpanded, coachSignals, guestAttrs, table?.id])
 
   const hasNewItems = orderItems.some(i => i.status !== 'sent' && i.status !== 'ready')
 
@@ -357,15 +410,21 @@ export default function AllOrdersScreen() {
           <div className={`${styles.aiBody} ${aiExpanded ? styles.aiBodyExpanded : ''}`}>
             {coachSignals.length > 0 ? (
               <ul className={styles.coachList}>
-                {coachSignals.map(s => (
-                  <li key={s.id} className={styles.coachRow}>
-                    <span className={`${styles.coachDot} ${s.level === 'red' ? styles.coachRed : s.level === 'yellow' ? styles.coachYellow : styles.coachGreen}`} aria-hidden="true" />
-                    <span className={styles.coachText}>
-                      <span className={styles.coachIcon} aria-hidden="true">{s.icon} </span>
-                      <AiHintText text={s.text} />
-                    </span>
-                  </li>
-                ))}
+                {coachSignals.map(s => {
+                  // Директива + (если есть) произносимая реплика в «…». ИИ-полировка
+                  // подменяет ТОЛЬКО реплику; директиву и числа не трогаем.
+                  const quote = s.quote ? (polished[s.id] ?? s.quote) : null
+                  const text = quote ? `${s.text} «${quote}»` : s.text
+                  return (
+                    <li key={s.id} className={styles.coachRow}>
+                      <span className={`${styles.coachDot} ${s.level === 'red' ? styles.coachRed : s.level === 'yellow' ? styles.coachYellow : styles.coachGreen}`} aria-hidden="true" />
+                      <span className={styles.coachText}>
+                        <span className={styles.coachIcon} aria-hidden="true">{s.icon} </span>
+                        <AiHintText text={text} />
+                      </span>
+                    </li>
+                  )
+                })}
               </ul>
             ) : (
               <p className={styles.aiText}>

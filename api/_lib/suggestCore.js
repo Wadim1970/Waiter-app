@@ -95,6 +95,7 @@ export function buildMessages({ candidates, stage, tag, guest, cart }) {
     g.age && `возраст: ${g.age}`,
     g.occasion && `повод: ${g.occasion}`,
     g.partySize ? `гостей за столом: ${g.partySize}` : null,
+    g.preferences && `предпочтения/ограничения: ${g.preferences}`,
   ].filter(Boolean).join(', ') || 'не указан'
 
   const system = `Ты — опытный наставник-официант и сомелье. Из списка кандидатов ты САМ ВЫБИРАЕШЬ 1–3 блюда, которые лучше всего ДОПОЛНЯТ уже выбранное гостем, и подсказываешь официанту, что именно сказать. Не пиши фразу к каждому кандидату — выбирай только по-настоящему уместные.
@@ -230,6 +231,68 @@ export function parseRecommendText(content) {
   try { obj = JSON.parse(content) } catch { return typeof content === 'string' && content.trim() ? content.trim() : null }
   const t = obj?.text ?? obj?.recommendation ?? null
   return typeof t === 'string' && t.trim() ? t.trim() : null
+}
+
+// ── ИИ-полировка фраз «коуча стола» ──────────────────────────────────────
+// Коуч детерминированный (мгновенный, оффлайн). Здесь — необязательный слой:
+// переписать ТОЛЬКО произносимую гостю реплику (то, что во внешних «…») теплее,
+// живее и с учётом профиля/повода/предпочтений гостя. Директиву официанту и все
+// числа/факты НЕ трогаем — они остаются из детерминированного текста. Реплики
+// без чисел, поэтому модель ничего не выдумывает про время/суммы.
+
+// Достаём произносимую реплику (в первых внешних «…») из текста сигнала.
+export function extractQuote(text) {
+  const m = /«([^»]*)»/.exec(text || '')
+  return m ? m[1].trim() : null
+}
+
+export function buildCoachMessages({ signals, guest }) {
+  // Кормим модель только тем, у чего есть реплика гостю (поле quote).
+  const items = (signals || [])
+    .map((s) => ({ id: s.id, situation: (s.text || '').trim(), draft: (s.quote || '').trim() }))
+    .filter((s) => s.draft)
+  const g = guest || {}
+  const guestLine = [
+    g.occasion && `повод: ${g.occasion}`,
+    g.partySize ? `гостей за столом: ${g.partySize}` : null,
+    g.preferences && `предпочтения/ограничения: ${g.preferences}`,
+  ].filter(Boolean).join(', ') || 'не указан'
+
+  const system = `Ты — наставник по сервису в ресторане. Официанту нужны короткие, живые, тёплые реплики, которые он ДОСЛОВНО скажет гостю. Для каждой ситуации перепиши черновик реплики естественнее и человечнее.
+Правила:
+- ТОЛЬКО сама произносимая фраза, 1 короткое предложение, без кавычек внутри;
+- сохрани смысл черновика; НЕ добавляй чисел, цен, времени — их в реплике быть не должно;
+- учитывай профиль гостя (повод, число гостей, предпочтения). Если у гостя есть ограничение (напр. «без чеснока», аллергия) — не предлагай то, что ему противоречит;
+- при опоздании блюда — вежливо и без негатива к кухне («уже готовим, вынесем совсем скоро»), не оправдывайся долго;
+- тон под повод: романтика — камернее, компания/праздник — легче и веселее.
+Верни СТРОГО JSON: {"<id>":"<фраза без кавычек>"} — по одному ключу на каждый переданный id. Ничего лишнего.`
+
+  const user = `Гость: ${guestLine}.
+Ситуации (перепиши поле draft):
+${JSON.stringify(items)}`
+
+  return [
+    { role: 'system', content: system },
+    { role: 'user', content: user },
+  ]
+}
+
+// Разбор ответа: {id: "фраза"} → отбрасываем неизвестные id и пустое.
+export function parseCoachPolish(content, ids) {
+  if (!content) return null
+  let obj
+  try { obj = JSON.parse(content) } catch { return null }
+  if (!obj || typeof obj !== 'object') return null
+  const allow = new Set(ids || [])
+  const out = {}
+  for (const [id, phrase] of Object.entries(obj)) {
+    if (!allow.has(id)) continue
+    if (typeof phrase !== 'string') continue
+    // Модель могла обернуть в кавычки — снимаем внешние «…» / "…".
+    const clean = phrase.trim().replace(/^[«"]+|[»"]+$/g, '').trim()
+    if (clean) out[id] = clean
+  }
+  return Object.keys(out).length ? out : null
 }
 
 // Фолбэк без ИИ: короткая директива с готовой цитатой (социальное
