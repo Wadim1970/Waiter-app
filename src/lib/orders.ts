@@ -10,6 +10,9 @@ export type LoadedOrderItem = {
   sent_at: string | null
   dish_name: string
   cook_time_min: number
+  // Для «коуча стола»: классификация позиции (напиток/десерт/горячее).
+  product_type?: string | null
+  menu_section?: string | null
   comment: string | null
   modifiers: { groupName: string; name: string; price_delta: number }[]
 }
@@ -216,7 +219,7 @@ export async function loadOrderItems(orderId: string): Promise<LoadedOrderItem[]
     .from('order_items')
     .select(`
       id, item_id, seat_number, quantity, unit_price, status, sent_at, comment,
-      menu_items ( dish_name, cook_time_min ),
+      menu_items ( dish_name, cook_time_min, product_type, menu_section ),
       order_item_modifiers (
         price_delta,
         modifiers ( name, modifier_groups ( name ) )
@@ -239,6 +242,8 @@ export async function loadOrderItems(orderId: string): Promise<LoadedOrderItem[]
     comment: item.comment ?? null,
     dish_name: item.menu_items?.dish_name ?? '?',
     cook_time_min: item.menu_items?.cook_time_min ?? 0,
+    product_type: item.menu_items?.product_type ?? null,
+    menu_section: item.menu_items?.menu_section ?? null,
     modifiers: (item.order_item_modifiers ?? []).map((m: any) => ({
       groupName: m.modifiers?.modifier_groups?.name ?? '',
       name: m.modifiers?.name ?? '',

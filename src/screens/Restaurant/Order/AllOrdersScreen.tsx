@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { TableWithSession } from '../../../lib/tables'
 import { loadOrderItems, loadGuestAttributes, getOrderStatus, getGuestPaidStatus, sendToKitchen, requestBill, clearTable, updateTableSessionStatus } from '../../../lib/orders'
@@ -6,6 +6,7 @@ import type { LoadedOrderItem, GuestAttrs } from '../../../lib/orders'
 import { supabase } from '../../../lib/supabase'
 import { getActiveShift } from '../QRScanner/QRScannerScreen'
 import { useRestaiHint } from '../../../lib/useRestaiHint'
+import { buildTableSignals } from '../../../lib/tableCoach'
 import AiHintText from '../../shared/AiHintText'
 import styles from './AllOrdersScreen.module.css'
 
@@ -82,6 +83,18 @@ export default function AllOrdersScreen() {
     restaurantId,
     [...new Set(orderItems.map(i => i.item_id))],
   )
+
+  // «Коуч стола» — детерминированные сигналы официанту (опоздание блюда, готово
+  // к подаче, пора десерт/повторить напитки). Пересчитывается по тику таймера,
+  // поэтому «дозревает» без перезагрузки. Приоритетнее апселла: сервис-факап
+  // гасим раньше, чем что-то допродаём.
+  const coachSignals = useMemo(
+    () => buildTableSignals({ items: orderItems, sessionStartedAt, orderStatus }),
+    // tick — намеренно в зависимостях: он тикает по таймеру и освежает время.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [orderItems, sessionStartedAt, orderStatus, tick],
+  )
+
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const refreshOrder = useCallback(async () => {
@@ -130,14 +143,18 @@ export default function AllOrdersScreen() {
   }, [orderId, refreshOrder])
 
   useEffect(() => {
+    // Тикаем, пока (а) что-то готовится — для таймеров блюд и сигнала опоздания,
+    // либо (б) стол открыт с активной сессией — чтобы «дозревали» сигналы коуча
+    // по времени за столом (десерт/повтор напитков) даже когда всё уже подано.
     const hasSentItems = orderItems.some(i => i.status === 'sent' && i.sent_at)
-    if (!hasSentItems) {
+    const tableOpen = !!sessionStartedAt && orderStatus !== 'paid'
+    if (!hasSentItems && !tableOpen) {
       if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null }
       return
     }
     tickRef.current = setInterval(() => setTick(t => t + 1), 30000)
     return () => { if (tickRef.current) clearInterval(tickRef.current) }
-  }, [orderItems])
+  }, [orderItems, sessionStartedAt, orderStatus])
 
   const hasNewItems = orderItems.some(i => i.status !== 'sent' && i.status !== 'ready')
 
@@ -321,6 +338,12 @@ export default function AllOrdersScreen() {
           <div className={styles.aiHeader}>
             <span className={styles.aiTitle}>
               Подсказка от <strong>RestAI</strong>
+              {coachSignals.length > 0 && (
+                <span
+                  className={`${styles.coachHeadDot} ${coachSignals[0].level === 'red' ? styles.coachRed : coachSignals[0].level === 'yellow' ? styles.coachYellow : styles.coachGreen}`}
+                  aria-label="есть подсказки по столу"
+                />
+              )}
             </span>
             <button className={styles.aiToggleBtn} onClick={() => setAiExpanded(v => !v)}>
               <img
@@ -332,13 +355,27 @@ export default function AllOrdersScreen() {
             </button>
           </div>
           <div className={`${styles.aiBody} ${aiExpanded ? styles.aiBodyExpanded : ''}`}>
-            <p className={styles.aiText}>
-              {hintLoading
-                ? 'Секунду, подбираю рекомендацию…'
-                : (hintText
-                    ? <AiHintText text={hintText} />
-                    : 'Уточните у гостей, всё ли в порядке с заказом.')}
-            </p>
+            {coachSignals.length > 0 ? (
+              <ul className={styles.coachList}>
+                {coachSignals.map(s => (
+                  <li key={s.id} className={styles.coachRow}>
+                    <span className={`${styles.coachDot} ${s.level === 'red' ? styles.coachRed : s.level === 'yellow' ? styles.coachYellow : styles.coachGreen}`} aria-hidden="true" />
+                    <span className={styles.coachText}>
+                      <span className={styles.coachIcon} aria-hidden="true">{s.icon} </span>
+                      <AiHintText text={s.text} />
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className={styles.aiText}>
+                {hintLoading
+                  ? 'Секунду, подбираю рекомендацию…'
+                  : (hintText
+                      ? <AiHintText text={hintText} />
+                      : 'Уточните у гостей, всё ли в порядке с заказом.')}
+              </p>
+            )}
           </div>
         </div>
 
