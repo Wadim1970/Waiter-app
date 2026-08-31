@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { getSuggestions, warmSuggestions, type AiSuggestion } from '../../../lib/api'
 import { loadGuestAttributes } from '../../../lib/orders'
+import AiHintText from '../../shared/AiHintText'
 import styles from './AiAssistantLayer.module.css'
 
 type Props = {
@@ -18,11 +19,11 @@ type Props = {
 // сочетания-ЕДА к тому, что уже в корзине гостя, с учётом маржи/списания как
 // тай-брейка. Секции — еда по категориям. Напитки и алкоголь предлагаются
 // ТОЛЬКО по своему явному тегу.
-const TAGS = ['к заказу', 'супы', 'мясо', 'рыба', 'морепродукты', 'десерты', 'напитки', 'алкоголь']
+const TAGS = ['к заказу', 'закуски/салаты', 'супы', 'мясо', 'рыба', 'морепродукты', 'десерты', 'напитки', 'алкоголь']
 const DEFAULT_TAG = 'к заказу'
 
 const TAG_ICON: Record<string, string> = {
-  'к заказу': '🍽️', 'супы': '🍲', 'мясо': '🥩', 'рыба': '🐟', 'морепродукты': '🦐',
+  'к заказу': '🍽️', 'закуски/салаты': '🥗', 'супы': '🍲', 'мясо': '🥩', 'рыба': '🐟', 'морепродукты': '🦐',
   'десерты': '🍰', 'напитки': '🥤', 'алкоголь': '🍷',
 }
 
@@ -181,7 +182,7 @@ export default function AiAssistantLayer({ restaurantId, orderId, seat, cartItem
               <span className={styles.name}>{current.name}</span>
               <span className={styles.price}>{current.price} ₽</span>
             </div>
-            <p className={styles.pitch}>{current.pitch}</p>
+            <p className={styles.pitch}><AiHintText text={current.pitch} /></p>
             {current.addon && <div className={styles.addon}>＋ {current.addon}</div>}
             <div className={styles.acts}>
               {added.has(current.dishId) ? (
