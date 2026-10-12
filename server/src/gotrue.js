@@ -1,7 +1,7 @@
 // Работа с GoTrue (Supabase Auth) Admin API.
 //
 // Используем service_role-ключ — у него все права в /auth/v1/admin/*.
-// Все вызовы идут через внешний URL (https://supabase.insis.pro/auth/v1/...),
+// Все вызовы идут через внешний URL (https://supabase.restai.pro/auth/v1/...),
 // потому что waiter-api живёт на хосте, а GoTrue — в docker-сети.
 
 import crypto from 'node:crypto'
