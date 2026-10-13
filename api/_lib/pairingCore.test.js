@@ -2,7 +2,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  pairRejectReason, canBeAnchor, parseGenerated, capPairUsage, dislikeMatcher, parsePersonal, menuFingerprint, guestTasteLine,
+  pairRejectReason, canBeAnchor, parseGenerated, capPairUsage, leadIsReversed, dislikeMatcher, parsePersonal, menuFingerprint, guestTasteLine,
 } from './pairingCore.js'
 
 const item = (id, name, section, price, extra = {}) => ({ id, name, section, price, available: true, productType: 'food', description: '', ingredients: [], ...extra })
@@ -49,6 +49,25 @@ test('алкоголь, соусы, десерты', () => {
   assert.equal(pairRejectReason(mojito, margherita), 'alcohol', 'к коктейлю — не горячее')
   assert.equal(pairRejectReason(tiramisu, sauce), 'sauce')
   assert.equal(pairRejectReason(steak, adjika), null, 'к мясу соус — да')
+})
+
+test('гарнир, пост, направление заголовка', () => {
+  const vinaigrette = item('s3', 'Винегрет с килькой', 'Салаты и закуски', 640)
+  const pure = item('g1', 'Картофельное пюре', 'Гарниры', 250)
+  const kiev = item('m2', 'Котлета по-киевски', 'Горячие блюда', 900)
+  assert.equal(pairRejectReason(vinaigrette, pure), 'garnish')
+  assert.equal(pairRejectReason(kiev, pure), null)
+  const leanDumplings = item('l2', 'Вареники с картофелем', 'Постное меню', 590)
+  const sourCream = item('c3', 'Сметана', 'Соусы', 90)
+  const focaccia = item('f1', 'Фокачча с прованскими травами', 'Фокачча и брускетта', 390, { ingredients: ['мука пшеничная', 'вода', 'масло оливковое'] })
+  const mors = item('d3', 'Морс из клюквы', 'Напитки', 250, { productType: 'drink' })
+  assert.equal(pairRejectReason(leanDumplings, sourCream), 'lent')
+  assert.equal(pairRejectReason(leanDumplings, mors), null)
+  assert.equal(pairRejectReason(item('l3', 'Чечевичный суп', 'Постное меню', 520), focaccia), null)
+  assert.equal(leadIsReversed('К паштету из куриной печени подходит коньяк Napoleon', 'Коньяк Napoleon', 'Паштет из куриной печени'), true)
+  assert.equal(leadIsReversed('К стейку Рибай подходит безалкогольное вино', 'Вино безалкогольное Албали', 'Стейк Рибай'), true)
+  assert.equal(leadIsReversed('К пицце Пепперони отлично подходит салат с бурратой', 'Пицца Пепперони', 'Салат с бурратой'), false)
+  assert.equal(leadIsReversed('К коньяку Napoleon — паштет', 'Коньяк Napoleon', 'Паштет из куриной печени'), false)
 })
 
 test('разнообразие пар', () => {

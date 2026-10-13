@@ -23,6 +23,8 @@ const KIDS_RE = /детск/i
 const SNACK_RE = /закуск|салат|сыр|фокачч|брускетт|антипаст|тарелк|паштет|хумус|тартар|карпаччо|оливк|орех|чипс|гренк/i
 // Крепкий алкоголь: к нему уместен безалкогольный миксер (джин — тоник).
 const SPIRIT_RE = /джин|виски|ром\b|водк|текил|коньяк|бренди|кальвадос/i
+const GARNISH_RE = /гарнир/i
+const LENT_RE = /пост/i
 
 const norm = (s) => String(s || '').toLowerCase().replace(/ё/g, 'е')
 
@@ -75,6 +77,11 @@ export function pairRejectReason(anchor, pair) {
   if (categoryOf(anchor) === 'dessert' && !isSoftDrink(pair)) return 'dessert'
   // К алкоголю — закуска, сыр или салат; к крепкому ещё и безалкогольный
   // миксер. Не горячее, не десерт, не соус.
+  // Гарнир — только к горячему (не «картофельное пюре к винегрету»).
+  if (GARNISH_RE.test(pair.section || '') && categoryOf(anchor) !== 'main') return 'garnish'
+  // К постному блюду — только постное: без мяса, рыбы, молочного и яиц
+  // (не «сметана к постным вареникам»).
+  if (LENT_RE.test(anchor.section || '') && !LENT_RE.test(pair.section || '') && leanBreaker()(pair)) return 'lent'
   if (isAlcoholItem(anchor)) {
     const mixer = isSoftDrink(pair) && SPIRIT_RE.test(anchor.name || '')
     const snack = isFood(pair) && !isSauce(pair) && categoryOf(pair) !== 'main' && categoryOf(pair) !== 'dessert'
@@ -82,6 +89,35 @@ export function pairRejectReason(anchor, pair) {
     if (!mixer && !snack) return 'alcohol'
   }
   return null
+}
+
+let leanMatcher = null
+// Ленивая инициализация: dislikeMatcher объявлен ниже по файлу.
+function leanBreaker() {
+  return (leanMatcher ||= dislikeMatcher('вегетарианец, молоко, яйца'))
+}
+
+// Корень первого значимого слова названия: «Коньяк Napoleon» → «конь»,
+// «Пицца Пепперони» → «пицц». Для проверки, о каком блюде заголовок.
+function nameStem(name) {
+  const word = norm(name).replace(/[«»"'()]/g, ' ').split(/[^а-яa-z]+/).find((w) => w.length >= 4)
+  return word ? word.slice(0, Math.max(4, word.length - 2)) : null
+}
+
+// Заголовок должен говорить о блюде гостя первым: «К пицце Пепперони
+// подходит салат», а не «К салату подходит пицца». Нейросеть иногда путает
+// направление («К паштету подходит коньяк» для коньяка). Если оба названия
+// нашлись и пара упомянута раньше — заголовок перевёрнут.
+export function leadIsReversed(lead, anchorName, pairName) {
+  const a = nameStem(anchorName), p = nameStem(pairName)
+  if (!a || !p || a === p) return false
+  const text = norm(lead)
+  const pos = (stem) => {
+    const m = new RegExp(`(^|[^а-яa-z])${stem}`).exec(text)
+    return m ? m.index : -1
+  }
+  const ai = pos(a), pi = pos(p)
+  return ai >= 0 && pi >= 0 && pi < ai
 }
 
 // Разнообразие: одно и то же блюдо — пара не больше чем к max блюдам меню
@@ -138,13 +174,15 @@ export function buildGenerateMessages({ menu, anchorNumbers, restaurantName }) {
 - к безалкогольным напиткам пары не подбираются — их нет в списке блюд для подбора;
 - к алкоголю — только закуска, сыр или салат («к вину — сырная тарелка»); к крепкому (джин, виски, ром) можно безалкогольный миксер (тоник);
 - к десерту — только напиток: кофе, чай, морс;
+- гарниры (пюре, картофель, рис) — только к горячим блюдам, не к салатам и закускам;
+- к блюдам постного меню — только постное: без мяса, рыбы, молочного (сметана, сыр, сливки) и яиц;
 - соусы предлагай только к еде, которую в них действительно макают или поливают (картофель фри, мясо, хлеб, пицца) — никогда к напиткам и десертам;
 - разнообразь: не предлагай одно и то же блюдо ко всему подряд, подбирай пару под конкретный вкус каждого блюда;
 - если к блюду ничего хорошего не подходит — не придумывай, пропусти его;
 - на одно блюдо 1–2 пары, лучшую первой.
 
 Для каждой пары напиши два текста ДЛЯ ГОСТЯ, по-русски, без цен и чисел:
-- lead — короткий заголовок до 70 символов, с названиями обоих блюд в правильных падежах: «К пицце Пепперони отлично подходит салат с бурратой»;
+- lead — короткий заголовок до 70 символов, с названиями обоих блюд в правильных падежах. Начинается с блюда, которое гость УЖЕ положил в заказ (номер a), а пара (номер p) — после: «К пицце Пепперони отлично подходит салат с бурратой». Не наоборот;
 - why — почему это вкусно вместе, до 90 символов, конкретно про вкус: «Сливочная буррата и свежие томаты смягчат остроту колбасок».
 Пиши тепло и просто, как шеф советует гостю. Без восклицательных знаков, без слов «идеально», «шедевр», «незабываемо».
 
@@ -191,6 +229,7 @@ export function parseGenerated(content, items, anchorNumbers, stats = {}) {
     const lead = clipText(x.lead, 90)
     const why = clipText(x.why, 120)
     if (!lead || !why) { bump('noText'); continue }
+    if (leadIsReversed(lead, anchor.name, pair.name)) { bump('leadOrder'); continue }
     const list = perAnchor.get(anchor.id) || []
     if (list.length >= 2 || list.includes(pair.id)) { bump('extra'); continue }
     list.push(pair.id)
