@@ -71,6 +71,23 @@ test('гарнир, пост, направление заголовка', () => 
   assert.equal(leadIsReversed('К коньяку Napoleon — паштет', 'Коньяк Napoleon', 'Паштет из куриной печени'), false)
 })
 
+test('дети, десерт как пара, свежий сыр к крепкому', () => {
+  const kidsSalad = item('k3', 'Салат овощной с маслом', 'Детское меню', 350)
+  const vareniki = item('v1', 'Вареники с творогом и сметаной', 'Из творога и яиц', 450)
+  const juice = item('j1', 'Сок вишня', 'Напитки', 200, { productType: 'drink' })
+  assert.equal(pairRejectReason(kidsSalad, vareniki), 'kids')
+  assert.equal(pairRejectReason(kidsSalad, juice), null)
+  const medovik = item('t2', 'Медовик с соленой карамелью', 'Десерты', 420)
+  assert.equal(pairRejectReason(vareniki, medovik), 'dessertPair')
+  const whisky = item('a3', 'Виски Single Malt', 'Алкогольные напитки', 900, { productType: 'alcohol' })
+  const champagne = item('a4', 'Шампанское Brut', 'Алкогольные напитки', 900, { productType: 'alcohol' })
+  const burrataCheese = item('s4', 'Буррата', 'Сыры из сыроварни', 700)
+  const scamorza = item('s5', 'Скаморца копченый', 'Сыры из сыроварни', 600)
+  assert.equal(pairRejectReason(whisky, burrataCheese), 'alcohol')
+  assert.equal(pairRejectReason(whisky, scamorza), null)
+  assert.equal(pairRejectReason(champagne, burrataCheese), null)
+})
+
 test('разнообразие пар', () => {
   const g = []
   for (let i = 1; i <= 8; i++) g.push({ anchorId: `m${i}`, pairId: 'salad', rank: 1 }, { anchorId: `m${i}`, pairId: `x${i}`, rank: 2 })
@@ -94,7 +111,7 @@ test('разбор ответа генерации отбрасывает мус
     { a: 1, p: 3, lead: 'дубль', why: 'дубль' },
   ] })
   const out = parseGenerated(content, items, [1, 2])
-  assert.deepEqual(out.map((x) => [x.anchorId, x.pairId, x.rank]), [['p1', 's1', 1], ['p1', 'd1', 2], ['p1', 't1', 3]])
+  assert.deepEqual(out.map((x) => [x.anchorId, x.pairId, x.rank]), [['p1', 's1', 1], ['p1', 'd1', 2]], 'тирамису отсеяна: десерт парой не предлагается')
   assert.equal(out[1].lead, 'К пицце — лимонад', 'кавычки по краям сняты')
   assert.deepEqual(parseGenerated('не json', items, [1]), [])
 })
