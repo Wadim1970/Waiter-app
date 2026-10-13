@@ -10,11 +10,11 @@
 import crypto from 'node:crypto'
 import { supabase as realSupabase, deepseekChat as realDeepseek, DEEPSEEK_KEY } from './suggestService.js'
 import {
-  canBeAnchor, compactMenu, menuFingerprint, buildGenerateMessages, parseGenerated,
+  canBeAnchor, canBePair, compactMenu, menuFingerprint, buildGenerateMessages, parseGenerated,
   chunk, capPairUsage, dislikeMatcher, guestTasteLine, buildPersonalMessages, parsePersonal,
 } from './pairingCore.js'
 
-const ANCHORS_PER_CALL = 20
+const ANCHORS_PER_CALL = 12
 const PARALLEL_CALLS = 3
 const RUNNING_STALE_MS = 15 * 60 * 1000
 const PERSONAL_TTL_SEC = 3600
@@ -98,8 +98,14 @@ export async function generateForRestaurant(restaurantId, { force = false } = {}
       const results = await Promise.all(group.map(async (nums) => {
         try {
           const raw = await deps.deepseekChat(
-            buildGenerateMessages({ menu, anchorNumbers: nums, restaurantName: name }),
-            { maxTokens: 3000, timeoutMs: 90000, temperature: 0.4 },
+            // В список — только то, что может быть парой, и блюда этой пачки:
+            // алкоголь и «Лавку» модель не видит и не предлагает.
+            buildGenerateMessages({
+              menu: menu.filter((m) => canBePair(items[m.n - 1]) || nums.includes(m.n)),
+              anchorNumbers: nums,
+              restaurantName: name,
+            }),
+            { maxTokens: 4000, timeoutMs: 90000, temperature: 0.4 },
           )
           return { nums, pairs: parseGenerated(raw, items, nums, stats) }
         } catch (err) {
