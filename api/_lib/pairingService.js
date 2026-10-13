@@ -82,6 +82,12 @@ export async function generateForRestaurant(restaurantId, { force = false } = {}
     const menu = compactMenu(items)
     const anchorNumbers = items.map((it, i) => (canBeAnchor(it) ? i + 1 : null)).filter(Boolean)
     const batches = chunk(anchorNumbers, ANCHORS_PER_CALL)
+    // Нечего считать (пустое или тестовое меню) — это не ошибка.
+    if (!anchorNumbers.length) {
+      await setState(restaurantId, { status: 'done', menu_hash: hash, generated_at: new Date().toISOString(), pair_count: 0, error: null })
+      return { status: 'done', pairCount: 0, anchors: 0 }
+    }
+    const stats = {}
 
     const generated = []
     const doneAnchorIds = new Set()
@@ -93,7 +99,7 @@ export async function generateForRestaurant(restaurantId, { force = false } = {}
             buildGenerateMessages({ menu, anchorNumbers: nums, restaurantName: name }),
             { maxTokens: 3000, timeoutMs: 90000, temperature: 0.4 },
           )
-          return { nums, pairs: parseGenerated(raw, items, nums) }
+          return { nums, pairs: parseGenerated(raw, items, nums, stats) }
         } catch (err) {
           console.error('pairings: batch failed', err?.message || err)
           return null
@@ -154,7 +160,8 @@ export async function generateForRestaurant(restaurantId, { force = false } = {}
       pair_count: rows.length,
       error: failed ? `Не ответили пачки: ${failed} из ${batches.length}` : null,
     })
-    return { status: failed ? 'partial' : 'done', pairCount: rows.length, anchors: doneAnchorIds.size }
+    const withPairs = new Set(rows.map((r) => r.dish_id)).size
+    return { status: failed ? 'partial' : 'done', pairCount: rows.length, anchors: doneAnchorIds.size, dishesWithPairs: withPairs, stats }
   } catch (err) {
     await setState(restaurantId, { status: 'error', error: String(err?.message || err).slice(0, 500) })
     throw err

@@ -121,27 +121,33 @@ function clipText(s, max) {
 // Разбор ответа генерации → [{anchorId, pairId, lead, why}]. Всё, что нарушает
 // правила (pairRejectReason) или ссылается на чужие номера, отбрасываем.
 // Не больше 2 пар на блюдо, без дублей.
-export function parseGenerated(content, items, anchorNumbers) {
+// stats (необязательно) — счётчики для лога: сколько пар предложила модель и
+// по какому правилу отсеяна каждая; по ним видно, какое правило режет лишнее.
+export function parseGenerated(content, items, anchorNumbers, stats = {}) {
+  const bump = (k) => { stats[k] = (stats[k] || 0) + 1 }
   let obj
-  try { obj = JSON.parse(content) } catch { return [] }
+  try { obj = JSON.parse(content) } catch { bump('badJson'); return [] }
   const arr = Array.isArray(obj) ? obj : obj?.pairs
-  if (!Array.isArray(arr)) return []
+  if (!Array.isArray(arr)) { bump('badJson'); return [] }
   const allowedAnchors = new Set(anchorNumbers)
   const perAnchor = new Map()
   const out = []
   for (const x of arr) {
+    bump('proposed')
     const a = Number(x?.a), p = Number(x?.p)
-    if (!allowedAnchors.has(a)) continue
+    if (!allowedAnchors.has(a)) { bump('foreignAnchor'); continue }
     const anchor = items[a - 1], pair = items[p - 1]
-    if (pairRejectReason(anchor, pair)) continue
+    const reason = pairRejectReason(anchor, pair)
+    if (reason) { bump(reason); continue }
     const lead = clipText(x.lead, 90)
     const why = clipText(x.why, 120)
-    if (!lead || !why) continue
+    if (!lead || !why) { bump('noText'); continue }
     const list = perAnchor.get(anchor.id) || []
-    if (list.length >= 2 || list.includes(pair.id)) continue
+    if (list.length >= 2 || list.includes(pair.id)) { bump('extra'); continue }
     list.push(pair.id)
     perAnchor.set(anchor.id, list)
     out.push({ anchorId: anchor.id, pairId: pair.id, rank: list.length, lead, why })
+    bump('kept')
   }
   return out
 }
