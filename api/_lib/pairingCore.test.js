@@ -2,7 +2,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  pairRejectReason, canBeAnchor, parseGenerated, dislikeMatcher, parsePersonal, menuFingerprint, guestTasteLine,
+  pairRejectReason, canBeAnchor, parseGenerated, capPairUsage, dislikeMatcher, parsePersonal, menuFingerprint, guestTasteLine,
 } from './pairingCore.js'
 
 const item = (id, name, section, price, extra = {}) => ({ id, name, section, price, available: true, productType: 'food', description: '', ingredients: [], ...extra })
@@ -25,12 +25,38 @@ test('правила пары', () => {
   assert.equal(pairRejectReason(pepperoni, wine), 'pair')
   assert.equal(pairRejectReason(pepperoni, cheese), 'pair')
   assert.equal(pairRejectReason(pepperoni, pepperoni), 'same')
-  assert.equal(pairRejectReason(lemonade, steak), 'price')
-  assert.equal(pairRejectReason(coffee, tiramisu), null, 'недорогое блюдо: пара до 500 ₽')
+  assert.equal(pairRejectReason(burrata, steak), 'price')
+  assert.equal(pairRejectReason(tiramisu, coffee), null, 'к десерту — кофе')
+  assert.equal(pairRejectReason(tiramisu, item('s9', 'Салат лёгкий', 'Салаты', 300)), 'dessert', 'к десерту — только напиток')
   assert.equal(pairRejectReason(pepperoni, sauce), null)
   assert.equal(canBeAnchor(sauce), false)
+  assert.equal(canBeAnchor(lemonade), false, 'к лимонаду подсказки нет')
+  assert.equal(canBeAnchor(coffee), false)
   assert.equal(canBeAnchor(cheese), false)
   assert.equal(pairRejectReason(kidsPasta, lemonade), null)
+})
+
+test('алкоголь, соусы, десерты', () => {
+  const mojito = item('a1', 'Коктейль Мохито', 'Алкогольные напитки', 650, { productType: 'alcohol' })
+  const gin = item('a2', 'Джин Bombay Sapphire', 'Алкогольные напитки', 550, { productType: 'alcohol' })
+  const adjika = item('c2', 'Аджика', 'Соусы', 90)
+  const cheesePlate = item('s2', 'Сырная тарелка', 'Сыры из сыроварни', 640)
+  const tonic = item('d2', 'Эвервесс Тоник', 'Напитки', 250, { productType: 'drink' })
+  assert.equal(pairRejectReason(mojito, adjika), 'sauce', 'к мохито — не аджика')
+  assert.equal(pairRejectReason(mojito, cheesePlate), null, 'к коктейлю — сыры')
+  assert.equal(pairRejectReason(mojito, tonic), 'alcohol', 'к коктейлю миксер не нужен')
+  assert.equal(pairRejectReason(gin, tonic), null, 'джин — тоник')
+  assert.equal(pairRejectReason(mojito, margherita), 'alcohol', 'к коктейлю — не горячее')
+  assert.equal(pairRejectReason(tiramisu, sauce), 'sauce')
+  assert.equal(pairRejectReason(steak, adjika), null, 'к мясу соус — да')
+})
+
+test('разнообразие пар', () => {
+  const g = []
+  for (let i = 1; i <= 8; i++) g.push({ anchorId: `m${i}`, pairId: 'salad', rank: 1 }, { anchorId: `m${i}`, pairId: `x${i}`, rank: 2 })
+  const out = capPairUsage(g, 6)
+  assert.equal(out.filter((x) => x.pairId === 'salad').length, 6)
+  assert.deepEqual(out.filter((x) => x.anchorId === 'm8').map((x) => [x.pairId, x.rank]), [['x8', 1]], 'осталась вторая пара — она теперь первая')
 })
 
 test('разбор ответа генерации отбрасывает мусор', () => {

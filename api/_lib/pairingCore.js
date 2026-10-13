@@ -17,8 +17,12 @@ import { categoryOf } from './suggestCore.js'
 const SKIP_SECTION_RE = /лавк|комбо|навынос|с собой/i
 // Разделы, которые не бывают «основой» пары: соус сам по себе не заказывают,
 // его добавляют к блюду.
-const NO_ANCHOR_SECTION_RE = /соус/i
+const SAUCE_RE = /соус/i
 const KIDS_RE = /детск/i
+// Закуски к алкоголю: «к вину — сырная тарелка», «к пиву — брускетты».
+const SNACK_RE = /закуск|салат|сыр|фокачч|брускетт|антипаст|тарелк|паштет|хумус|тартар|карпаччо|оливк|орех|чипс|гренк/i
+// Крепкий алкоголь: к нему уместен безалкогольный миксер (джин — тоник).
+const SPIRIT_RE = /джин|виски|ром\b|водк|текил|коньяк|бренди|кальвадос/i
 
 const norm = (s) => String(s || '').toLowerCase().replace(/ё/g, 'е')
 
@@ -28,11 +32,19 @@ export function isAlcoholItem(item) {
   return item.productType === 'alcohol'
 }
 
+const isSoftDrink = (item) => item.productType === 'drink'
+const isSauce = (item) => SAUCE_RE.test(item.section || '')
+const isFood = (item) => !item.productType || item.productType === 'food'
+
+// Основа пары — то, после чего гостю показываем подсказку. Соус сам по
+// себе не заказывают, а к лимонаду, соку или кофе подсказка не нужна
+// (иначе «к мохито — аджика»).
 export function canBeAnchor(item) {
   return item.available !== false
     && Number(item.price) > 0
     && !SKIP_SECTION_RE.test(item.section || '')
-    && !NO_ANCHOR_SECTION_RE.test(item.section || '')
+    && !isSauce(item)
+    && !isSoftDrink(item)
 }
 
 export function canBePair(item) {
@@ -57,7 +69,40 @@ export function pairRejectReason(anchor, pair) {
   // лимонад) допускаем пару до 500 ₽: «к кофе — тирамису» уместно.
   if (Number(pair.price) > Math.max(Number(anchor.price) || 0, 500)) return 'price'
   if (KIDS_RE.test(anchor.section || '') && isAlcoholItem(pair)) return 'kids'
+  // Соус — только к еде, и не к десерту.
+  if (isSauce(pair) && (!isFood(anchor) || categoryOf(anchor) === 'dessert')) return 'sauce'
+  // К десерту — только напиток (кофе, чай, морс).
+  if (categoryOf(anchor) === 'dessert' && !isSoftDrink(pair)) return 'dessert'
+  // К алкоголю — закуска, сыр или салат; к крепкому ещё и безалкогольный
+  // миксер. Не горячее, не десерт, не соус.
+  if (isAlcoholItem(anchor)) {
+    const mixer = isSoftDrink(pair) && SPIRIT_RE.test(anchor.name || '')
+    const snack = isFood(pair) && !isSauce(pair) && categoryOf(pair) !== 'main' && categoryOf(pair) !== 'dessert'
+      && SNACK_RE.test(`${pair.name || ''} ${pair.section || ''}`)
+    if (!mixer && !snack) return 'alcohol'
+  }
   return null
+}
+
+// Разнообразие: одно и то же блюдо — пара не больше чем к max блюдам меню
+// (иначе «Зелёный салат» и «Мохитино» ко всему горячему). Вторые пары (rank 2)
+// уступают место первым; после отсева rank пересчитывается.
+export function capPairUsage(generated, max = 6) {
+  const used = new Map()
+  const kept = []
+  const ordered = [...generated].sort((a, b) => a.rank - b.rank)
+  for (const g of ordered) {
+    const n = used.get(g.pairId) || 0
+    if (n >= max) continue
+    used.set(g.pairId, n + 1)
+    kept.push(g)
+  }
+  const ranks = new Map()
+  return generated.filter((g) => kept.includes(g)).map((g) => {
+    const r = (ranks.get(g.anchorId) || 0) + 1
+    ranks.set(g.anchorId, r)
+    return { ...g, rank: r }
+  })
 }
 
 // Компактный слепок меню для промпта и стабильный хэш меню. Номера вместо
@@ -90,7 +135,11 @@ export function buildGenerateMessages({ menu, anchorNumbers, restaurantName }) {
 - пара сочетается по вкусу, сытности, температуре и свежести: к жирному и сытному — свежее и лёгкое, к острому — сливочное или освежающее, к кофе — десерт, к десерту — кофе или чай;
 - пара не дороже основного блюда (кроме случаев, когда основное стоит меньше 500 ₽);
 - алкоголь не предлагай; к детскому меню — только детское уместное (соки, морсы, десерты);
-- соусы предлагай только к тому, что в них действительно макают или поливают (картофель фри, мясо, хлеб, пицца);
+- к безалкогольным напиткам пары не подбираются — их нет в списке блюд для подбора;
+- к алкоголю — только закуска, сыр или салат («к вину — сырная тарелка»); к крепкому (джин, виски, ром) можно безалкогольный миксер (тоник);
+- к десерту — только напиток: кофе, чай, морс;
+- соусы предлагай только к еде, которую в них действительно макают или поливают (картофель фри, мясо, хлеб, пицца) — никогда к напиткам и десертам;
+- разнообразь: не предлагай одно и то же блюдо ко всему подряд, подбирай пару под конкретный вкус каждого блюда;
 - если к блюду ничего хорошего не подходит — не придумывай, пропусти его;
 - на одно блюдо 1–2 пары, лучшую первой.
 
