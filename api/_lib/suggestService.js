@@ -13,13 +13,13 @@ import {
   buildCoachMessages, parseCoachPolish,
 } from './suggestCore.js'
 
-const supabase = createClient(
+export const supabase = createClient(
   process.env.SUPABASE_URL || process.env.VITE_SUPABASE_WAITER_URL,
   process.env.SUPABASE_SERVICE_KEY,
   { auth: { autoRefreshToken: false, persistSession: false } },
 )
 
-const DEEPSEEK_KEY = process.env.DEEPSEEK_API_KEY || ''
+export const DEEPSEEK_KEY = process.env.DEEPSEEK_API_KEY || ''
 const DEEPSEEK_BASE = process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com'
 const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-chat'
 
@@ -73,7 +73,7 @@ export async function buildDigest(restaurantId) {
 }
 
 // Один вызов DeepSeek (JSON-режим). Возвращает сырой content; при сбое бросает.
-async function deepseekChat(messages, { maxTokens = 700, timeoutMs = 6000 } = {}) {
+export async function deepseekChat(messages, { maxTokens = 700, timeoutMs = 6000, temperature = 0.6 } = {}) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {
@@ -84,7 +84,7 @@ async function deepseekChat(messages, { maxTokens = 700, timeoutMs = 6000 } = {}
         model: DEEPSEEK_MODEL,
         messages,
         response_format: { type: 'json_object' },
-        temperature: 0.6,
+        temperature,
         max_tokens: maxTokens,
       }),
       signal: controller.signal,
