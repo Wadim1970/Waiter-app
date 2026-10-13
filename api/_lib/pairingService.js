@@ -10,7 +10,7 @@
 import crypto from 'node:crypto'
 import { supabase as realSupabase, deepseekChat as realDeepseek, DEEPSEEK_KEY } from './suggestService.js'
 import {
-  canBeAnchor, canBePair, compactMenu, menuFingerprint, buildGenerateMessages, parseGenerated,
+  canBeAnchor, canBePair, pairRejectReason, compactMenu, menuFingerprint, buildGenerateMessages, parseGenerated,
   chunk, capPairUsage, dislikeMatcher, guestTasteLine, buildPersonalMessages, parsePersonal,
 } from './pairingCore.js'
 
@@ -131,10 +131,16 @@ export async function generateForRestaurant(restaurantId, { force = false } = {}
       .filter((r) => r.source === 'manual' || r.status === 'disabled')
       .map((r) => `${r.dish_id}|${r.pair_dish_id}`))
 
-    // Старые автоматические пары удаляем только у блюд, по которым расчёт
-    // прошёл: при сбое пачки у её блюд остаются прежние пары.
+    // Старые автоматические пары удаляем у блюд, по которым расчёт прошёл (при
+    // сбое пачки у её блюд остаются прежние пары), а также те, что больше не
+    // проходят правила: блюдо перестало быть основой пары (напиток), исчезло
+    // из меню, или пара нарушает новое правило.
+    const byId = new Map(items.map((it) => [it.id, it]))
     const staleIds = (existing || [])
-      .filter((r) => r.source === 'ai' && r.status === 'active' && doneAnchorIds.has(r.dish_id))
+      .filter((r) => r.source === 'ai' && r.status === 'active' && (
+        doneAnchorIds.has(r.dish_id)
+        || pairRejectReason(byId.get(r.dish_id), byId.get(r.pair_dish_id))
+      ))
       .map((r) => r.id)
     for (const ids of chunk(staleIds, 200)) {
       const { error } = await deps.supabase.from('menu_pairings').delete().in('id', ids)
