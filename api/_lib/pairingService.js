@@ -11,7 +11,7 @@ import crypto from 'node:crypto'
 import { supabase as realSupabase, deepseekChat as realDeepseek, DEEPSEEK_KEY } from './suggestService.js'
 import {
   canBeAnchor, compactMenu, menuFingerprint, buildGenerateMessages, parseGenerated,
-  chunk, dislikeMatcher, guestTasteLine, buildPersonalMessages, parsePersonal,
+  chunk, capPairUsage, dislikeMatcher, guestTasteLine, buildPersonalMessages, parsePersonal,
 } from './pairingCore.js'
 
 const ANCHORS_PER_CALL = 20
@@ -19,6 +19,8 @@ const PARALLEL_CALLS = 3
 const RUNNING_STALE_MS = 15 * 60 * 1000
 const PERSONAL_TTL_SEC = 3600
 const PERSONAL_MAX_ANCHORS = 80
+// Одно блюдо — пара не больше чем к стольким блюдам меню.
+const MAX_USES_PER_PAIR = 6
 
 // Зависимости через объект — тест подменяет базу и нейросеть
 // (pairingService.test.js), код ниже обращается к ним только так.
@@ -134,7 +136,7 @@ export async function generateForRestaurant(restaurantId, { force = false } = {}
     }
 
     const now = new Date().toISOString()
-    const rows = generated
+    const rows = capPairUsage(generated, MAX_USES_PER_PAIR)
       .filter((g) => !keep.has(`${g.anchorId}|${g.pairId}`))
       .map((g) => ({
         restaurant_id: restaurantId,
