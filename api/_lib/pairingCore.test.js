@@ -26,6 +26,7 @@ test('правила пары', () => {
   assert.equal(pairRejectReason(pepperoni, cheese), 'pair')
   assert.equal(pairRejectReason(pepperoni, pepperoni), 'same')
   assert.equal(pairRejectReason(burrata, steak), 'price')
+  assert.equal(pairRejectReason(burrata, item('x2', 'Суп дня', 'Супы', 760)), null, 'до +25% к цене блюда')
   assert.equal(pairRejectReason(tiramisu, coffee), null, 'к десерту — кофе')
   assert.equal(pairRejectReason(tiramisu, item('s9', 'Салат лёгкий', 'Салаты', 300)), 'dessert', 'к десерту — только напиток')
   assert.equal(pairRejectReason(pepperoni, sauce), null)
@@ -73,8 +74,10 @@ test('гарнир, пост, направление заголовка', () => 
 test('разнообразие пар', () => {
   const g = []
   for (let i = 1; i <= 8; i++) g.push({ anchorId: `m${i}`, pairId: 'salad', rank: 1 }, { anchorId: `m${i}`, pairId: `x${i}`, rank: 2 })
+  g.push({ anchorId: 'm1', pairId: 'third', rank: 3 })
   const out = capPairUsage(g, 6)
   assert.equal(out.filter((x) => x.pairId === 'salad').length, 6)
+  assert.equal(out.filter((x) => x.anchorId === 'm1').length, 2, 'не больше двух пар на блюдо')
   assert.deepEqual(out.filter((x) => x.anchorId === 'm8').map((x) => [x.pairId, x.rank]), [['x8', 1]], 'осталась вторая пара — она теперь первая')
 })
 
@@ -84,13 +87,14 @@ test('разбор ответа генерации отбрасывает мус
     { a: 1, p: 3, lead: 'К пицце Пепперони отлично подходит салат с бурратой', why: 'Сливочная буррата смягчит остроту' },
     { a: 1, p: 2, lead: 'x', why: 'y' },              // тот же раздел
     { a: 1, p: 4, lead: '«К пицце — лимонад»', why: 'Освежит' },
-    { a: 1, p: 6, lead: 'третья пара', why: 'лишняя' }, // больше 2 на блюдо
+    { a: 1, p: 6, lead: 'третья пара', why: 'запасная' },
+    { a: 1, p: 6, lead: 'четвёртая', why: 'лишняя' },
     { a: 2, p: 99, lead: 'нет такого', why: 'нет' },
     { a: 5, p: 3, lead: 'не просили', why: 'не та пачка' },
     { a: 1, p: 3, lead: 'дубль', why: 'дубль' },
   ] })
   const out = parseGenerated(content, items, [1, 2])
-  assert.deepEqual(out.map((x) => [x.anchorId, x.pairId, x.rank]), [['p1', 's1', 1], ['p1', 'd1', 2]])
+  assert.deepEqual(out.map((x) => [x.anchorId, x.pairId, x.rank]), [['p1', 's1', 1], ['p1', 'd1', 2], ['p1', 't1', 3]])
   assert.equal(out[1].lead, 'К пицце — лимонад', 'кавычки по краям сняты')
   assert.deepEqual(parseGenerated('не json', items, [1]), [])
 })

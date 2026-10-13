@@ -67,9 +67,9 @@ export function pairRejectReason(anchor, pair) {
   if (norm(anchor.section) === norm(pair.section)) return 'section'
   // Два основных блюда не конкурируют (пицца и стейк вместе не берут).
   if (categoryOf(anchor) === 'main' && categoryOf(pair) === 'main') return 'main'
-  // Пара — дополнение, а не дороже основного. Для недорогих блюд (кофе,
+  // Пара — дополнение, заметно не дороже основного (до +25%). Для недорогих блюд (кофе,
   // лимонад) допускаем пару до 500 ₽: «к кофе — тирамису» уместно.
-  if (Number(pair.price) > Math.max(Number(anchor.price) || 0, 500)) return 'price'
+  if (Number(pair.price) > Math.max((Number(anchor.price) || 0) * 1.25, 500)) return 'price'
   if (KIDS_RE.test(anchor.section || '') && isAlcoholItem(pair)) return 'kids'
   // Соус — только к еде, и не к десерту.
   if (isSauce(pair) && (!isFood(anchor) || categoryOf(anchor) === 'dessert')) return 'sauce'
@@ -121,9 +121,10 @@ export function leadIsReversed(lead, anchorName, pairName) {
 }
 
 // Разнообразие: одно и то же блюдо — пара не больше чем к max блюдам меню
-// (иначе «Зелёный салат» и «Мохитино» ко всему горячему). Вторые пары (rank 2)
-// уступают место первым; после отсева rank пересчитывается.
-export function capPairUsage(generated, max = 6) {
+// (иначе «Зелёный салат» и «Мохитино» ко всему горячему). Запасные пары
+// (rank 2–3) уступают место первым; после отсева rank пересчитывается и у
+// блюда остаётся не больше perAnchor пар.
+export function capPairUsage(generated, max = 6, perAnchor = 2) {
   const used = new Map()
   const kept = []
   const ordered = [...generated].sort((a, b) => a.rank - b.rank)
@@ -138,7 +139,7 @@ export function capPairUsage(generated, max = 6) {
     const r = (ranks.get(g.anchorId) || 0) + 1
     ranks.set(g.anchorId, r)
     return { ...g, rank: r }
-  })
+  }).filter((g) => g.rank <= perAnchor)
 }
 
 // Компактный слепок меню для промпта и стабильный хэш меню. Номера вместо
@@ -169,7 +170,7 @@ export function buildGenerateMessages({ menu, anchorNumbers, restaurantName }) {
 - пара из ДРУГОГО раздела меню: к пицце — салат, закуска, напиток или десерт, но не другая пицца;
 - два основных горячих блюда вместе не предлагай (пицца + стейк — нет);
 - пара сочетается по вкусу, сытности, температуре и свежести: к жирному и сытному — свежее и лёгкое, к острому — сливочное или освежающее, к кофе — десерт, к десерту — кофе или чай;
-- пара не дороже основного блюда (кроме случаев, когда основное стоит меньше 500 ₽);
+- пара не дороже основного блюда больше чем на четверть (кроме случаев, когда основное стоит меньше 500 ₽);
 - алкоголь не предлагай; к детскому меню — только детское уместное (соки, морсы, десерты);
 - к безалкогольным напиткам пары не подбираются — их нет в списке блюд для подбора;
 - к алкоголю — только закуска, сыр или салат («к вину — сырная тарелка»); к крепкому (джин, виски, ром) можно безалкогольный миксер (тоник);
@@ -179,7 +180,7 @@ export function buildGenerateMessages({ menu, anchorNumbers, restaurantName }) {
 - соусы предлагай только к еде, которую в них действительно макают или поливают (картофель фри, мясо, хлеб, пицца) — никогда к напиткам и десертам;
 - разнообразь: не предлагай одно и то же блюдо ко всему подряд, подбирай пару под конкретный вкус каждого блюда;
 - если к блюду ничего хорошего не подходит — не придумывай, пропусти его;
-- на одно блюдо 1–2 пары, лучшую первой.
+- на одно блюдо 2–3 РАЗНЫЕ пары, лучшую первой: если первую уже часто предлагают к другим блюдам, гостю покажут следующую.
 
 Для каждой пары напиши два текста ДЛЯ ГОСТЯ, по-русски, без цен и чисел:
 - lead — короткий заголовок до 70 символов, с названиями обоих блюд в правильных падежах. Начинается с блюда, которое гость УЖЕ положил в заказ (номер a), а пара (номер p) — после: «К пицце Пепперони отлично подходит салат с бурратой». Не наоборот;
@@ -231,7 +232,7 @@ export function parseGenerated(content, items, anchorNumbers, stats = {}) {
     if (!lead || !why) { bump('noText'); continue }
     if (leadIsReversed(lead, anchor.name, pair.name)) { bump('leadOrder'); continue }
     const list = perAnchor.get(anchor.id) || []
-    if (list.length >= 2 || list.includes(pair.id)) { bump('extra'); continue }
+    if (list.length >= 3 || list.includes(pair.id)) { bump('extra'); continue }
     list.push(pair.id)
     perAnchor.set(anchor.id, list)
     out.push({ anchorId: anchor.id, pairId: pair.id, rank: list.length, lead, why })
