@@ -66,6 +66,7 @@ beforeEach(() => {
       mi(3, 'Салат с орехами', 'Салаты', 450, { ingredients: ['грецкий орех', 'руккола'] }),
       mi(4, 'Лимонад', 'Напитки', 290, { product_type: 'drink' }),
       mi(5, 'Бокал вина', 'Вино', 450, { product_type: 'alcohol' }),
+      mi(6, 'Сыр из лавки', 'Сыры', 300, { is_hidden: true }),
     ],
     restaurants: [{ restaurantId: R, name: 'Тест' }],
     menu_pairings: [], menu_pairing_state: [], waiter_ai_cache: [],
@@ -95,6 +96,8 @@ beforeEach(() => {
 test('расчёт пар: правила, повтор без изменений, ручные и выключенные', async () => {
   const r1 = await svc.generateForRestaurant(R)
   assert.equal(r1.status, 'done')
+  const prompt = calls[0].map((m) => m.content).join(' ')
+  assert.ok(!prompt.includes('Сыр из лавки'), 'скрытое от гостя в парах не участвует')
   const pairs = db.tables.menu_pairings
   assert.deepEqual(pairs.map((p) => [p.dish_id, p.pair_dish_id]).sort(),
     [[id(1), id(2)], [id(1), id(3)], [id(2), id(4)]].sort(), 'вино отсеяно')

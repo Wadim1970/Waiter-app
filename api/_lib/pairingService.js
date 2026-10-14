@@ -31,7 +31,8 @@ const sha1 = (s) => crypto.createHash('sha1').update(s).digest('hex')
 async function loadMenu(restaurantId) {
   const { data, error } = await deps.supabase
     .from('menu_items')
-    .select('id, dish_name, description, cost_rub, menu_section, product_type, is_available, ingredients')
+    // '*' — чтобы работало и до миграции с is_hidden (колонки может не быть).
+    .select('*')
     .eq('restaurant_id', restaurantId)
   if (error) throw error
   return (data || []).map((mi) => ({
@@ -41,7 +42,8 @@ async function loadMenu(restaurantId) {
     price: Number(mi.cost_rub) || 0,
     section: mi.menu_section || '',
     productType: mi.product_type,
-    available: mi.is_available !== false,
+    // Скрытое от гостя (Лавка, комбо…) в парах не участвует.
+    available: mi.is_available !== false && mi.is_hidden !== true,
     ingredients: Array.isArray(mi.ingredients) ? mi.ingredients : [],
   }))
 }
