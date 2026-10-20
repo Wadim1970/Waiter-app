@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { resumeFreelancer } from '../../lib/demoAuth'
 import styles from './WelcomeScreen.module.css'
 
 const logoLetters = [
@@ -9,6 +11,20 @@ const logoLetters = [
 
 export default function WelcomeScreen() {
   const navigate = useNavigate()
+  const [checking, setChecking] = useState(false)
+
+  // Официант-фрилансер: если на телефоне уже есть его вход (в том числе
+  // отложенный на время демо-входа по коду) — сразу в приложение, к его
+  // сменам и истории; иначе — регистрация/вход по SMS.
+  const handleFreelancer = async () => {
+    if (checking) return
+    setChecking(true)
+    try {
+      navigate((await resumeFreelancer()) ? '/map' : '/register')
+    } finally {
+      setChecking(false)
+    }
+  }
 
   return (
     <main className={styles.container} aria-label="Экран приветствия">
@@ -54,12 +70,13 @@ export default function WelcomeScreen() {
       <div className={styles.registerSection}>
         <button
           type="button"
-          onClick={() => navigate('/register')}
+          onClick={handleFreelancer}
           className={styles.registerLink}
+          disabled={checking}
         >
-          Регистрация
+          Вход для фрилансеров
         </button>
-        <p className={styles.registerSubtext}>для ищущих подработку</p>
+        <p className={styles.registerSubtext}>регистрация и поиск смен</p>
       </div>
     </main>
   )

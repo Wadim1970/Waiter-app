@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { supabase, resolveWaiterId } from '../../lib/supabase'
+import { supabase, resolveWaiterId, getWaiterId } from '../../lib/supabase'
+import { isDemoWaiter } from '../../lib/demoAuth'
 
 export default function AuthCheck() {
   const navigate = useNavigate()
@@ -37,8 +38,11 @@ export default function AuthCheck() {
         // данных. Восстанавливаем кэш из БД, если он пуст.
         await resolveWaiterId()
 
-        // Редиректим в приложение только со стартовых страниц.
-        if (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/register') {
+        // На главный экран приложение больше не перескакивает само: при каждом
+        // открытии гость выбирает — «Вход» (по коду) или «Вход для
+        // фрилансеров» (WelcomeScreen сам вернёт сохранённый личный вход).
+        // С экрана регистрации уводим только уже вошедшего фрилансера.
+        if (location.pathname === '/register' && !isDemoWaiter(getWaiterId())) {
           navigate('/map', { replace: true })
         }
       } catch (err) {
