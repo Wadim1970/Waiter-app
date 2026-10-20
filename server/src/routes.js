@@ -4,6 +4,12 @@ import { normalizePhone, getOrCreateAuthUserByPhone, linkWaiterToAuthUser, setUs
 import { sendPushForCall } from './webpush.js'
 import { sendSmsCode, verifySmsCode } from './sms.js'
 
+// SMS — только на мобильный: Россия +7 9…, Казахстан +7 7…. Номер вида
+// «+7 890…» (гость набрал «8» после уже стоящего «+7») SMS-шлюз отбрасывает
+// как неверный — отвечаем понятной ошибкой сразу, не дёргая n8n.
+const MOBILE_RE = /^\+7[79]\d{9}$/
+const MOBILE_ERROR = 'Нужен мобильный номер: +7 9XX XXX XX XX'
+
 // Разрешённые типы файлов для документов официанта
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf'])
 
@@ -108,8 +114,8 @@ export async function routes(app) {
 
   app.post('/api/send-sms', async (req, reply) => {
     const phone = normalizePhone(req.body?.phone)
-    if (!/^\+7\d{10}$/.test(phone)) {
-      return reply.code(400).send({ error: 'Неверный формат телефона' })
+    if (!MOBILE_RE.test(phone)) {
+      return reply.code(400).send({ error: MOBILE_ERROR })
     }
 
     const result = await sendSmsCode(phone, (code) => `Ваш код для входа: ${code}`, 'waiter')
@@ -213,8 +219,8 @@ export async function routes(app) {
 
   app.post('/api/guest/send-sms', async (req, reply) => {
     const phone = normalizePhone(req.body?.phone)
-    if (!/^\+7\d{10}$/.test(phone)) {
-      return reply.code(400).send({ error: 'Неверный формат телефона' })
+    if (!MOBILE_RE.test(phone)) {
+      return reply.code(400).send({ error: MOBILE_ERROR })
     }
 
     const result = await sendSmsCode(phone, (code) => `Ваш код для участия в викторине RestAI: ${code}`, 'guest')
