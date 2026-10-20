@@ -26,17 +26,18 @@ export default function RegisterScreen() {
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
-    
-    // Разрешаем только цифры после +7
-    const numbers = value.replace(/\D/g, '')
-    
-    if (numbers.startsWith('7')) {
-      setPhone('+' + numbers)
-    } else if (!value) {
+    if (!value) {
       setPhone('')
-    } else {
-      setPhone('+7')
+      return
     }
+    // Только цифры после +7. Ведущую «8» (по привычке: 8 903…) и номер,
+    // вставленный целиком (8 903… / +7 903…), приводим к +7 9… — иначе
+    // выходило «+7 890…», и SMS-шлюз отбрасывал номер как неверный.
+    let digits = value.replace(/\D/g, '')
+    if (digits.startsWith('7')) digits = digits.slice(1)
+    if (digits.length === 11 && (digits[0] === '7' || digits[0] === '8')) digits = digits.slice(1)
+    else if (digits[0] === '8') digits = digits.slice(1)
+    setPhone('+7' + digits.slice(0, 10))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,6 +45,11 @@ export default function RegisterScreen() {
 
   if (!name.trim() || !phone.trim()) {
     alert('Пожалуйста, заполните все поля');
+    return;
+  }
+  // Мобильный: Россия +7 9…, Казахстан +7 7…
+  if (!/^\+7[79]\d{9}$/.test(phone.trim())) {
+    alert('Введите мобильный номер полностью: +7 9XX XXX XX XX');
     return;
   }
 
