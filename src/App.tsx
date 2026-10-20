@@ -2,6 +2,7 @@ import { lazy, Suspense, useState, useCallback } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import WelcomeScreen from './screens/Welcome/WelcomeScreen'
 import AuthCheck from './screens/Auth/AuthCheck'
+import LoginScreen from './screens/Auth/LoginScreen'
 import JobDetailsScreenEager from './screens/Map/JobDetailsScreen'
 import WaiterCallOverlay from './screens/shared/WaiterCallOverlay'
 import AppBadgeSync from './screens/shared/AppBadgeSync'
@@ -102,7 +103,7 @@ function App() {
       <Suspense fallback={<Loader />}>
         <Routes>
           <Route path="/" element={<WelcomeScreen />} />
-          <Route path="/login" element={<div>Login Screen (скоро)</div>} />
+          <Route path="/login" element={<LoginScreen />} />
           <Route path="/register" element={<RegisterScreen />} />
           <Route path="/verification" element={<VerificationScreen />} />
           <Route path="/registration" element={<RegistrationForm />} />

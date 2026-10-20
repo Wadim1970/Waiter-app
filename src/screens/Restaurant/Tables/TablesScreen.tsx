@@ -5,6 +5,7 @@ import { getMyTables, getAllTables, applySessionToTables } from '../../../lib/ta
 import type { TableWithSession, TableSessionRow } from '../../../lib/tables'
 import { hasConfirmedShiftToday } from '../../../lib/bookings'
 import { supabase, resolveWaiterId } from '../../../lib/supabase'
+import { isDemoWaiter } from '../../../lib/demoAuth'
 import TableCard from './TableCard'
 import Footer from '../../shared/Footer'
 import RestaurantAccessDeniedModal from '../../shared/RestaurantAccessDeniedModal'
@@ -33,6 +34,12 @@ export default function TablesScreen() {
   useEffect(() => {
     if (!waiterId || !restaurantId) return
     let cancelled = false
+    // Демо-официант (вход по коду) работает в тестовом ресторане без смены:
+    // сервер заводит её при входе, но если не вышло — столы всё равно нужны.
+    if (isDemoWaiter(waiterId)) {
+      setAuthorized(true)
+      return
+    }
     hasConfirmedShiftToday(waiterId, restaurantId).then(ok => {
       if (!cancelled) setAuthorized(ok)
     })
