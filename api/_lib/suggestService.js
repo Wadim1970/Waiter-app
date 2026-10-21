@@ -8,7 +8,7 @@
 import crypto from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 import {
-  rankCandidates, badgesFor, templatePitch, buildMessages, parsePitches,
+  rankCandidates, badgesFor, templatePitch, menuForPrompt, buildSuggestMessages, parsePicks,
   pickPools, buildRecommendMessages, parseRecommendText, templateSet, categoryOf,
   buildCoachMessages, parseCoachPolish,
 } from './suggestCore.js'
@@ -97,10 +97,11 @@ export async function deepseekChat(messages, { maxTokens = 700, timeoutMs = 6000
   }
 }
 
-async function callDeepSeek({ candidates, stage, tag, guest, cart }) {
-  const content = await deepseekChat(buildMessages({ candidates, stage, tag, guest, cart }))
-  return parsePitches(content, candidates)
-}
+// Модели отдаём всё меню (~9 тыс. токенов у «Сыроварни»): дольше, чем 12
+// кандидатов, поэтому таймауты шире. Первый тап по тегу всё равно отдаётся
+// из тёплого кэша (/warm).
+const LLM_TIMEOUT_MS = 12000
+const LLM_TEMPERATURE = 0.5
 
 // Рекомендательный набор для виджета «Подсказка от RestAI» — один связный текст.
 export async function recommendSet({ restaurantId, cartItemIds, guest }) {
@@ -108,15 +109,14 @@ export async function recommendSet({ restaurantId, cartItemIds, guest }) {
   const cartSet = new Set(cartItemIds || [])
   const cartNames = digest.filter((d) => cartSet.has(d.id)).map((d) => d.name)
   const pools = pickPools(digest, { exclude: cartItemIds || [] })
-
-  const hasAny = pools.main.length || pools.alco.length || pools.soft.length || pools.dessert.length
-  if (!hasAny) return { text: null, source: 'empty' }
+  const menu = menuForPrompt(digest)
+  if (menu.byNum.size === 0) return { text: null, source: 'empty' }
 
   if (!DEEPSEEK_KEY) return { text: templateSet(pools), source: 'fallback' }
 
   const raw = await deepseekChat(
-    buildRecommendMessages({ cart: cartNames, pools, guest }),
-    { maxTokens: 500, timeoutMs: 9000 },
+    buildRecommendMessages({ menu, cart: cartNames, guest }),
+    { maxTokens: 500, timeoutMs: LLM_TIMEOUT_MS, temperature: LLM_TEMPERATURE },
   ).catch(() => null)
   const text = parseRecommendText(raw)
   return text ? { text, source: 'llm' } : { text: templateSet(pools), source: 'fallback' }
@@ -154,25 +154,27 @@ export async function computeSuggestions({ restaurantId, stage, tag, guest, excl
   const cartHasMain = dg.some((d) => cartSet.has(d.id) && categoryOf(d) === 'main')
   const excludeMain = (!tag || tag === 'к заказу') && cartHasMain
 
-  // Широкий пул (ранжирован по марже/флагам дня) — из него ИИ САМ выбирает
-  // сочетания к заказу. Пул шире, чем показываем: даём модели простор выбора,
-  // а не навязываем ей топ-3 по марже.
-  const pool = rankCandidates(dg, { tag, exclude: fullExclude, limit: 12, excludeMain })
-  if (pool.length === 0) return { suggestions: [], source: 'empty' }
+  // ИИ выбирает сам по всему меню. Пул по тегу и выгоде — только запасной
+  // путь (нет ключа / сбой / пустой ответ); мейны в нём уже исключены, так что
+  // случайного «второго горячего» не будет.
+  const menu = menuForPrompt(dg)
+  const pool = rankCandidates(dg, { tag, exclude: fullExclude, limit: finalLimit, excludeMain })
 
   let picks = null
-  if (DEEPSEEK_KEY) {
-    picks = await callDeepSeek({ candidates: pool, stage, tag, guest, cart: cartNames }).catch(() => null)
+  if (DEEPSEEK_KEY && menu.byNum.size) {
+    const raw = await deepseekChat(
+      buildSuggestMessages({ menu, stage, tag, guest, cart: cartNames, offeredIds: exclude }),
+      { maxTokens: 700, timeoutMs: LLM_TIMEOUT_MS, temperature: LLM_TEMPERATURE },
+    ).catch(() => null)
+    picks = parsePicks(raw, menu, new Set(fullExclude))
   }
+  if (!picks && pool.length === 0) return { suggestions: [], source: 'empty' }
 
-  // ИИ выбрал сочетания → строим из ЕГО выбора, в его порядке предпочтения.
-  // Иначе (нет ключа / сбой / пусто) — топ по выгоде из того же чистого пула
-  // (мейны уже исключены, так что случайного «второго горячего» не будет).
-  const byId = new Map(pool.map((i) => [i.id, i]))
-  // fallback-приём = социальное доказательство (его использует templatePitch).
+  const byId = new Map(dg.map((i) => [i.id, i]))
+  // fallback-приём = вкусовое сочетание (так сформулирован templatePitch).
   const chosen = (picks && picks.length)
     ? picks.map((p) => ({ item: byId.get(p.dishId), pitch: p.pitch, addon: p.addon, technique: p.technique })).filter((x) => x.item)
-    : pool.slice(0, finalLimit).map((item) => ({ item, pitch: templatePitch(item), addon: null, technique: 'social_proof' }))
+    : pool.slice(0, finalLimit).map((item) => ({ item, pitch: templatePitch(item), addon: null, technique: 'taste_pairing' }))
 
   const suggestions = chosen.slice(0, finalLimit).map(({ item, pitch, addon, technique }) => ({
     dishId: item.id,
@@ -182,7 +184,7 @@ export async function computeSuggestions({ restaurantId, stage, tag, guest, excl
     addon: addon || null,
     reason: item.pushReason || null,
     badges: badgesFor(item),
-    technique: technique || (picks && picks.length ? null : 'social_proof'),
+    technique: technique || (picks && picks.length ? null : 'taste_pairing'),
     category: categoryOf(item),
   }))
 
@@ -201,8 +203,9 @@ export function cacheKey({ restaurantId, stage, tag, guest, cartItemIds }) {
     // основным блюдом в заказе; v6 — ИИ САМ выбирает сочетания из широкого пула
     // (а не пишет фразы к топ-3 по марже), тег «хит» → «к заказу»; v7 — учёт
     // предпочтений/ограничений гостя (исключаем неподходящее); v8 — pitch как
-    // скрипт продаж (директива + реплика в «…»), тег «закуски/салаты».
-    v: 8,
+    // скрипт продаж (директива + реплика в «…»), тег «закуски/салаты»; v9 —
+    // модель видит всё меню, короткие принципы, без выдуманных «хвалят».
+    v: 9,
     r: restaurantId,
     s: stage || '',
     t: tag || '',
