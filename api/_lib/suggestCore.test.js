@@ -81,3 +81,10 @@ test('parseRecommendText: offer+say, старый text, битый JSON не п�
   assert.equal(parseRecommendText('{"text":"Готовый текст"}'), 'Готовый текст')
   assert.equal(parseRecommendText('{"text":"Предложи «вино»}'), null)
 })
+
+test('состав блюда — в меню целиком; «напитки» — только безалкогольные', () => {
+  const menu = menuForPrompt([item('b', 'Борщ', 'Супы', 590, { description: 'Наваристый.', ingredients: ['свёкла', 'чеснок'] })])
+  assert.match(menu.text, /Борщ — 590 ₽\. Наваристый\. Состав: свёкла, чеснок/)
+  const [, user] = buildSuggestMessages({ menu, tag: 'напитки', cart: [] })
+  assert.match(user.content, /безалкогольные напитки/)
+})

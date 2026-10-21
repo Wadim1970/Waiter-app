@@ -31,7 +31,7 @@ export async function buildDigest(restaurantId) {
   const today = new Date().toISOString().slice(0, 10)
   const [items, costing, flags] = await Promise.all([
     supabase.from('menu_items')
-      .select('id, dish_name, description, cost_rub, menu_section, product_type, is_available')
+      .select('id, dish_name, description, ingredients, cost_rub, menu_section, product_type, is_available')
       .eq('restaurant_id', restaurantId)
       .eq('is_available', true),
     supabase.from('menu_item_costing')
@@ -58,6 +58,7 @@ export async function buildDigest(restaurantId) {
       id: mi.id,
       name: mi.dish_name,
       description: mi.description || '',
+      ingredients: Array.isArray(mi.ingredients) ? mi.ingredients : [],
       price: mi.cost_rub,
       section: mi.menu_section,
       productType: mi.product_type,
