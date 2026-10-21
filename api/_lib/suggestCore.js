@@ -132,9 +132,33 @@ const PRINCIPLES = `Ты — опытный официант и сомелье. 
 Как думать:
 - Смотри, что гость уже заказал, сколько людей за столом, какой повод и что гость не ест. Предлагай то, что действительно сделает заказ лучше: дополнит по вкусу, по сытности, по моменту (к горячему, к вину, на десерт, с собой). Хорошая подсказка — та, за которую гость скажет спасибо.
 - Не предлагай второе горячее к горячему, лишнего одному гостю и ничего, что противоречит ограничениям гостя.
+- Думай о моменте ужина: к одним закускам уместно горячее; к горячему — закуска, салат, гарнир, соус; десерт и кофе — когда гость доедает или сам о них спрашивает.
+- Не додумывай, кто за столом что ест и почему, — исходи только из того, что дано.
 - Пометка «приоритет» — блюдо выгодно ресторану: при прочих равных выбирай его, но уместность для гостя важнее. Гостю про выгоду не говори.
 - Говори только правду. Не утверждай, что блюдо популярно, его хвалят или осталась последняя порция, — этого мы не знаем. Пометка «заканчивается сегодня» — можно честно сказать, что его осталось немного; «спец дня от шефа» — что шеф рекомендует его сегодня.
-- Фраза для гостя — естественная, как сказал бы живой внимательный официант, без цен и без рекламных штампов.`
+- Фраза для гостя — естественная, как сказал бы живой внимательный официант: одно-два коротких предложения, до 25 слов, без цен и без рекламных штампов.`
+
+// Подсказка официанту собирается кодом из двух полей ответа модели: offer —
+// что предложить, say — дословная фраза гостю. Раньше модель писала всё одной
+// строкой и через раз теряла кавычки или вставляла «Скажи гостю:» — фраза
+// не выделялась, а официант оставался без готовой реплики.
+const OFFER_SAY_NOTE = `offer — коротко официанту, что предложить и почему (до 12 слов, без кавычек, без «скажи»).
+say — дословно, что официант скажет гостю (без кавычек вокруг).`
+
+function cleanSay(raw) {
+  return String(raw || '').trim()
+    .replace(/^(скажи(те)?( гостю)?|фраза( гостю)?|предложи(те)?)\s*:\s*/i, '')
+    .replace(/[«»"„“]/g, '')
+    .trim()
+}
+
+// offer + say → «Директива: «реплика»» (фронт выделяет текст в «…» жирным).
+export function composePitch(offer, say) {
+  const s = cleanSay(say)
+  if (!s) return null
+  const o = String(offer || '').trim().replace(/[«»"„“]/g, '').replace(/[\s.:;,—-]+$/, '')
+  return o ? `${o}: «${s}»` : `«${s}»`
+}
 
 const TECHNIQUE_NOTE = `technique — приём, если он в фразе есть: taste_pairing (сочетание вкусов), choice_no_choice (выбор из двух вариантов), scarcity (заканчивается — только по пометке), social_proof (не используй); иначе null.`
 
@@ -162,11 +186,11 @@ export function buildSuggestMessages({ menu, stage, tag, guest, cart, offeredIds
   const system = `${PRINCIPLES}
 - Лучше одно точное предложение, чем три случайных. Предложи от 1 до 3 блюд, лучшее первым.
 
-Формат каждой подсказки (pitch): сначала коротко официанту, что предложить (без кавычек), затем фраза для гостя в кавычках «…», одно-два предложения. Внутри «…» других кавычек не ставь.
+${OFFER_SAY_NOTE}
 addon — необязательная короткая вторая пара к этому блюду (например, к десерту — кофе) или null.
 ${TECHNIQUE_NOTE}
 
-Ответ — строго JSON: {"suggestions":[{"n":<номер блюда из меню>,"pitch":"…","technique":"…","addon":null}]}
+Ответ — строго JSON: {"suggestions":[{"n":<номер блюда из меню>,"offer":"…","say":"…","technique":"…","addon":null}]}
 
 Меню ресторана (номер. название — цена. описание [пометки]):
 ${menu.text}`
@@ -202,12 +226,13 @@ export function parsePicks(content, menu, banned = new Set()) {
   for (const x of arr) {
     const item = menu.byNum.get(Number(x?.n))
     if (!item || banned.has(item.id) || used.has(item.id)) continue
-    if (typeof x.pitch !== 'string' || !x.pitch.trim()) continue
+    const pitch = x.say ? composePitch(x.offer, x.say) : null
+    if (!pitch) continue
     used.add(item.id)
     const addon = x.addon && String(x.addon).trim()
     out.push({
       dishId: item.id,
-      pitch: x.pitch.trim(),
+      pitch,
       technique: TECHNIQUES.has(x.technique) ? x.technique : null,
       addon: addon && addon.toLowerCase() !== 'null' ? addon : null,
     })
@@ -219,9 +244,10 @@ export function parsePicks(content, menu, banned = new Set()) {
 export function buildRecommendMessages({ menu, cart, guest }) {
   const system = `${PRINCIPLES}
 
-Гость уже сделал заказ. Дай официанту ОДНУ короткую подсказку — одно-два лучших дополнения к этому заказу из меню, по точным названиям: сначала коротко, что предложить (без кавычек), затем фраза для гостя в кавычках «…». Всего 1–2 предложения. Внутри «…» других кавычек не ставь.
+Гость уже сделал заказ. Дай официанту ОДНУ подсказку — одно, максимум два лучших дополнения к этому заказу из меню, по точным названиям. Не перечисляй варианты.
+${OFFER_SAY_NOTE}
 
-Ответ — строго JSON: {"text":"…"}
+Ответ — строго JSON: {"offer":"…","say":"…"}
 
 Меню ресторана (номер. название — цена. описание [пометки]):
 ${menu.text}`
@@ -269,7 +295,9 @@ export function pickPools(digest, { exclude = [], perCategory = 3 } = {}) {
 export function parseRecommendText(content) {
   if (!content) return null
   let obj
-  try { obj = JSON.parse(content) } catch { return typeof content === 'string' && content.trim() ? content.trim() : null }
+  // Битый JSON не показываем официанту как есть (бывало «{"text":"…»).
+  try { obj = JSON.parse(content) } catch { return typeof content === 'string' && !content.trim().startsWith('{') && content.trim() ? content.trim() : null }
+  if (obj?.say) return composePitch(obj.offer, obj.say)
   const t = obj?.text ?? obj?.recommendation ?? null
   return typeof t === 'string' && t.trim() ? t.trim() : null
 }

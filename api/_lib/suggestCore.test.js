@@ -1,7 +1,7 @@
 // node --test api/_lib/suggestCore.test.js
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { menuForPrompt, buildSuggestMessages, buildRecommendMessages, parsePicks, templatePitch, templateSet, pickPools } from './suggestCore.js'
+import { menuForPrompt, buildSuggestMessages, buildRecommendMessages, parsePicks, parseRecommendText, composePitch, templatePitch, templateSet, pickPools } from './suggestCore.js'
 
 const item = (id, name, section, price, extra = {}) => ({ id, name, section, price, available: true, productType: 'food', description: '', dailyFlag: null, pushPriority: 0, ...extra })
 const digest = [
@@ -45,14 +45,14 @@ test('buildSuggestMessages: меню в system, заказ и «уже пред�
 test('parsePicks: номер → блюдо, отбрасывает выдуманное, запрещённое и повторы', () => {
   const menu = menuForPrompt(digest)
   const raw = JSON.stringify({ suggestions: [
-    { n: 99, pitch: 'x' },
-    { n: 3, pitch: 'Предложите стейк: «…»' },
-    { n: 2, pitch: 'Предложите салат: «к стейку — лёгкий салат?»', technique: 'taste_pairing', addon: 'null' },
-    { n: 2, pitch: 'повтор' },
-    { n: 4, pitch: '  ' },
+    { n: 99, offer: 'x', say: 'y' },
+    { n: 3, offer: 'Стейк', say: 'Стейк?' },
+    { n: 2, offer: 'Лёгкий салат к стейку.', say: 'К стейку — лёгкий салат с бурратой?', technique: 'taste_pairing', addon: 'null' },
+    { n: 2, offer: 'повтор', say: 'повтор' },
+    { n: 4, offer: 'Чизкейк', say: '  ' },
   ] })
   const out = parsePicks(raw, menu, new Set(['steak']))
-  assert.deepEqual(out, [{ dishId: 'salad', pitch: 'Предложите салат: «к стейку — лёгкий салат?»', technique: 'taste_pairing', addon: null }])
+  assert.deepEqual(out, [{ dishId: 'salad', pitch: 'Лёгкий салат к стейку: «К стейку — лёгкий салат с бурратой?»', technique: 'taste_pairing', addon: null }])
   assert.equal(parsePicks('не json', menu), null)
   assert.equal(parsePicks('{"suggestions":[]}', menu), null)
 })
@@ -61,11 +61,23 @@ test('buildRecommendMessages: всё меню, заказ гостя', () => {
   const menu = menuForPrompt(digest)
   const [sys, user] = buildRecommendMessages({ menu, cart: ['Борщ'], guest: null })
   assert.ok(sys.content.includes(menu.text))
-  assert.match(sys.content, /\{"text":"…"\}/)
+  assert.match(sys.content, /\{"offer":"…","say":"…"\}/)
   assert.match(user.content, /Уже в заказе: Борщ/)
 })
 
 test('шаблоны без ИИ не выдумывают популярность', () => {
   assert.ok(!/хвал|часто берут/.test(templatePitch(digest[1])))
   assert.ok(!/хвал|часто берут/.test(templateSet(pickPools(digest))))
+})
+
+test('composePitch: реплика всегда в одних «…», без «Скажи гостю:» и лишних кавычек', () => {
+  assert.equal(composePitch('Предложите морс', 'Скажи гостю: «К мясу — клюквенный морс?»'), 'Предложите морс: «К мясу — клюквенный морс?»')
+  assert.equal(composePitch('', 'Морс?'), '«Морс?»')
+  assert.equal(composePitch('Морс', '  '), null)
+})
+
+test('parseRecommendText: offer+say, старый text, битый JSON не показываем', () => {
+  assert.equal(parseRecommendText('{"offer":"К борщу — паштет","say":"Принести паштет с тостами?"}'), 'К борщу — паштет: «Принести паштет с тостами?»')
+  assert.equal(parseRecommendText('{"text":"Готовый текст"}'), 'Готовый текст')
+  assert.equal(parseRecommendText('{"text":"Предложи «вино»}'), null)
 })
