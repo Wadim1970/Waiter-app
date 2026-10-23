@@ -13,7 +13,7 @@ const PAGE = 1000
 const CHUNK = 150
 
 // PostgREST отдаёт не больше 1000 строк за раз — дочитываем страницами.
-async function selectAll(build) {
+export async function selectAll(build) {
   const out = []
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await build().range(from, from + PAGE - 1)
@@ -23,7 +23,7 @@ async function selectAll(build) {
   }
 }
 
-async function selectIn(table, cols, col, ids, extra = (q) => q) {
+export async function selectIn(table, cols, col, ids, extra = (q) => q) {
   const uniq = [...new Set((ids || []).filter(Boolean))]
   const out = []
   for (let i = 0; i < uniq.length; i += CHUNK) {
@@ -33,7 +33,7 @@ async function selectIn(table, cols, col, ids, extra = (q) => q) {
   return out
 }
 
-function groupBy(rows, key) {
+export function groupBy(rows, key) {
   const m = new Map()
   for (const r of rows) {
     const k = r[key]
@@ -43,7 +43,7 @@ function groupBy(rows, key) {
   return m
 }
 
-async function restaurantOf(restaurantId) {
+export async function restaurantOf(restaurantId) {
   const { data, error } = await deps.db.from('restaurants')
     .select('restaurantId, name, timezone').eq('restaurantId', restaurantId).maybeSingle()
   if (error) throw error
@@ -59,7 +59,7 @@ export function httpError(status, message) {
 
 const TABLE_COLS = 'id, number, zone, capacity, is_active, layout_x, layout_y, layout_w, layout_h, layout_shape, layout_rotation'
 
-async function tablesOf(restaurantId, { includeInactive = false } = {}) {
+export async function tablesOf(restaurantId, { includeInactive = false } = {}) {
   let q = deps.db.from('tables').select(TABLE_COLS).eq('restaurant_id', restaurantId).order('number')
   if (!includeInactive) q = q.eq('is_active', true)
   const { data, error } = await q
@@ -73,14 +73,14 @@ const layoutOf = (t) => (t.layout_x == null || t.layout_y == null ? null : {
   shape: t.layout_shape || null, rotation: t.layout_rotation || 0,
 })
 
-async function waitersByIds(ids) {
+export async function waitersByIds(ids) {
   const rows = await selectIn('waiters', 'id, display_name, first_name, last_name', 'id', ids)
   return new Map(rows.map((w) => [w.id, w]))
 }
 
 // Официанты ресторана — для выбора при закреплении стола: штатные, кто уже
 // закреплялся за его столами и кто выходил на смены за последние 60 дней.
-async function restaurantWaiters(restaurantId, tableIds, extraIds = []) {
+export async function restaurantWaiters(restaurantId, tableIds, extraIds = []) {
   const since = addDays(new Date().toISOString().slice(0, 10), -60)
   const [staff, assigned, shifts] = await Promise.all([
     selectAll(() => deps.db.from('waiters').select('id').eq('restaurant_id', restaurantId)),
@@ -92,7 +92,7 @@ async function restaurantWaiters(restaurantId, tableIds, extraIds = []) {
 }
 
 // Сырые данные дня по набору столов: посадки, заказы, позиции, вызовы, ИИ-события.
-async function loadDay(tableIds, day, { withNames = false } = {}) {
+export async function loadDay(tableIds, day, { withNames = false } = {}) {
   // Посадка могла начаться до 06:00 (ночь) — берём с запасом и фильтруем по пересечению.
   const lookback = new Date(day.from.getTime() - 12 * 3600_000).toISOString()
   const sessions = (await selectIn('table_sessions',
@@ -104,7 +104,7 @@ async function loadDay(tableIds, day, { withNames = false } = {}) {
   const orders = await selectIn('orders', 'id, table_id, table_session_id, status, created_at', 'table_id', tableIds,
     (q) => q.gte('created_at', lookback).lt('created_at', day.to.toISOString()))
   const orderIds = orders.map((o) => o.id)
-  const items = await selectIn('order_items', 'id, order_id, item_id, seat_number, quantity, unit_price, status, comment', 'order_id', orderIds)
+  const items = await selectIn('order_items', 'id, order_id, item_id, seat_number, quantity, unit_price, status, comment, sent_at', 'order_id', orderIds)
   const mods = await selectIn('order_item_modifiers', 'order_item_id, modifier_id, price_delta', 'order_item_id', items.map((i) => i.id))
   const calls = await selectIn('waiter_calls', 'id, table_id, status, created_at, acknowledged_at, acknowledged_by, reason, kind', 'table_id', tableIds,
     (q) => q.gte('created_at', lookback).lt('created_at', day.to.toISOString()))
@@ -128,7 +128,7 @@ async function loadDay(tableIds, day, { withNames = false } = {}) {
   }
 }
 
-function sessionContext(session, raw, extra) {
+export function sessionContext(session, raw, extra) {
   const now = deps.now()
   const orders = ordersOfSession(session, raw.orders, { now })
   return {
