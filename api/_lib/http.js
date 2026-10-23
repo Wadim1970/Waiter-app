@@ -24,10 +24,10 @@ export function bodyOf(req) {
   return req.body || {}
 }
 
-// Токен админки — PAIRINGS_ADMIN_TOKEN в окружении сервера. Без него
-// админские функции выключены совсем.
+// Токен админки — ADMIN_TOKEN (или прежний PAIRINGS_ADMIN_TOKEN) в окружении
+// сервера. Без него админские функции выключены совсем.
 export function isAdmin(req) {
-  const expected = process.env.PAIRINGS_ADMIN_TOKEN || ''
+  const expected = process.env.ADMIN_TOKEN || process.env.PAIRINGS_ADMIN_TOKEN || ''
   const got = String(req.headers['x-admin-token'] || '')
   if (!expected || got.length !== expected.length) return false
   return crypto.timingSafeEqual(Buffer.from(got), Buffer.from(expected))
