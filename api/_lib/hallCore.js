@@ -119,6 +119,10 @@ export function buildSession(session, ctx) {
   items.sort((a, b) => (a.seat ?? 99) - (b.seat ?? 99))
 
   const seats = new Set(items.map((i) => i.seat).filter((s) => s != null))
+  // Через сколько после посадки ушёл на кухню первый заказ.
+  const firstSent = orders.flatMap((o) => (itemsByOrder.get(o.id) || []).map((it) => it.sent_at)).filter(Boolean)
+    .map((t) => new Date(t).getTime()).sort((a, b) => a - b)[0]
+  const firstOrderMin = firstSent ? Math.max(0, Math.round((firstSent - new Date(session.started_at).getTime()) / 60000)) : null
   const waiter = resolveSessionWaiter(session, {
     eventWaiterIds: events.map((e) => e.waiter_id),
     assignedWaiterId,
@@ -145,6 +149,7 @@ export function buildSession(session, ctx) {
     billType: session.bill_type || null,
     durationMin: minutesBetween(session.started_at, end),
     guestCount: session.guest_count || seats.size || null,
+    firstOrderMin,
     waiter: { id: waiter.id, name: waiterName(waiters.get(waiter.id)), inferred: waiter.inferred },
     total,
     items,
