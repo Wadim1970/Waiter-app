@@ -6,18 +6,17 @@ import { generateForRestaurant, generateAll, getState } from '../_lib/pairingSer
 //        он идёт минуту-две, столько nginx соединение не держит. Без
 //        restaurantId — по всем ресторанам (так зовёт cron).
 //   GET  ?restaurantId=…          — состояние последнего расчёта.
-// Нужен заголовок X-Admin-Token.
+// Учебный ресторан — без входа; другие рестораны и пересчёт по всем (cron) —
+// с заголовком X-Admin-Token.
 
 export default async function handler(req, res) {
   if (cors(req, res, 'GET, POST, OPTIONS')) return
-  if (!isAdmin(req)) {
-    res.status(401).json({ error: 'Нужен токен админки' })
-    return
-  }
+  const denied = () => res.status(401).json({ error: 'Нет доступа к кабинету этого ресторана' })
 
   if (req.method === 'GET') {
     const restaurantId = String(req.query.restaurantId || '')
     if (!isUuid(restaurantId)) { res.status(400).json({ error: 'restaurantId обязателен' }); return }
+    if (!isAdmin(req, restaurantId)) { denied(); return }
     res.status(200).json({ state: await getState(restaurantId) })
     return
   }
@@ -27,6 +26,8 @@ export default async function handler(req, res) {
   const force = body.force === true
   const restaurantId = body.restaurantId ? String(body.restaurantId) : ''
   if (restaurantId && !isUuid(restaurantId)) { res.status(400).json({ error: 'Неверный restaurantId' }); return }
+  // Без restaurantId — пересчёт по всем ресторанам: только с токеном (cron).
+  if (!isAdmin(req, restaurantId)) { denied(); return }
 
   res.status(202).json({ started: true, restaurantId: restaurantId || 'all' })
 

@@ -6,19 +6,19 @@ import { listPairs, updatePair, addManualPair, deletePair } from '../_lib/pairin
 //   POST   {restaurantId, dishId, pairDishId, lead, reason} — ручная пара
 //   PATCH  {restaurantId, id, status?, lead?, reason?}      — выключить/включить, поправить текст
 //   DELETE {restaurantId, id}                      — удалить ручную пару
-// Нужен заголовок X-Admin-Token.
+// Учебный ресторан — без входа, остальные — с заголовком X-Admin-Token.
 
 export default async function handler(req, res) {
   if (cors(req, res)) return
-  if (!isAdmin(req)) {
-    res.status(401).json({ error: 'Нужен токен админки' })
-    return
-  }
 
   const body = req.method === 'GET' ? {} : bodyOf(req)
   const restaurantId = String(req.method === 'GET' ? req.query.restaurantId || '' : body.restaurantId || '')
   if (!isUuid(restaurantId)) {
     res.status(400).json({ error: 'restaurantId обязателен' })
+    return
+  }
+  if (!isAdmin(req, restaurantId)) {
+    res.status(401).json({ error: 'Нет доступа к кабинету этого ресторана' })
     return
   }
 
