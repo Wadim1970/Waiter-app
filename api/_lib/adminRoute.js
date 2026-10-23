@@ -1,16 +1,12 @@
 import { cors, bodyOf, isAdmin, isUuid } from './http.js'
 
-// Обёртка для функций админки: CORS, токен, restaurantId, ошибки.
+// Обёртка для функций админки: CORS, restaurantId, доступ, ошибки.
 // handlers — { GET: ({ query, body, restaurantId }) => result, POST: …, … }.
 // Ошибка с полем status (400/404/409) уходит админке текстом как есть,
 // остальные — в лог сервера и «ошибка сервера».
 export function adminRoute(name, handlers) {
   return async function handler(req, res) {
     if (cors(req, res)) return
-    if (!isAdmin(req)) {
-      res.status(401).json({ error: 'Нужен токен админки' })
-      return
-    }
     const run = handlers[req.method]
     if (!run) {
       res.status(405).json({ error: 'Метод не поддерживается' })
@@ -21,6 +17,10 @@ export function adminRoute(name, handlers) {
     const restaurantId = String(query.restaurantId || body.restaurantId || '')
     if (!isUuid(restaurantId)) {
       res.status(400).json({ error: 'restaurantId обязателен' })
+      return
+    }
+    if (!isAdmin(req, restaurantId)) {
+      res.status(401).json({ error: 'Нет доступа к кабинету этого ресторана' })
       return
     }
     try {

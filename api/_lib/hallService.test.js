@@ -192,3 +192,19 @@ test('HTTP: токен, restaurantId, ошибки с кодом', async () => {
   assert.equal(ok.statusCode, 200)
   assert.equal(ok.body.guestCount, 5)
 })
+
+test('доступ: учебный ресторан — без токена, остальные — только с токеном', async () => {
+  const { isAdmin } = await import('./http.js')
+  const req = (token) => ({ headers: token ? { 'x-admin-token': token } : {} })
+  process.env.ADMIN_TOKEN = 'secret-token'
+  delete process.env.ADMIN_OPEN_RESTAURANTS
+  assert.equal(isAdmin(req(), 'dd89773c-0952-4fd1-9510-514094a928ee'), true)
+  assert.equal(isAdmin(req(), R), false)
+  assert.equal(isAdmin(req(), ''), false) // действия по всем ресторанам
+  assert.equal(isAdmin(req('secret-token'), R), true)
+  process.env.ADMIN_OPEN_RESTAURANTS = ''
+  assert.equal(isAdmin(req(), 'dd89773c-0952-4fd1-9510-514094a928ee'), false)
+  process.env.ADMIN_OPEN_RESTAURANTS = `${R}, other`
+  assert.equal(isAdmin(req(), R), true)
+  delete process.env.ADMIN_OPEN_RESTAURANTS
+})

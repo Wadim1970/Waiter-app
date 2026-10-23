@@ -24,9 +24,20 @@ export function bodyOf(req) {
   return req.body || {}
 }
 
-// Токен админки — ADMIN_TOKEN (или прежний PAIRINGS_ADMIN_TOKEN) в окружении
-// сервера. Без него админские функции выключены совсем.
-export function isAdmin(req) {
+// Учебный ресторан «Сыроварня» — его кабинет открыт без входа, пока нет
+// входа в личный кабинет ресторана. Список меняется в окружении сервера
+// (ADMIN_OPEN_RESTAURANTS, через запятую; пустая строка — закрыть все).
+const DEMO_RESTAURANT_ID = 'dd89773c-0952-4fd1-9510-514094a928ee'
+function openRestaurants() {
+  const raw = process.env.ADMIN_OPEN_RESTAURANTS ?? DEMO_RESTAURANT_ID
+  return new Set(raw.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean))
+}
+
+// Доступ к функциям админки: кабинет открытого ресторана — без токена;
+// любой другой ресторан и действия по всем ресторанам (cron) — только с
+// токеном ADMIN_TOKEN (или прежним PAIRINGS_ADMIN_TOKEN) в X-Admin-Token.
+export function isAdmin(req, restaurantId = '') {
+  if (restaurantId && openRestaurants().has(String(restaurantId).toLowerCase())) return true
   const expected = process.env.ADMIN_TOKEN || process.env.PAIRINGS_ADMIN_TOKEN || ''
   const got = String(req.headers['x-admin-token'] || '')
   if (!expected || got.length !== expected.length) return false
