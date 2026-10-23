@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { supabase, getWaiterId } from './supabase'
 
 export type LoadedOrderItem = {
   id: string
@@ -44,15 +44,20 @@ export async function updateTableSessionStatus(
   status: 'free' | 'occupied' | 'preparing' | 'resting' | 'bill_requested' | 'call',
   guestCount?: number,
 ): Promise<string | null> {
+  // Кто ведёт стол — для истории стола и аналитики официантов в админке.
+  // Посадку, открытую гостем (QR), «забирает» первый официант, который её
+  // тронул; без него база ставит закреплённого за столом.
+  const waiterId = getWaiterId()
   const { data: existing } = await supabase
     .from('table_sessions')
-    .select('id')
+    .select('id, waiter_id')
     .eq('table_id', tableId)
     .eq('is_active', true)
     .maybeSingle()
 
   if (existing) {
     const updates: Record<string, unknown> = { status }
+    if (!existing.waiter_id && waiterId) updates.waiter_id = waiterId
     if (status === 'free') {
       updates.is_active = false
       updates.ended_at = new Date().toISOString()
@@ -66,6 +71,7 @@ export async function updateTableSessionStatus(
       .insert({
         table_id: tableId, status, is_active: true,
         started_at: new Date().toISOString(),
+        ...(waiterId ? { waiter_id: waiterId } : {}),
         ...(guestCount !== undefined ? { guest_count: guestCount } : {}),
       })
       .select('id')
