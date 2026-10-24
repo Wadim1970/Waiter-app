@@ -26,9 +26,13 @@ function seed() {
       { id: T2, restaurant_id: R, number: 2, zone: 'main', capacity: 2, is_active: true },
     ],
     waiters: [
-      { id: ANNA, restaurant_id: R, first_name: 'Анна', last_name: 'Петрова', employment_type: 'staff' },
-      { id: SERGEY, restaurant_id: null, first_name: 'Сергей', last_name: 'Иванов', employment_type: 'freelance' },
-      { id: IDLE, restaurant_id: R, first_name: 'Ольга', last_name: 'Смирнова' },
+      { id: ANNA, first_name: 'Анна', last_name: 'Петрова' },
+      { id: SERGEY, first_name: 'Сергей', last_name: 'Иванов' },
+      { id: IDLE, first_name: 'Ольга', last_name: 'Смирнова' },
+    ],
+    restaurant_staff: [
+      { waiter_id: ANNA, restaurant_id: R, hire_date: '2026-01-10', dismissal_date: null },
+      { waiter_id: IDLE, restaurant_id: R, hire_date: '2026-02-01', dismissal_date: null },
     ],
     waiter_table_assignments: [
       // Стол 2 22.10 закреплён за Сергеем — его посадка без записи уйдёт ему.
@@ -174,6 +178,7 @@ test('карточка официанта: сравнение с рестора�
 })
 
 test('карточка: чужой официант — 404', async () => {
-  hall.deps.db.tables.waiters.push({ id: 'b0000000-0000-0000-0000-000000000009', restaurant_id: '22222222-2222-2222-2222-222222222222', first_name: 'Чужой' })
+  hall.deps.db.tables.waiters.push({ id: 'b0000000-0000-0000-0000-000000000009', first_name: 'Чужой' })
+  hall.deps.db.tables.restaurant_staff.push({ waiter_id: 'b0000000-0000-0000-0000-000000000009', restaurant_id: '22222222-2222-2222-2222-222222222222', hire_date: '2026-01-01', dismissal_date: null })
   await assert.rejects(() => svc.getWaiterStats(R, 'b0000000-0000-0000-0000-000000000009', '2026-10-22', '2026-10-23'), (e) => e.status === 404)
 })

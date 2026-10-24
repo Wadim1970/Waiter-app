@@ -156,14 +156,22 @@ export async function getStaff(restaurantId, from, to) {
 export async function getWaiterStats(restaurantId, waiterId, from, to) {
   const data = await loadPeriod(restaurantId, from, to)
   const { data: w, error } = await deps.db.from('waiters')
-    .select('id, display_name, first_name, last_name, employment_type, restaurant_id, rating, personal_photo_1_url, hire_date')
+    .select('id, display_name, first_name, last_name, rating, personal_photo_1_url')
     .eq('id', waiterId).maybeSingle()
   if (error) throw error
   if (!w) throw httpError(404, 'Официант не найден')
+  // Штатная работа в этом ресторане (в т. ч. прошлая): тип «постоянный» выводится из неё,
+  // а не хранится у человека — один официант может быть штатным здесь и фрилансером в другом месте.
+  const { data: staffRows, error: staffErr } = await deps.db.from('restaurant_staff')
+    .select('restaurant_id, hire_date, dismissal_date')
+    .eq('waiter_id', waiterId).eq('restaurant_id', restaurantId)
+  if (staffErr) throw staffErr
+  const here = [...(staffRows || [])].sort((a, b) => String(b.hire_date).localeCompare(String(a.hire_date)))
+  const current = here.find((r) => !r.dismissal_date) || null
   const m = metricsFor(waiterId, data)
   const worked = m.sessions > 0 || data.events.some((e) => e.waiter_id === waiterId)
     || data.shifts.some((s) => s.waiter_id === waiterId) || data.assignRows.some((a) => a.waiter_id === waiterId)
-  if (!worked && w.restaurant_id !== restaurantId) {
+  if (!worked && !here.length) {
     // Официант этого ресторана ни разу не касался — не показываем чужих.
     const known = await restaurantWaiters(restaurantId, data.tableIds, [])
     if (!known.has(waiterId)) throw httpError(404, 'Официант не работал в этом ресторане')
@@ -178,10 +186,10 @@ export async function getWaiterStats(restaurantId, waiterId, from, to) {
     waiter: {
       id: w.id,
       name: waiterName(w),
-      employmentType: w.employment_type || null,
-      staff: w.restaurant_id === restaurantId,
+      employmentType: current ? 'permanent' : 'freelance',
+      staff: Boolean(current),
       photo: w.personal_photo_1_url || null,
-      hireDate: w.hire_date || null,
+      hireDate: (current || here[0])?.hire_date || null,
     },
     totals: strip(m),
     restaurantTotals: restaurantMetrics(data, allIds),

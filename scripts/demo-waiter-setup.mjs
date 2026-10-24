@@ -88,7 +88,6 @@ if (!waiterId) {
     const { data, error } = await db.from('waiters').insert({
       phone: cfg.phone,
       first_name: cfg.name,
-      employment_type: 'freelance',
       phone_verified: true,
       auth_user_id: user.id,
     }).select('id').single()

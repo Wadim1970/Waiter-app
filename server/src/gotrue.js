@@ -97,7 +97,6 @@ export async function linkWaiterToAuthUser({ phone, authUserId }) {
     .insert({
       phone,
       first_name: '',
-      employment_type: 'freelance',
       phone_verified: true,
       auth_user_id: authUserId,
     })
