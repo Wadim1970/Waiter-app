@@ -1,10 +1,11 @@
-import { cors, bodyOf, isAdmin, isUuid } from './http.js'
+import { cors, bodyOf, isAdmin, hasAdminToken, isUuid } from './http.js'
 
 // Обёртка для функций админки: CORS, restaurantId, доступ, ошибки.
+// strict: true — только по токену администратора, без открытого учебного ресторана.
 // handlers — { GET: ({ query, body, restaurantId }) => result, POST: …, … }.
 // Ошибка с полем status (400/404/409) уходит админке текстом как есть,
 // остальные — в лог сервера и «ошибка сервера».
-export function adminRoute(name, handlers) {
+export function adminRoute(name, handlers, { strict = false } = {}) {
   return async function handler(req, res) {
     if (cors(req, res)) return
     const run = handlers[req.method]
@@ -19,12 +20,12 @@ export function adminRoute(name, handlers) {
       res.status(400).json({ error: 'restaurantId обязателен' })
       return
     }
-    if (!isAdmin(req, restaurantId)) {
+    if (!(strict ? hasAdminToken(req) : isAdmin(req, restaurantId))) {
       res.status(401).json({ error: 'Нет доступа к кабинету этого ресторана' })
       return
     }
     try {
-      res.status(200).json(await run({ query, body, restaurantId }))
+      res.status(200).json(await run({ query, body, restaurantId, req }))
     } catch (err) {
       if (err?.status) {
         res.status(err.status).json({ error: err.message })

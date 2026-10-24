@@ -38,6 +38,12 @@ function openRestaurants() {
 // токеном ADMIN_TOKEN (или прежним PAIRINGS_ADMIN_TOKEN) в X-Admin-Token.
 export function isAdmin(req, restaurantId = '') {
   if (restaurantId && openRestaurants().has(String(restaurantId).toLowerCase())) return true
+  return hasAdminToken(req)
+}
+
+// Только токен администратора — без исключения для открытого учебного
+// ресторана. Для данных, которые нельзя отдавать без входа (QR допуска к смене).
+export function hasAdminToken(req) {
   const expected = process.env.ADMIN_TOKEN || process.env.PAIRINGS_ADMIN_TOKEN || ''
   const got = String(req.headers['x-admin-token'] || '')
   if (!expected || got.length !== expected.length) return false
