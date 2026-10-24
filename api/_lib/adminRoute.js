@@ -24,7 +24,7 @@ export function adminRoute(name, handlers) {
       return
     }
     try {
-      res.status(200).json(await run({ query, body, restaurantId }))
+      res.status(200).json(await run({ query, body, restaurantId, req }))
     } catch (err) {
       if (err?.status) {
         res.status(err.status).json({ error: err.message })
