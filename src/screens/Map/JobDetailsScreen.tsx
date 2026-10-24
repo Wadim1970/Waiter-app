@@ -68,8 +68,8 @@ const minSwipeDistance = 50
     const [restaurantResult, jobsResult, reviewsResult] = await Promise.all([
       supabaseRestaurants
         .from('restaurants')
-        .select('restaurantId, name, address, rating_staff, number_of_voters, photo_hall')
-        .eq('restaurantId', restaurantId)
+        .select('id, name, address, rating_staff, number_of_voters, photo_hall')
+        .eq('id', restaurantId)
         .single(),
       
       supabaseRestaurants
@@ -98,7 +98,7 @@ const minSwipeDistance = 50
     
     const result: RestaurantDetails = {
       restaurant: {
-        id: restaurantResult.data.restaurantId,
+        id: restaurantResult.data.id,
         name: restaurantResult.data.name,
         address: restaurantResult.data.address,
         rating_staff: restaurantResult.data.rating_staff,

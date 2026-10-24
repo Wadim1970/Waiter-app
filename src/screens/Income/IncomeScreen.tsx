@@ -174,7 +174,7 @@ export default function IncomeScreen() {
 
       const [{ data: restaurants }, { data: jobs }, { data: prevJobs }] = await Promise.all([
         restaurantIds.length
-          ? supabase.from('restaurants').select('"restaurantId", name').in('"restaurantId"', restaurantIds)
+          ? supabase.from('restaurants').select('id, name').in('id', restaurantIds)
           : Promise.resolve({ data: [] as any[] }),
         jobIds.length
           ? supabase.from('jobs').select('id, pay_amount').in('id', jobIds)
@@ -184,7 +184,7 @@ export default function IncomeScreen() {
           : Promise.resolve({ data: [] as any[] }),
       ])
 
-      const restaurantMap = Object.fromEntries((restaurants ?? []).map((r: any) => [r.restaurantId, r.name]))
+      const restaurantMap = Object.fromEntries((restaurants ?? []).map((r: any) => [r.id, r.name]))
       const jobMap = Object.fromEntries((jobs ?? []).map((j: any) => [j.id, j.pay_amount ?? 0]))
       const prevJobMap = Object.fromEntries((prevJobs ?? []).map((j: any) => [j.id, j.pay_amount ?? 0]))
 

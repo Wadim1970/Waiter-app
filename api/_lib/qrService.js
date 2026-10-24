@@ -54,8 +54,8 @@ function shareUrl(base, restaurantId, date) {
 
 async function loadRestaurant(restaurantId) {
   const { data, error } = await deps.db.from('restaurants')
-    .select('restaurantId, name, timezone, qr_reset_time')
-    .eq('restaurantId', restaurantId).maybeSingle()
+    .select('id, name, timezone, qr_reset_time')
+    .eq('id', restaurantId).maybeSingle()
   if (error) throw error
   if (!data) throw httpError(404, 'Ресторан не найден')
   return data

@@ -17,8 +17,8 @@ const NOW = new Date('2026-10-24T08:00:00Z')
 function seed() {
   return fakeDb({
     restaurants: [
-      { restaurantId: R, name: 'Сыроварня', timezone: 'Europe/Moscow', qr_reset_time: '06:00:00' },
-      { restaurantId: OTHER, name: 'Гастро Паб', timezone: 'Europe/Moscow', qr_reset_time: '06:00:00' },
+      { id: R, name: 'Сыроварня', timezone: 'Europe/Moscow', qr_reset_time: '06:00:00' },
+      { id: OTHER, name: 'Гастро Паб', timezone: 'Europe/Moscow', qr_reset_time: '06:00:00' },
     ],
     restaurant_daily_tokens: [
       { restaurant_id: R, token: 'old-token-23', valid_date: '2026-10-23', created_at: '2026-10-23T03:00:00Z' },

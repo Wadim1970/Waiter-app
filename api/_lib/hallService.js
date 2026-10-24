@@ -45,10 +45,10 @@ export function groupBy(rows, key) {
 
 export async function restaurantOf(restaurantId) {
   const { data, error } = await deps.db.from('restaurants')
-    .select('restaurantId, name, timezone').eq('restaurantId', restaurantId).maybeSingle()
+    .select('id, name, timezone').eq('id', restaurantId).maybeSingle()
   if (error) throw error
   if (!data) throw httpError(404, 'Ресторан не найден')
-  return { id: data.restaurantId, name: data.name, timezone: data.timezone || DEFAULT_TZ }
+  return { id: data.id, name: data.name, timezone: data.timezone || DEFAULT_TZ }
 }
 
 export function httpError(status, message) {

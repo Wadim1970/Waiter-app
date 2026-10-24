@@ -20,7 +20,7 @@ const NOW = new Date('2026-10-23T17:00:00Z') // 23.10, 20:00 МСК
 
 function seed() {
   return fakeDb({
-    restaurants: [{ restaurantId: R, name: 'Сыроварня', timezone: 'Europe/Moscow' }],
+    restaurants: [{ id: R, name: 'Сыроварня', timezone: 'Europe/Moscow' }],
     tables: [
       { id: T1, restaurant_id: R, number: 1, zone: 'main', capacity: 4, is_active: true },
       { id: T2, restaurant_id: R, number: 2, zone: 'main', capacity: 2, is_active: true },

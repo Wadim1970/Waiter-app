@@ -105,7 +105,7 @@ export default function MenuScreen() {
     supabaseRestaurants
       .from('restaurants')
       .select('branding_primary_color, branding_price_bg_color, branding_background_color')
-      .eq('restaurantId', restaurantId)
+      .eq('id', restaurantId)
       .maybeSingle()
       .then(({ data }) => {
         if (data) setBrand({
