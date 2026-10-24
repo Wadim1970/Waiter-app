@@ -49,7 +49,7 @@ async function loadMenu(restaurantId) {
 }
 
 async function restaurantName(restaurantId) {
-  const { data } = await deps.supabase.from('restaurants').select('name').eq('restaurantId', restaurantId).maybeSingle()
+  const { data } = await deps.supabase.from('restaurants').select('name').eq('id', restaurantId).maybeSingle()
   return data?.name || ''
 }
 
@@ -185,11 +185,11 @@ export async function generateForRestaurant(restaurantId, { force = false } = {}
 }
 
 export async function generateAll({ force = false } = {}) {
-  const { data, error } = await deps.supabase.from('restaurants').select('"restaurantId"')
+  const { data, error } = await deps.supabase.from('restaurants').select('id')
   if (error) throw error
   const out = []
   for (const r of data || []) {
-    const id = r.restaurantId
+    const id = r.id
     if (!id) continue
     try {
       out.push({ restaurantId: id, ...(await generateForRestaurant(id, { force })) })

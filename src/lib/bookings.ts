@@ -34,7 +34,7 @@ export interface Job {
 }
 
 export interface Restaurant {
-  restaurantId: string
+  id: string
   name: string
   address: string
   rating_staff: number

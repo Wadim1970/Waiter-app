@@ -316,7 +316,7 @@ const handleCloseDetails = () => {
       {/* МОДАЛЬНОЕ ОКНО С ДЕТАЛЯМИ СМЕНЫ */}
 {selectedShift && (
   <JobDetailsScreen
-    restaurantId={selectedShift.job.restaurant.restaurantId}
+    restaurantId={selectedShift.job.restaurant.id}
     shiftDate={selectedShift.job.shift_date}
     onClose={handleCloseDetails}
   />

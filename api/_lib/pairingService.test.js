@@ -68,7 +68,7 @@ beforeEach(() => {
       mi(5, 'Бокал вина', 'Вино', 450, { product_type: 'alcohol' }),
       mi(6, 'Сыр из лавки', 'Сыры', 300, { is_hidden: true }),
     ],
-    restaurants: [{ restaurantId: R, name: 'Тест' }],
+    restaurants: [{ id: R, name: 'Тест' }],
     menu_pairings: [], menu_pairing_state: [], waiter_ai_cache: [],
     guests: [{ id: 7, dislikes: 'орехи', preferences: { top_dishes: [{ name: 'Лимонад' }], sections: { Напитки: 4 } } }],
   }, { guest_id_for_device: ({ p_device_id }) => (p_device_id === 'dev-known' ? 7 : null) })

@@ -84,7 +84,7 @@ const fetchRestaurantsForDate = async (dateString: string): Promise<Restaurant[]
     const { data, error } = await supabaseRestaurants
       .from('restaurants')
       .select(`
-        restaurantId,
+        id,
         name,
         address,
         latitude,
@@ -113,9 +113,9 @@ const fetchRestaurantsForDate = async (dateString: string): Promise<Restaurant[]
     const restaurantsMap = new Map<string, Restaurant>()
     
     data?.forEach((item: any) => {
-      if (!restaurantsMap.has(item.restaurantId)) {
-        restaurantsMap.set(item.restaurantId, {
-          restaurantId: item.restaurantId,
+      if (!restaurantsMap.has(item.id)) {
+        restaurantsMap.set(item.id, {
+          restaurantId: item.id,
           name: item.name,
           address: item.address,
           latitude: parseFloat(item.latitude),
@@ -126,7 +126,7 @@ const fetchRestaurantsForDate = async (dateString: string): Promise<Restaurant[]
         })
       }
       
-      const restaurant = restaurantsMap.get(item.restaurantId)!
+      const restaurant = restaurantsMap.get(item.id)!
       
       if (item.jobs && Array.isArray(item.jobs)) {
         item.jobs.forEach((job: any) => {
