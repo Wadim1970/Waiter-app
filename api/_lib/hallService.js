@@ -83,11 +83,11 @@ export async function waitersByIds(ids) {
 export async function restaurantWaiters(restaurantId, tableIds, extraIds = []) {
   const since = addDays(new Date().toISOString().slice(0, 10), -60)
   const [staff, assigned, shifts] = await Promise.all([
-    selectAll(() => deps.db.from('waiters').select('id').eq('restaurant_id', restaurantId)),
+    selectAll(() => deps.db.from('restaurant_staff').select('waiter_id, dismissal_date').eq('restaurant_id', restaurantId)),
     selectIn('waiter_table_assignments', 'waiter_id', 'table_id', tableIds),
     selectAll(() => deps.db.from('staff_shifts').select('waiter_id').eq('restaurant_id', restaurantId).gte('shift_date', since)),
   ])
-  const ids = [...staff.map((w) => w.id), ...assigned.map((a) => a.waiter_id), ...shifts.map((s) => s.waiter_id), ...extraIds]
+  const ids = [...staff.filter((s) => !s.dismissal_date).map((s) => s.waiter_id), ...assigned.map((a) => a.waiter_id), ...shifts.map((s) => s.waiter_id), ...extraIds]
   return waitersByIds(ids)
 }
 

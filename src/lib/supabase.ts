@@ -82,7 +82,6 @@ export interface WaiterRegistration {
   id?: string
   first_name: string
   phone: string
-  employment_type: 'permanent' | 'freelance'
   phone_verified?: boolean
   created_at?: string
   updated_at?: string
