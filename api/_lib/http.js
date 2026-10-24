@@ -41,8 +41,6 @@ export function isAdmin(req, restaurantId = '') {
   return hasAdminToken(req)
 }
 
-// Только токен администратора — без исключения для открытого учебного
-// ресторана. Для данных, которые нельзя отдавать без входа (QR допуска к смене).
 export function hasAdminToken(req) {
   const expected = process.env.ADMIN_TOKEN || process.env.PAIRINGS_ADMIN_TOKEN || ''
   const got = String(req.headers['x-admin-token'] || '')

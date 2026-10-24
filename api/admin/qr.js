@@ -5,8 +5,8 @@ import { getQr, resetQr } from '../_lib/qrService.js'
 // история дней.
 //   GET  ?restaurantId=…                — показать
 //   POST {restaurantId, action:'reset'} — сбросить токен на сегодня
-// ТОЛЬКО с X-Admin-Token: токен даёт доступ к сменам, открытым учебным
-// рестораном без входа он не отдаётся.
+// Доступ как у остальных разделов: учебный ресторан (ADMIN_OPEN_RESTAURANTS) —
+// без токена, любой другой — с X-Admin-Token.
 function baseOf(req) {
   const fixed = process.env.QR_PUBLIC_BASE_URL
   if (fixed) return fixed
@@ -25,4 +25,4 @@ export default adminRoute('qr', {
     }
     return resetQr(restaurantId, { base: baseOf(req) })
   },
-}, { strict: true })
+})

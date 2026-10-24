@@ -1,10 +1,11 @@
-import { cors, hasAdminToken, isUuid } from './_lib/http.js'
+import { cors, isAdmin, isUuid } from './_lib/http.js'
 import { isDateStr, todayOf, verifyLink, qrImage } from './_lib/qrService.js'
 
 // Картинка QR допуска к смене (PNG).
 //   GET ?r=<ресторан>&d=<дата YYYY-MM-DD, по умолчанию сегодня>&s=<подпись>
 // Подпись выдаёт админка (страница «QR-коды») для пересылки в мессенджер
-// или почтой; без неё нужен X-Admin-Token. Ссылка всегда показывает
+// или почтой; без неё — доступ как в админке (открытый учебный ресторан без
+// токена, остальные с X-Admin-Token). Ссылка всегда показывает
 // ТЕКУЩИЙ токен за свою дату — после сброса старая картинка не устаревает.
 export default async function handler(req, res) {
   if (cors(req, res, 'GET, OPTIONS')) return
@@ -19,7 +20,7 @@ export default async function handler(req, res) {
     res.status(400).json({ error: 'Неверная ссылка' })
     return
   }
-  if (!(hasAdminToken(req) || verifyLink(restaurantId, date, q.s))) {
+  if (!(isAdmin(req, restaurantId) || verifyLink(restaurantId, date, q.s))) {
     res.status(401).json({ error: 'Нет доступа' })
     return
   }
