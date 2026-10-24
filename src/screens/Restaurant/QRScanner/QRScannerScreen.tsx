@@ -92,15 +92,11 @@ export default function QRScannerScreen() {
       token = url.searchParams.get('token') ?? decodedText
     } catch {}
 
-    const today = new Date().toISOString().split('T')[0]
-    const { data } = await supabase
-      .from('restaurant_daily_tokens')
-      .select('restaurant_id')
-      .eq('token', token)
-      .eq('valid_date', today)
-      .maybeSingle()
+    // Таблица токенов закрыта от клиентов — сверяет функция базы: возвращает
+    // ресторан, если токен сегодняшний (по UTC, как и раньше).
+    const { data: scannedRestaurantId } = await supabase.rpc('check_shift_token', { p_token: token })
 
-    if (!data) {
+    if (!scannedRestaurantId) {
       setError('QR-код недействителен или устарел.')
       return
     }
@@ -108,7 +104,7 @@ export default function QRScannerScreen() {
     // QR-код валиден, но одного этого мало — доступ к столам конкретного
     // ресторана даём только при подтверждённой смене там же и сегодня.
     const waiterId = await resolveWaiterId()
-    const allowed = waiterId ? await hasConfirmedShiftToday(waiterId, data.restaurant_id) : false
+    const allowed = waiterId ? await hasConfirmedShiftToday(waiterId, scannedRestaurantId) : false
     if (!allowed) {
       setAccessDenied(true)
       return
@@ -116,11 +112,11 @@ export default function QRScannerScreen() {
 
     // Сохраняем смену на 12 часов
     localStorage.setItem(SHIFT_KEY, JSON.stringify({
-      restaurantId: data.restaurant_id,
+      restaurantId: scannedRestaurantId,
       scannedAt: Date.now(),
     }))
 
-    navigate(`/restaurant/tables?restaurant=${data.restaurant_id}`)
+    navigate(`/restaurant/tables?restaurant=${scannedRestaurantId}`)
   }
 
   return (
