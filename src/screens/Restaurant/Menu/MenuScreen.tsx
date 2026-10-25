@@ -27,7 +27,13 @@ type MenuItem = {
   subsection_id: string | null
   sub_subsection_id: string | null
   is_available: boolean
+  // Стоп-лист кухни (админка → «Кухня»): до этого момента блюда нет.
+  stop_until?: string | null
 }
+
+// Блюдо в стопе: 'infinity' — «до отмены».
+const isStopped = (d: { stop_until?: string | null }) =>
+  !!d.stop_until && (d.stop_until === 'infinity' || new Date(d.stop_until).getTime() > Date.now())
 
 type ModifierGroup = { id: string; name: string; type: string; required: boolean }
 type Modifier = { id: string; group_id: string; name: string; price_delta: number }
@@ -211,6 +217,7 @@ export default function MenuScreen() {
   )
 
   const handleAdd = async (dish: MenuItem) => {
+    if (isStopped(dish)) return
     const { data: groups } = await supabaseRestaurants
       .from('modifier_groups')
       .select('*')
@@ -420,10 +427,11 @@ export default function MenuScreen() {
         )}
         {visibleDishes.map(dish => {
           const qty = getQuantity(dish.id)
+          const stopped = isStopped(dish)
           return (
-            <div key={dish.id} className={styles.dishRow} onClick={() => setInfoDish(dish)}>
+            <div key={dish.id} className={`${styles.dishRow}${stopped ? ` ${styles.dishRowStopped}` : ''}`} onClick={() => setInfoDish(dish)}>
               <div className={styles.dishLeft}>
-                <p className={styles.dishName}>{dish.dish_name}</p>
+                <p className={styles.dishName}>{dish.dish_name}{stopped && <span className={styles.stopTag}>стоп</span>}</p>
                 {dish.description && <p className={styles.dishDesc}>{dish.description}</p>}
                 <p className={styles.dishTime}>
                   {showVolume ? dish.weight_g : `${dish.cook_time_min} мин · ${dish.weight_g} г`}
@@ -432,7 +440,9 @@ export default function MenuScreen() {
               <div className={styles.dishRight}>
                 <span className={styles.dishPrice}>{dish.cost_rub} ₽</span>
                 <div className={styles.dishActions}>
-                  {qty === 0 ? (
+                  {qty === 0 && stopped ? (
+                    <span className={styles.stopLabel}>нет в наличии</span>
+                  ) : qty === 0 ? (
                     <button className={styles.addBtn} onClick={e => { e.stopPropagation(); handleAdd(dish) }}>+</button>
                   ) : (
                     <div className={styles.counter}>

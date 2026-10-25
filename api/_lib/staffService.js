@@ -9,7 +9,8 @@ import {
 import { businessDay, businessDateOf, assignmentsForDate, buildSession, inWindow, waiterName } from './hallCore.js'
 import { normalizePeriod, aggregate, upsellStats, byDay, tablesSummary, workDays } from './staffCore.js'
 
-async function loadPeriod(restaurantId, fromStr, toStr) {
+// Посадки ресторана за период — общая основа «Официантов» и «Статистики».
+export async function loadPeriod(restaurantId, fromStr, toStr) {
   const restaurant = await restaurantOf(restaurantId)
   const tz = restaurant.timezone
   const today = businessDateOf(deps.now(), tz)
@@ -29,7 +30,7 @@ async function loadPeriod(restaurantId, fromStr, toStr) {
       .select('waiter_id, dish_id, category, technique, outcome, created_at, channel')
       .eq('restaurant_id', restaurantId)
       .gte('created_at', range.from.toISOString()).lt('created_at', range.to.toISOString())),
-    selectAll(() => deps.db.from('menu_items').select('id, dish_name, cost_rub').eq('restaurant_id', restaurantId)),
+    selectAll(() => deps.db.from('menu_items').select('id, dish_name, cost_rub, menu_section, is_hidden').eq('restaurant_id', restaurantId)),
     selectAll(() => deps.db.from('staff_shifts').select('waiter_id, shift_date')
       .eq('restaurant_id', restaurantId).gte('shift_date', period.from).lte('shift_date', period.to)),
     selectAll(() => deps.db.from('reviews').select('rating_service, rating_food, comment, created_at, table_number')
@@ -71,10 +72,13 @@ async function loadPeriod(restaurantId, fromStr, toStr) {
   const waiterEvents = events
     .filter((e) => e.waiter_id && e.channel !== 'guest_menu')
     .map((e) => ({ ...e, date: businessDateOf(new Date(e.created_at), tz) }))
-  const dishes = new Map(dishRows.map((d) => [d.id, { name: d.dish_name, price: Number(d.cost_rub || 0) }]))
+  const dishes = new Map(dishRows.map((d) => [d.id, { name: d.dish_name, price: Number(d.cost_rub || 0), section: d.menu_section || null, hidden: !!d.is_hidden }]))
+  const guestEvents = events
+    .filter((e) => e.channel === 'guest_menu')
+    .map((e) => ({ ...e, date: businessDateOf(new Date(e.created_at), tz) }))
 
   return {
-    restaurant, today, period, tables, tableIds, sessions, events: waiterEvents, dishes, shifts, waiterReviews, assignRows: assigned,
+    restaurant, today, period, tables, tableIds, sessions, events: waiterEvents, guestEvents, dishes, shifts, waiterReviews, assignRows: assigned,
   }
 }
 

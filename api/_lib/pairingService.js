@@ -27,6 +27,16 @@ const MAX_USES_PER_PAIR = 6
 export const deps = { supabase: realSupabase, deepseekChat: realDeepseek, hasKey: () => !!DEEPSEEK_KEY }
 
 const sha1 = (s) => crypto.createHash('sha1').update(s).digest('hex')
+const activeUntil = (t) => !!t && (t === 'infinity' || new Date(t).getTime() > Date.now())
+
+// Приоритет блюд в рекомендациях («Кухня» → приоритет и «срочно продать»):
+// при равных парах гостю первой показываем приоритетную.
+async function loadPriorities(restaurantId, items) {
+  const { data } = await deps.supabase.from('menu_item_costing').select('dish_id, push_priority').eq('restaurant_id', restaurantId)
+  const out = new Map((data || []).map((c) => [c.dish_id, c.push_priority || 0]))
+  for (const it of items) if (it.urgent) out.set(it.id, 3)
+  return out
+}
 
 async function loadMenu(restaurantId) {
   const { data, error } = await deps.supabase
@@ -44,6 +54,11 @@ async function loadMenu(restaurantId) {
     productType: mi.product_type,
     // Скрытое от гостя (Лавка, комбо…) в парах не участвует.
     available: mi.is_available !== false && mi.is_hidden !== true,
+    // Стоп-лист «Кухни» — отдельно от available: он меняется в течение дня и
+    // не должен перезапускать суточный расчёт пар (отпечаток меню), а
+    // учитывается при выдаче пар гостю.
+    stopped: activeUntil(mi.stop_until),
+    urgent: activeUntil(mi.urgent_until),
     ingredients: Array.isArray(mi.ingredients) ? mi.ingredients : [],
   }))
 }
@@ -235,17 +250,24 @@ export async function personalPairings({ restaurantId, deviceId }) {
   const key = sha1(JSON.stringify({ v: 1, k: 'pairings', r: restaurantId, d: deviceId, x: dislikes, h: history, p: version }))
   const cached = await deps.supabase.from('waiter_ai_cache').select('suggestions, source')
     .eq('cache_key', key).gt('expires_at', new Date().toISOString()).maybeSingle()
-  if (cached.data?.suggestions) return { personal: true, cached: true, source: cached.data.source, pairings: cached.data.suggestions }
-
   const items = await loadMenu(restaurantId)
   const byId = new Map(items.map((i) => [i.id, i]))
+  // Кэш мог сложиться до стопа блюда — блюда в стопе из ответа убираем.
+  const withoutStopped = (res) => Object.fromEntries(Object.entries(res)
+    .map(([anchor, list]) => [anchor, (list || []).filter((o) => !byId.get(o.dishId)?.stopped)]))
+  if (cached.data?.suggestions) {
+    return { personal: true, cached: true, source: cached.data.source, pairings: withoutStopped(cached.data.suggestions) }
+  }
+
   const blocked = dislikeMatcher(dislikes)
+  const priority = await loadPriorities(restaurantId, items)
 
   // Строгий фильтр: пары, которые гостю нельзя, выбрасываем совсем.
   const options = new Map()
-  for (const p of pairs) {
+  const ordered = [...pairs].sort((a, b) => (priority.get(b.pair_dish_id) || 0) - (priority.get(a.pair_dish_id) || 0))
+  for (const p of ordered) {
     const dish = byId.get(p.pair_dish_id)
-    if (!dish || !dish.available || !byId.get(p.dish_id) || blocked(dish)) continue
+    if (!dish || !dish.available || dish.stopped || !byId.get(p.dish_id) || blocked(dish)) continue
     const list = options.get(p.dish_id) || []
     if (list.length < 3) list.push({ dishId: p.pair_dish_id, lead: p.lead, why: p.reason })
     options.set(p.dish_id, list)
@@ -289,7 +311,7 @@ export async function personalPairings({ restaurantId, deviceId }) {
     created_at: new Date().toISOString(),
     expires_at: new Date(Date.now() + PERSONAL_TTL_SEC * 1000).toISOString(),
   })
-  return { personal: true, source, pairings: result }
+  return { personal: true, source, pairings: withoutStopped(result) }
 }
 
 // ── Админка: список и правка пар ──
