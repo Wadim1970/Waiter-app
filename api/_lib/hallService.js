@@ -2,6 +2,7 @@
 // Логика расчётов — в hallCore.js.
 
 import { supabase } from './suggestService.js'
+import { normalizePhone, BOOKING_DAYS_AHEAD } from './bookingsCore.js'
 import {
   DEFAULT_TZ, businessDay, businessDateOf, addDays, isDateStr, assignmentsForDate, buildSession,
   ordersOfSession, inWindow, daySummary, waiterName, reservationConflict, sanitizeLayout,
@@ -67,7 +68,7 @@ export async function tablesOf(restaurantId, { includeInactive = false } = {}) {
   return data || []
 }
 
-const layoutOf = (t) => (t.layout_x == null || t.layout_y == null ? null : {
+export const layoutOf = (t) => (t.layout_x == null || t.layout_y == null ? null : {
   x: Number(t.layout_x), y: Number(t.layout_y),
   w: t.layout_w == null ? null : Number(t.layout_w), h: t.layout_h == null ? null : Number(t.layout_h),
   shape: t.layout_shape || null, rotation: t.layout_rotation || 0,
@@ -149,7 +150,7 @@ async function assignmentRows(tableIds, dateStr) {
     (q) => q.or(`is_permanent.eq.true,assigned_date.eq.${dateStr}`))
 }
 
-function reservationView(r) {
+export function reservationView(r) {
   return {
     id: r.id, tableId: r.table_id, startsAt: r.starts_at, endsAt: r.ends_at, guestCount: r.guest_count,
     guestName: r.guest_name || null, guestPhone: r.guest_phone || null, comment: r.comment || null, status: r.status,
@@ -350,7 +351,8 @@ function reservationFields(body, current = {}) {
     ends_at: body.endsAt ?? current.ends_at,
     guest_count: body.guestCount ?? current.guest_count,
     guest_name: body.guestName !== undefined ? String(body.guestName || '').trim().slice(0, 120) || null : current.guest_name ?? null,
-    guest_phone: body.guestPhone !== undefined ? String(body.guestPhone || '').trim().slice(0, 40) || null : current.guest_phone ?? null,
+    // Номер — в одном виде (+7XXXXXXXXXX), чтобы узнавать гостя по прошлым броням.
+    guest_phone: body.guestPhone !== undefined ? normalizePhone(body.guestPhone) || String(body.guestPhone || '').trim().slice(0, 40) || null : current.guest_phone ?? null,
     comment: body.comment !== undefined ? String(body.comment || '').trim().slice(0, 500) || null : current.comment ?? null,
     status: body.status ?? current.status ?? 'confirmed',
   }
@@ -382,8 +384,16 @@ async function assertNoConflict(restaurantId, candidate) {
   }
 }
 
+// Брони — не дальше чем на 30 дней вперёд.
+async function assertBookingWindow(restaurantId, startsAt) {
+  const { timezone } = await restaurantOf(restaurantId)
+  const last = addDays(businessDateOf(deps.now(), timezone), BOOKING_DAYS_AHEAD)
+  if (new Date(startsAt) >= businessDay(last, timezone).to) throw httpError(400, `Бронь — не дальше чем на ${BOOKING_DAYS_AHEAD} дней вперёд`)
+}
+
 export async function createReservation(restaurantId, body) {
   const fields = reservationFields(body)
+  await assertBookingWindow(restaurantId, fields.starts_at)
   if (fields.table_id) await tableOf(restaurantId, fields.table_id)
   await assertNoConflict(restaurantId, fields)
   const { data, error } = await deps.db.from('table_reservations')
@@ -398,6 +408,7 @@ export async function updateReservation(restaurantId, id, body) {
   if (error) throw error
   if (!current) throw httpError(404, 'Бронь не найдена')
   const fields = reservationFields(body, current)
+  if (fields.starts_at !== new Date(current.starts_at).toISOString()) await assertBookingWindow(restaurantId, fields.starts_at)
   if (fields.table_id && fields.table_id !== current.table_id) await tableOf(restaurantId, fields.table_id)
   await assertNoConflict(restaurantId, { ...fields, id })
   const { data, error: upErr } = await deps.db.from('table_reservations').update(fields).eq('id', id).eq('restaurant_id', restaurantId).select('*').single()
