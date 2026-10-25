@@ -22,7 +22,7 @@ const OPS = {
 }
 
 class Query {
-  constructor(db, table) { Object.assign(this, { db, table, filters: [], mode: 'select', orderBy: null, rangeAt: null, one: null, returning: false }) }
+  constructor(db, table) { Object.assign(this, { db, table, filters: [], mode: 'select', orderBy: [], rangeAt: null, one: null, returning: false }) }
   select() { if (this.mode !== 'select') this.returning = true; return this }
   insert(rows) { this.mode = 'insert'; this.payload = Array.isArray(rows) ? rows : [rows]; return this }
   update(fields) { this.mode = 'update'; this.payload = fields; return this }
@@ -32,7 +32,7 @@ class Query {
     this.filters.push((r) => alts.some(([c, op, v]) => OPS[op](r, c, v)))
     return this
   }
-  order(col, { ascending = true } = {}) { this.orderBy = [col, ascending]; return this }
+  order(col, { ascending = true } = {}) { this.orderBy.push([col, ascending]); return this }
   range(a, b) { this.rangeAt = [a, b]; return this }
   limit(n) { this.rangeAt = [0, n - 1]; return this }
   maybeSingle() { this.one = 'maybe'; return this }
@@ -53,9 +53,14 @@ class Query {
       this.db.tables[this.table] = all.filter((r) => !this.match(r))
     } else {
       out = all.filter((r) => this.match(r))
-      if (this.orderBy) {
-        const [c, asc] = this.orderBy
-        out = [...out].sort((a, b) => (asc ? 1 : -1) * cmp(a[c], b[c]))
+      if (this.orderBy.length) {
+        out = [...out].sort((a, b) => {
+          for (const [c, asc] of this.orderBy) {
+            const d = cmp(a[c], b[c])
+            if (d) return asc ? d : -d
+          }
+          return 0
+        })
       }
       if (this.rangeAt) out = out.slice(this.rangeAt[0], this.rangeAt[1] + 1)
     }

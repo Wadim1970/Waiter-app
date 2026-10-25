@@ -29,11 +29,13 @@ const CACHE_TTL_SEC = 300
 // Дайджест меню: блюдо + маржа/приоритет + флаг дня.
 export async function buildDigest(restaurantId) {
   const today = new Date().toISOString().slice(0, 10)
-  const [items, costing, flags] = await Promise.all([
-    supabase.from('menu_items')
-      .select('id, dish_name, description, ingredients, cost_rub, menu_section, product_type, is_available')
-      .eq('restaurant_id', restaurantId)
-      .eq('is_available', true),
+  const menuQuery = (cols) => supabase.from('menu_items')
+    .select(cols)
+    .eq('restaurant_id', restaurantId)
+    .eq('is_available', true)
+  const [itemsFull, costing, flags] = await Promise.all([
+    // stop_until/urgent_* — стоп-лист и «срочно продать» из раздела «Кухня».
+    menuQuery('id, dish_name, description, ingredients, cost_rub, menu_section, product_type, is_available, stop_until, urgent_until, urgent_note'),
     supabase.from('menu_item_costing')
       .select('dish_id, margin_abs, margin_pct, push_priority, push_reason')
       .eq('restaurant_id', restaurantId),
@@ -42,7 +44,13 @@ export async function buildDigest(restaurantId) {
       .eq('restaurant_id', restaurantId)
       .eq('day', today),
   ])
+  // Миграция «Кухни» ещё не применена (нет колонок) — без стопа и «срочно».
+  const items = itemsFull.error?.code === '42703'
+    ? await menuQuery('id, dish_name, description, ingredients, cost_rub, menu_section, product_type, is_available')
+    : itemsFull
   if (items.error) throw items.error
+  const now = Date.now()
+  const activeUntil = (t) => !!t && (t === 'infinity' || new Date(t).getTime() > now)
 
   const costMap = new Map((costing.data || []).map((c) => [c.dish_id, c]))
   const flagMap = new Map()
@@ -53,7 +61,10 @@ export async function buildDigest(restaurantId) {
 
   return (items.data || []).map((mi) => {
     const c = costMap.get(mi.id) || {}
-    const f = flagMap.get(mi.id)
+    // Стоп из «Кухни» главнее всего; «срочно продать» — как «последний день реализации».
+    const f = activeUntil(mi.stop_until) ? { flag: 'stop', note: null }
+      : activeUntil(mi.urgent_until) ? { flag: 'expiring', note: mi.urgent_note || null }
+        : flagMap.get(mi.id)
     return {
       id: mi.id,
       name: mi.dish_name,

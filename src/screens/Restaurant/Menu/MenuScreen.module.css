@@ -476,3 +476,21 @@
 }
 .sheetAdd:active { transform: scale(0.99); }
 .sheetAddPrice { font-variant-numeric: tabular-nums; opacity: 0.9; }
+
+/* Блюдо в стопе кухни (админка → «Кухня») */
+.dishRowStopped .dishName,
+.dishRowStopped .dishDesc,
+.dishRowStopped .dishTime,
+.dishRowStopped .dishPrice { opacity: 0.45; }
+.stopTag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: #d30000;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+.stopLabel { font-size: 12px; color: #8e9096; white-space: nowrap; }
