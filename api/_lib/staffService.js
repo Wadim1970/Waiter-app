@@ -22,7 +22,7 @@ async function loadPeriod(restaurantId, fromStr, toStr) {
   const [raw, assignRows, events, dishRows, shifts, reviews, waiterReviews] = await Promise.all([
     loadDay(tableIds, range),
     selectAll(() => deps.db.from('waiter_table_assignments')
-      .select('id, waiter_id, table_id, assigned_date, is_permanent, created_at')
+      .select('id, waiter_id, table_id, assigned_date, is_permanent, source, created_at')
       .in('table_id', tableIds.length ? tableIds : ['00000000-0000-0000-0000-000000000000'])
       .or(`is_permanent.eq.true,assigned_date.gte.${period.from}`)),
     selectAll(() => deps.db.from('ai_suggestion_events')

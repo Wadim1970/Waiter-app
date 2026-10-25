@@ -145,7 +145,7 @@ export function sessionContext(session, raw, extra) {
 }
 
 async function assignmentRows(tableIds, dateStr) {
-  return selectIn('waiter_table_assignments', 'id, waiter_id, table_id, assigned_date, is_permanent, created_at', 'table_id', tableIds,
+  return selectIn('waiter_table_assignments', 'id, waiter_id, table_id, assigned_date, is_permanent, source, created_at', 'table_id', tableIds,
     (q) => q.or(`is_permanent.eq.true,assigned_date.eq.${dateStr}`))
 }
 

@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { getActiveShift } from '../QRScanner/QRScannerScreen'
-import { getMyTables, getAllTables, applySessionToTables } from '../../../lib/tables'
-import type { TableWithSession, TableSessionRow } from '../../../lib/tables'
+import { getMyTables, getAllTables, getMyTableMarks, setMyTable, applySessionToTables } from '../../../lib/tables'
+import type { TableWithSession, TableSessionRow, TableMarks } from '../../../lib/tables'
+import { applyToggle, applyServerState } from '../../../lib/tableMarks.js'
 import { hasConfirmedShiftToday } from '../../../lib/bookings'
 import { supabase, resolveWaiterId } from '../../../lib/supabase'
 import { isDemoWaiter } from '../../../lib/demoAuth'
@@ -19,8 +20,11 @@ export default function TablesScreen() {
   const [waiterId, setWaiterId] = useState<string | null>(null)
   const [tables, setTables] = useState<TableWithSession[]>([])
   const [tab, setTab] = useState<'my' | 'all'>('my')
+  // Галочки официанта по столам этого ресторана (вкладка «Все столы»).
+  const [marks, setMarks] = useState<TableMarks>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   // null — ещё проверяем, true/false — результат проверки допуска
   const [authorized, setAuthorized] = useState<boolean | null>(null)
 
@@ -63,10 +67,18 @@ export default function TablesScreen() {
     try {
       setLoading(true)
       setError(null)
-      const data = tab === 'my'
-        ? await getMyTables(waiterId!, restaurantId)
-        : await getAllTables(restaurantId)
-      setTables(data)
+      if (tab === 'my') {
+        setTables(await getMyTables(waiterId!, restaurantId))
+      } else {
+        // Галочки нужны только официанту с известным id; без них список столов
+        // всё равно показываем (просто без галочек).
+        const [data, myMarks] = await Promise.all([
+          getAllTables(restaurantId),
+          waiterId ? getMyTableMarks(waiterId, restaurantId).catch(() => null) : Promise.resolve(null),
+        ])
+        setTables(data)
+        if (myMarks) setMarks(myMarks)
+      }
     } catch (e: any) {
       setError('Не удалось загрузить столы')
     } finally {
@@ -117,6 +129,21 @@ export default function TablesScreen() {
 
     return () => { supabase.removeChannel(channel) }
   }, [restaurantId, loadTables])
+
+  // Галочка: стол сразу попадает в «Мои столы» / исчезает оттуда. Если сервер
+  // отказал — возвращаем как было и говорим об этом.
+  const handleToggle = async (table: TableWithSession, selected: boolean) => {
+    const before = marks
+    setMarks(applyToggle(before, table.id, selected))
+    try {
+      const state = await setMyTable(table.id, selected)
+      setMarks(prev => applyServerState(prev, table.id, state))
+    } catch {
+      setMarks(before)
+      setNotice('Не удалось изменить отметку стола')
+      setTimeout(() => setNotice(null), 4000)
+    }
+  }
 
   const handleTableClick = async (table: TableWithSession) => {
     // Сначала ищем активный (не оплаченный) заказ стола — В НЁМ МОГУТ БЫТЬ И
@@ -200,6 +227,7 @@ export default function TablesScreen() {
       </div>
 
       <div className={styles.content}>
+        {notice && <p className={styles.errorText}>{notice}</p>}
         {loading && (
           <div className={styles.centered}>
             <div className={styles.spinner} />
@@ -216,7 +244,7 @@ export default function TablesScreen() {
         {!loading && !error && tables.length === 0 && (
           <div className={styles.centered}>
             <p className={styles.emptyText}>
-              {tab === 'my' ? 'На сегодня столы не назначены' : 'Столы не найдены'}
+              {tab === 'my' ? 'Столов пока нет. Отметьте свои столы галочкой во вкладке «Все столы»' : 'Столы не найдены'}
             </p>
           </div>
         )}
@@ -224,7 +252,14 @@ export default function TablesScreen() {
         {!loading && !error && tables.length > 0 && (
           <div className={styles.grid}>
             {tables.map(table => (
-              <TableCard key={table.id} table={table} onClick={handleTableClick} />
+              <TableCard
+                key={table.id}
+                table={table}
+                onClick={handleTableClick}
+                {...(tab === 'all' && waiterId
+                  ? { onToggle: handleToggle, checked: !!marks[table.id]?.self, locked: !!marks[table.id]?.locked }
+                  : {})}
+              />
             ))}
           </div>
         )}

@@ -53,6 +53,15 @@ test('закрепления на дату: на дату важнее «нав�
   assert.deepEqual(m.get('t1').map((a) => a.waiter_id), ['today', 'perm'])
 })
 
+test('галочка официанта действует со дня установки, закрепление администратора — как раньше', () => {
+  const rows = [
+    { table_id: 't1', waiter_id: 'self', source: 'self', is_permanent: true, assigned_date: '2026-10-22', created_at: '2026-10-22' },
+    { table_id: 't1', waiter_id: 'adm', source: 'admin', is_permanent: true, assigned_date: '2026-10-22', created_at: '2026-10-22' },
+  ]
+  assert.deepEqual(assignmentsForDate(rows, '2026-10-21').get('t1').map((a) => a.waiter_id), ['adm'])
+  assert.deepEqual(assignmentsForDate(rows, '2026-10-23').get('t1').map((a) => a.waiter_id).sort(), ['adm', 'self'])
+})
+
 test('заказы посадки: по table_session_id, старые — по столу и времени', () => {
   const s = { id: 's1', table_id: 't1', started_at: '2026-10-22T08:00:00Z', ended_at: '2026-10-22T09:30:00Z', is_active: false }
   const orders = [

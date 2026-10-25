@@ -66,3 +66,30 @@
   color: white;
   line-height: 1.1;
 }
+
+/* Галочка «обслуживаю этот стол» — правый нижний угол, область нажатия крупная. */
+.check {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 0 clamp(8px, 3vw, 15px) clamp(6px, 2vw, 10px) 0;
+  cursor: pointer;
+}
+
+.check input {
+  width: 26px;
+  height: 26px;
+  margin: 0;
+  accent-color: #ffffff;
+  cursor: pointer;
+}
+
+.check input:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
