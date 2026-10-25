@@ -134,6 +134,6 @@ export function slowReport(items, dishById, { limit = 200 } = {}) {
       skipped: insane,
     },
     dishes,
-    lateItems: late.sort((a, b) => b.delayMin - a.delayMin).slice(0, limit),
+    lateItems: late.sort((a, b) => b.delayMin - a.delayMin || String(b.sentAt).localeCompare(String(a.sentAt))).slice(0, limit),
   }
 }
