@@ -65,6 +65,9 @@ function seed() {
       { restaurant_id: R, order_id: 'o2', waiter_id: ANNA, dish_id: 'd4', category: 'dessert', technique: 'taste_pairing', outcome: 'rejected', created_at: '2026-10-23T16:20:00Z', channel: 'waiter' },
       { restaurant_id: R, waiter_id: null, dish_id: 'd2', technique: 'taste_pairing', outcome: 'accepted', created_at: '2026-10-23T16:10:00Z', channel: 'guest_menu' },
       { restaurant_id: R, waiter_id: null, dish_id: 'd4', technique: 'taste_pairing', outcome: 'ignored', created_at: '2026-10-23T16:11:00Z', channel: 'guest_menu' },
+      { restaurant_id: R, waiter_id: null, dish_id: 'd3', tag: 'drink', outcome: 'accepted', created_at: '2026-10-23T16:12:00Z', channel: 'guest_cart' },
+      { restaurant_id: R, waiter_id: null, dish_id: 'd4', tag: 'starter', outcome: 'rejected', created_at: '2026-10-23T16:12:30Z', channel: 'guest_cart' },
+      { restaurant_id: R, waiter_id: null, dish_id: null, tag: 'dessert_ask', outcome: 'accepted', created_at: '2026-10-23T16:13:00Z', channel: 'guest_cart' },
     ],
     reviews: [{ restaurant_id: R, table_number: '1', rating_food: 5, rating_service: 5, created_at: '2026-10-22T09:50:00Z' }],
     reviews_waiter: [],
@@ -160,6 +163,9 @@ test('статистика за период со сравнением', async (
   assert.deepEqual(s.tables.map((t) => [t.number, t.sessions, t.revenue]), [[1, 2, 6000], [2, 1, 500]])
   assert.deepEqual([s.ai.waiter.offered, s.ai.waiter.accepted, s.ai.waiter.revenue], [2, 1, 500])
   assert.deepEqual([s.ai.guestMenu.offered, s.ai.guestMenu.accepted, s.ai.guestMenu.revenue], [2, 1, 1500])
-  assert.equal(s.ai.share, Math.round((2000 / 6500) * 100))
+  const cart = s.ai.guestCart
+  assert.deepEqual([cart.offered, cart.accepted, cart.revenue, cart.dessertAsked, cart.dessertYes], [2, 1, 500, 1, 1])
+  assert.deepEqual(cart.byGap.map((g) => [g.label, g.offered, g.accepted]), [['Напиток', 1, 1], ['Закуска или салат', 1, 0]])
+  assert.equal(s.ai.share, Math.round((2500 / 6500) * 100))
   assert.deepEqual([s.guestApp.calls, s.guestApp.avgReactionSec, s.guestApp.reviews], [2, 180, 1])
 })

@@ -13,6 +13,7 @@ import {
   canBeAnchor, canBePair, pairRejectReason, compactMenu, menuFingerprint, buildGenerateMessages, parseGenerated,
   chunk, capPairUsage, dislikeMatcher, guestTasteLine, buildPersonalMessages, parsePersonal,
 } from './pairingCore.js'
+import { mealAt, mealOfCart, roleOf, suitsMeal } from './mealCore.js'
 
 const ANCHORS_PER_CALL = 12
 const PARALLEL_CALLS = 3
@@ -24,7 +25,7 @@ const MAX_USES_PER_PAIR = 6
 
 // Зависимости через объект — тест подменяет базу и нейросеть
 // (pairingService.test.js), код ниже обращается к ним только так.
-export const deps = { supabase: realSupabase, deepseekChat: realDeepseek, hasKey: () => !!DEEPSEEK_KEY }
+export const deps = { supabase: realSupabase, deepseekChat: realDeepseek, hasKey: () => !!DEEPSEEK_KEY, now: () => new Date() }
 
 const sha1 = (s) => crypto.createHash('sha1').update(s).digest('hex')
 const activeUntil = (t) => !!t && (t === 'infinity' || new Date(t).getTime() > Date.now())
@@ -66,6 +67,17 @@ export async function loadMenu(restaurantId) {
     mealTimes: Array.isArray(mi.meal_times) ? mi.meal_times : null,
   }))
 }
+
+// Приём пищи сейчас по часам ресторана — пары к блюду не должны быть
+// неуместны по времени (утром к сырникам — кофе, а не стейк).
+export async function clockMealOf(restaurantId, now = deps.now()) {
+  const { data } = await deps.supabase.from('restaurants').select('timezone').eq('id', restaurantId).maybeSingle()
+  return mealAt(now, data?.timezone || 'Europe/Moscow')
+}
+
+// Пара уместна сейчас: время — по часам, но завтрак остаётся завтраком в
+// любое время (сырники в 15:00 — к ним кофе).
+export const pairFitsMeal = (anchor, pair, clockMeal) => !anchor || !pair || suitsMeal(pair, mealOfCart([roleOf(anchor)], clockMeal))
 
 async function restaurantName(restaurantId) {
   const { data } = await deps.supabase.from('restaurants').select('name').eq('id', restaurantId).maybeSingle()
@@ -251,7 +263,8 @@ export async function personalPairings({ restaurantId, deviceId }) {
   if (!pairs.length) return { personal: false }
   const version = pairs.reduce((m, p) => (p.updated_at > m ? p.updated_at : m), '')
 
-  const key = sha1(JSON.stringify({ v: 1, k: 'pairings', r: restaurantId, d: deviceId, x: dislikes, h: history, p: version }))
+  const meal = await clockMealOf(restaurantId).catch(() => null)
+  const key = sha1(JSON.stringify({ v: 2, k: 'pairings', r: restaurantId, d: deviceId, x: dislikes, h: history, p: version, m: meal }))
   const cached = await deps.supabase.from('waiter_ai_cache').select('suggestions, source')
     .eq('cache_key', key).gt('expires_at', new Date().toISOString()).maybeSingle()
   const items = await loadMenu(restaurantId)
@@ -272,6 +285,7 @@ export async function personalPairings({ restaurantId, deviceId }) {
   for (const p of ordered) {
     const dish = byId.get(p.pair_dish_id)
     if (!dish || !dish.available || dish.stopped || !byId.get(p.dish_id) || blocked(dish)) continue
+    if (meal && !pairFitsMeal(byId.get(p.dish_id), dish, meal)) continue
     const list = options.get(p.dish_id) || []
     if (list.length < 3) list.push({ dishId: p.pair_dish_id, lead: p.lead, why: p.reason })
     options.set(p.dish_id, list)

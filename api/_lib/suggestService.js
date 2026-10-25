@@ -12,6 +12,7 @@ import {
   pickPools, buildRecommendMessages, parseRecommendText, templateSet, categoryOf,
   buildCoachMessages, parseCoachPolish,
 } from './suggestCore.js'
+import { mealAt, mealOfCart, roleOf, suitsMeal } from './mealCore.js'
 
 export const supabase = createClient(
   process.env.SUPABASE_URL || process.env.VITE_SUPABASE_WAITER_URL,
@@ -27,6 +28,10 @@ const FLAG_PRI = { stop: 3, expiring: 2, special: 1 }
 const CACHE_TTL_SEC = 300
 
 // Дайджест меню: блюдо + маржа/приоритет + флаг дня.
+const BASE_COLS = 'id, dish_name, description, ingredients, cost_rub, menu_section, product_type, is_available'
+const KITCHEN_COLS = 'stop_until, urgent_until, urgent_note'
+const MEAL_COLS = 'course_role, meal_times'
+
 export async function buildDigest(restaurantId) {
   const today = new Date().toISOString().slice(0, 10)
   const menuQuery = (cols) => supabase.from('menu_items')
@@ -34,8 +39,9 @@ export async function buildDigest(restaurantId) {
     .eq('restaurant_id', restaurantId)
     .eq('is_available', true)
   const [itemsFull, costing, flags] = await Promise.all([
-    // stop_until/urgent_* — стоп-лист и «срочно продать» из раздела «Кухня».
-    menuQuery('id, dish_name, description, ingredients, cost_rub, menu_section, product_type, is_available, stop_until, urgent_until, urgent_note'),
+    // stop_until/urgent_* — стоп-лист и «срочно продать» из раздела «Кухня»;
+    // course_role/meal_times — ручная роль блюда и время подачи.
+    menuQuery(`${BASE_COLS}, ${KITCHEN_COLS}, ${MEAL_COLS}`),
     supabase.from('menu_item_costing')
       .select('dish_id, margin_abs, margin_pct, push_priority, push_reason')
       .eq('restaurant_id', restaurantId),
@@ -44,10 +50,10 @@ export async function buildDigest(restaurantId) {
       .eq('restaurant_id', restaurantId)
       .eq('day', today),
   ])
-  // Миграция «Кухни» ещё не применена (нет колонок) — без стопа и «срочно».
-  const items = itemsFull.error?.code === '42703'
-    ? await menuQuery('id, dish_name, description, ingredients, cost_rub, menu_section, product_type, is_available')
-    : itemsFull
+  // Миграции ещё не применены (нет колонок) — без ручных ролей, без стопа и «срочно».
+  let items = itemsFull
+  if (items.error?.code === '42703') items = await menuQuery(`${BASE_COLS}, ${KITCHEN_COLS}`)
+  if (items.error?.code === '42703') items = await menuQuery(BASE_COLS)
   if (items.error) throw items.error
   const now = Date.now()
   const activeUntil = (t) => !!t && (t === 'infinity' || new Date(t).getTime() > now)
@@ -80,8 +86,29 @@ export async function buildDigest(restaurantId) {
       pushReason: c.push_reason || null,
       dailyFlag: f?.flag || null,
       dailyNote: f?.note || null,
+      role: mi.course_role || null,
+      mealTimes: Array.isArray(mi.meal_times) ? mi.meal_times : null,
     }
   })
+}
+
+// Часовой пояс ресторана — для времени дня (держим в памяти: не меняется).
+const tzCache = new Map()
+async function restaurantTz(restaurantId) {
+  if (tzCache.has(restaurantId)) return tzCache.get(restaurantId)
+  const { data } = await supabase.from('restaurants').select('timezone').eq('id', restaurantId).maybeSingle()
+  const tz = data?.timezone || 'Europe/Moscow'
+  tzCache.set(restaurantId, tz)
+  return tz
+}
+
+// Приём пищи для подсказок: часы ресторана с поправкой на заказ, и меню —
+// только то, что уместно предлагать сейчас (то, что уже в заказе, остаётся).
+export async function mealContext(restaurantId, digest, cartItemIds = []) {
+  const cartSet = new Set(cartItemIds || [])
+  const clockMeal = mealAt(new Date(), await restaurantTz(restaurantId).catch(() => 'Europe/Moscow'))
+  const meal = mealOfCart(digest.filter((d) => cartSet.has(d.id)).map(roleOf), clockMeal)
+  return { meal, digest: digest.filter((d) => cartSet.has(d.id) || suitsMeal(d, meal)) }
 }
 
 // Один вызов DeepSeek (JSON-режим). Возвращает сырой content; при сбое бросает.
@@ -117,7 +144,7 @@ const LLM_TEMPERATURE = 0.5
 
 // Рекомендательный набор для виджета «Подсказка от RestAI» — один связный текст.
 export async function recommendSet({ restaurantId, cartItemIds, guest }) {
-  const digest = await buildDigest(restaurantId)
+  const { meal, digest } = await mealContext(restaurantId, await buildDigest(restaurantId), cartItemIds)
   const cartSet = new Set(cartItemIds || [])
   const cartNames = digest.filter((d) => cartSet.has(d.id)).map((d) => d.name)
   const pools = pickPools(digest, { exclude: cartItemIds || [] })
@@ -127,7 +154,7 @@ export async function recommendSet({ restaurantId, cartItemIds, guest }) {
   if (!DEEPSEEK_KEY) return { text: templateSet(pools), source: 'fallback' }
 
   const raw = await deepseekChat(
-    buildRecommendMessages({ menu, cart: cartNames, guest }),
+    buildRecommendMessages({ menu, cart: cartNames, guest, meal }),
     { maxTokens: 500, timeoutMs: LLM_TIMEOUT_MS, temperature: LLM_TEMPERATURE },
   ).catch(() => null)
   const text = parseRecommendText(raw)
@@ -156,7 +183,7 @@ export async function polishCoachSignals({ signals, guest }) {
 // Считает подсказки с нуля. Можно передать готовый digest (чтобы /warm строил
 // его один раз на все теги).
 export async function computeSuggestions({ restaurantId, stage, tag, guest, exclude, limit, cartItemIds, digest }) {
-  const dg = digest || await buildDigest(restaurantId)
+  const { meal, digest: dg } = await mealContext(restaurantId, digest || await buildDigest(restaurantId), cartItemIds)
   const cartSet = new Set(cartItemIds || [])
   const cartNames = dg.filter((d) => cartSet.has(d.id)).map((d) => d.name)
   const fullExclude = [...(exclude || []), ...(cartItemIds || [])]
@@ -175,7 +202,7 @@ export async function computeSuggestions({ restaurantId, stage, tag, guest, excl
   let picks = null
   if (DEEPSEEK_KEY && menu.byNum.size) {
     const raw = await deepseekChat(
-      buildSuggestMessages({ menu, stage, tag, guest, cart: cartNames, offeredIds: exclude }),
+      buildSuggestMessages({ menu, stage, tag, guest, cart: cartNames, offeredIds: exclude, meal }),
       { maxTokens: 700, timeoutMs: LLM_TIMEOUT_MS, temperature: LLM_TEMPERATURE },
     ).catch(() => null)
     picks = parsePicks(raw, menu, new Set(fullExclude))
@@ -216,8 +243,10 @@ export function cacheKey({ restaurantId, stage, tag, guest, cartItemIds }) {
     // (а не пишет фразы к топ-3 по марже), тег «хит» → «к заказу»; v7 — учёт
     // предпочтений/ограничений гостя (исключаем неподходящее); v8 — pitch как
     // скрипт продаж (директива + реплика в «…»), тег «закуски/салаты»; v9 —
-    // модель видит всё меню, короткие принципы, без выдуманных «хвалят».
-    v: 9,
+    // модель видит всё меню, короткие принципы, без выдуманных «хвалят»;
+    // v10 — время дня (меню без неуместного сейчас, строка о приёме пищи).
+    v: 10,
+    m: mealAt(new Date(), tzCache.get(restaurantId) || 'Europe/Moscow'),
     r: restaurantId,
     s: stage || '',
     t: tag || '',

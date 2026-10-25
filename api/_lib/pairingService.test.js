@@ -74,6 +74,8 @@ beforeEach(() => {
   }, { guest_id_for_device: ({ p_device_id }) => (p_device_id === 'dev-known' ? 7 : null) })
   calls = []
   svc.deps.supabase = db
+  // Ужин (19:00 МСК): пары к горячему уместны.
+  svc.deps.now = () => new Date('2026-10-25T16:00:00Z')
   svc.deps.hasKey = () => true
   svc.deps.deepseekChat = async (messages) => {
     calls.push(messages)

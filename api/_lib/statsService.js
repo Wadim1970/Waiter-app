@@ -33,7 +33,7 @@ export async function getStats(restaurantId, fromStr, toStr) {
     byWeekday: days >= 7 ? byWeekday(data.sessions, period.days) : null,
     dishes: dishStats(data.sessions, data.dishes),
     tables: tableStats(data.sessions, data.tables, days),
-    ai: aiStats(data.events, data.guestEvents, data.dishes, totals.revenue),
+    ai: aiStats(data.events, data.guestEvents, data.dishes, totals.revenue, data.cartEvents),
     guestApp: guestAppStats(data.sessions),
   }
 }

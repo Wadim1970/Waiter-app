@@ -186,8 +186,18 @@ function numsOf(menu, ids) {
   return out
 }
 
+// Время дня — что уместно предлагать (меню в промте уже отфильтровано,
+// строка объясняет модели почему).
+const MEAL_HINT = {
+  breakfast: 'Сейчас завтрак: уместны завтраки, выпечка, кофе, чай, соки; стейки, супы и алкоголь не предлагай.',
+  lunch: 'Сейчас обед: уместны суп, горячее, салат, напитки.',
+  dinner: 'Сейчас ужин: уместны закуски, горячее с соусом и гарниром, вино и напитки, десерт; суп сам не предлагай.',
+  late: 'Сейчас поздний вечер: уместны лёгкие закуски, салаты, напитки и десерты; тяжёлое горячее не предлагай.',
+}
+export const mealHint = (meal) => MEAL_HINT[meal] || null
+
 // Карточки-подсказки по тегу официанта (/api/waiter/suggest).
-export function buildSuggestMessages({ menu, stage, tag, guest, cart, offeredIds }) {
+export function buildSuggestMessages({ menu, stage, tag, guest, cart, offeredIds, meal }) {
   const system = `${PRINCIPLES}
 - Лучше одно точное предложение, чем три случайных. Предложи от 1 до 3 блюд, лучшее первым.
 
@@ -210,6 +220,7 @@ ${menu.text}`
     `Гость: ${guestLineOf(guest)}.`,
     `Уже в заказе: ${cart && cart.length ? cart.join(', ') : 'пока ничего'}.`,
     stage ? `Момент обслуживания: ${stage}.` : null,
+    mealHint(meal),
     `Официант ищет: ${ask}.`,
     offered.length ? `Уже предлагали, не повторяй: ${offered.join(', ')}.` : null,
   ].filter(Boolean).join('\n')
@@ -248,7 +259,7 @@ export function parsePicks(content, menu, banned = new Set()) {
 }
 
 // Виджет «Подсказка от RestAI» на экране заказа: одна связная подсказка.
-export function buildRecommendMessages({ menu, cart, guest }) {
+export function buildRecommendMessages({ menu, cart, guest, meal }) {
   const system = `${PRINCIPLES}
 
 Гость уже сделал заказ. Дай официанту ОДНУ подсказку — одно, максимум два лучших дополнения к этому заказу из меню, по точным названиям. Не перечисляй варианты.
@@ -259,8 +270,11 @@ ${OFFER_SAY_NOTE}
 Меню ресторана (номер. название — цена. описание [пометки]):
 ${menu.text}`
 
-  const user = `Гость: ${guestLineOf(guest)}.
-Уже в заказе: ${cart && cart.length ? cart.join(', ') : 'пока ничего'}.`
+  const user = [
+    `Гость: ${guestLineOf(guest)}.`,
+    `Уже в заказе: ${cart && cart.length ? cart.join(', ') : 'пока ничего'}.`,
+    mealHint(meal),
+  ].filter(Boolean).join('\n')
 
   return [
     { role: 'system', content: system },

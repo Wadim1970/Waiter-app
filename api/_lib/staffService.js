@@ -27,7 +27,7 @@ export async function loadPeriod(restaurantId, fromStr, toStr) {
       .in('table_id', tableIds.length ? tableIds : ['00000000-0000-0000-0000-000000000000'])
       .or(`is_permanent.eq.true,assigned_date.gte.${period.from}`)),
     selectAll(() => deps.db.from('ai_suggestion_events')
-      .select('waiter_id, dish_id, category, technique, outcome, created_at, channel')
+      .select('waiter_id, dish_id, category, technique, outcome, created_at, channel, tag')
       .eq('restaurant_id', restaurantId)
       .gte('created_at', range.from.toISOString()).lt('created_at', range.to.toISOString())),
     selectAll(() => deps.db.from('menu_items').select('id, dish_name, cost_rub, menu_section, is_hidden').eq('restaurant_id', restaurantId)),
@@ -76,9 +76,13 @@ export async function loadPeriod(restaurantId, fromStr, toStr) {
   const guestEvents = events
     .filter((e) => e.channel === 'guest_menu')
     .map((e) => ({ ...e, date: businessDateOf(new Date(e.created_at), tz) }))
+  // Совет в корзине гостя (и его ответ на «можно позже предложить десерт?»).
+  const cartEvents = events
+    .filter((e) => e.channel === 'guest_cart')
+    .map((e) => ({ ...e, date: businessDateOf(new Date(e.created_at), tz) }))
 
   return {
-    restaurant, today, period, tables, tableIds, sessions, events: waiterEvents, guestEvents, dishes, shifts, waiterReviews, assignRows: assigned,
+    restaurant, today, period, tables, tableIds, sessions, events: waiterEvents, guestEvents, cartEvents, dishes, shifts, waiterReviews, assignRows: assigned,
   }
 }
 

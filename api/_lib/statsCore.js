@@ -162,13 +162,36 @@ export function tableStats(sessions, tables, days) {
 
 // Эффект ИИ: подсказки официанту и гостю в меню — предложено, принято,
 // на какую сумму, какая доля выручки.
-export function aiStats(waiterEvents, guestEvents, dishes, revenue) {
+export const CART_GAP_LABELS = {
+  sauce: 'Соус', side: 'Гарнир', drink: 'Напиток', soup: 'Суп или салат', main: 'Горячее',
+  starter: 'Закуска или салат', snack: 'Закуска к напитку', dessert: 'Десерт по напоминанию',
+}
+
+export function aiStats(waiterEvents, guestEvents, dishes, revenue, cartEvents = []) {
   const w = upsellStats(waiterEvents, dishes)
   const g = upsellStats(guestEvents, dishes)
-  const aiRevenue = w.revenue + g.revenue
+  // Советы в корзине: сами советы — отдельно от ответа «можно позже десерт?».
+  const asks = cartEvents.filter((e) => e.tag === 'dessert_ask')
+  const c = upsellStats(cartEvents.filter((e) => e.tag !== 'dessert_ask'), dishes)
+  const byGap = new Map()
+  for (const e of cartEvents) {
+    if (e.tag === 'dessert_ask') continue
+    const k = e.tag || 'other'
+    const x = byGap.get(k) || { key: k, label: CART_GAP_LABELS[k] || 'Другое', offered: 0, accepted: 0 }
+    x.offered++
+    if (e.outcome === 'accepted') x.accepted++
+    byGap.set(k, x)
+  }
+  const aiRevenue = w.revenue + g.revenue + c.revenue
   return {
     waiter: { offered: w.offered, accepted: w.accepted, rate: w.rate, revenue: w.revenue, byTechnique: w.byTechnique, byCategory: w.byCategory, topDishes: w.topDishes },
     guestMenu: { offered: g.offered, accepted: g.accepted, rate: g.rate, revenue: g.revenue, topDishes: g.topDishes },
+    guestCart: {
+      offered: c.offered, accepted: c.accepted, rate: c.rate, revenue: c.revenue, topDishes: c.topDishes,
+      byGap: [...byGap.values()].map((x) => ({ ...x, rate: pct(x.accepted, x.offered) })).sort((a, b) => b.offered - a.offered),
+      dessertAsked: asks.length,
+      dessertYes: asks.filter((e) => e.outcome === 'accepted').length,
+    },
     revenue: aiRevenue,
     share: pct(aiRevenue, revenue),
   }
