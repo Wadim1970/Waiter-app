@@ -1,4 +1,9 @@
 import { supabase } from './supabase'
+import { buildMarks } from './tableMarks.js'
+
+// self — своя галочка (снять можно), locked — закреплён администратором (снять нельзя).
+export interface TableMark { self: boolean; locked: boolean }
+export type TableMarks = Record<string, TableMark>
 
 export type TableZone = 'main' | 'veranda' | 'banquet'
 export type TableStatus = 'free' | 'occupied' | 'preparing' | 'resting' | 'bill_requested' | 'call'
@@ -144,6 +149,31 @@ export async function getAllTables(restaurantId: string): Promise<TableWithSessi
   if (error) throw error
 
   return (data as any[]).map(mapViewRow)
+}
+
+// Галочки официанта в ЭТОМ ресторане: свои (можно снять) и закреплённые
+// администратором (снять нельзя). Логика — в tableMarks.js.
+export async function getMyTableMarks(waiterId: string, restaurantId: string): Promise<TableMarks> {
+  const today = new Date().toISOString().split('T')[0]
+
+  const { data, error } = await supabase
+    .from('waiter_table_assignments')
+    .select('table_id, source, is_permanent, assigned_date, tables!inner ( restaurant_id )')
+    .eq('waiter_id', waiterId)
+    .eq('tables.restaurant_id', restaurantId)
+    .or(`assigned_date.eq.${today},is_permanent.eq.true`)
+
+  if (error) throw error
+
+  return buildMarks(data as any[], today)
+}
+
+// Поставить / снять свою галочку. Возвращает итоговое состояние стола с сервера
+// (set_my_table, миграция 20261024140000).
+export async function setMyTable(tableId: string, selected: boolean): Promise<TableMark> {
+  const { data, error } = await supabase.rpc('set_my_table', { p_table_id: tableId, p_selected: selected })
+  if (error) throw error
+  return { self: Boolean(data?.selected), locked: Boolean(data?.locked) }
 }
 
 export function formatElapsedTime(startedAt: string | null): string {

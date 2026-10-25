@@ -5,9 +5,14 @@ import styles from './TableCard.module.css'
 interface Props {
   table: TableWithSession
   onClick: (table: TableWithSession) => void
+  // Галочка «обслуживаю этот стол» (вкладка «Все столы»). Без onToggle её нет.
+  checked?: boolean
+  // Стол закреплён администратором — галочка стоит и не снимается.
+  locked?: boolean
+  onToggle?: (table: TableWithSession, selected: boolean) => void
 }
 
-export default function TableCard({ table, onClick }: Props) {
+export default function TableCard({ table, onClick, checked = false, locked = false, onToggle }: Props) {
   const colors = STATUS_COLORS[table.status]
   // При "ждут счёт" дописываем, какой счёт нести: общий или раздельный —
   // гость выбрал это, когда звал официанта.
@@ -37,6 +42,21 @@ export default function TableCard({ table, onClick }: Props) {
         <span className={styles.zone}>{ZONE_LABELS[table.zone]}</span>
         <span className={styles.status}>{STATUS_LABELS[table.status]}{billNote}</span>
       </div>
+      {onToggle && (
+        <label
+          className={styles.check}
+          title={locked ? 'Закреплён администратором' : undefined}
+          onClick={e => e.stopPropagation()}
+        >
+          <input
+            type="checkbox"
+            checked={checked || locked}
+            disabled={locked}
+            onChange={e => onToggle(table, e.target.checked)}
+            aria-label={`Обслуживаю стол ${table.number}`}
+          />
+        </label>
+      )}
     </div>
   )
 }

@@ -75,10 +75,12 @@ export function resolveSessionWaiter(session, { eventWaiterIds = [], assignedWai
 }
 
 // Закреплённые за столами на дату: на дату важнее «навсегда», затем последний назначенный.
+// Галочка официанта (source = 'self') действует со дня, когда он её поставил, —
+// в прошлые дни стол за ним не числится.
 export function assignmentsForDate(rows, dateStr) {
   const byTable = new Map()
   const sorted = [...(rows || [])]
-    .filter((a) => a.is_permanent || a.assigned_date === dateStr)
+    .filter((a) => a.source === 'self' ? a.assigned_date <= dateStr : (a.is_permanent || a.assigned_date === dateStr))
     .sort((a, b) => (a.is_permanent === b.is_permanent ? String(b.created_at).localeCompare(String(a.created_at)) : a.is_permanent ? 1 : -1))
   for (const a of sorted) {
     if (!byTable.has(a.table_id)) byTable.set(a.table_id, [])
