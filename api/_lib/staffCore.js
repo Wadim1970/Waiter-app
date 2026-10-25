@@ -48,7 +48,8 @@ export function aggregate(sessions) {
   const paid = sessions.filter((s) => s.total > 0)
   const revenue = paid.reduce((s, x) => s + x.total, 0)
   const guests = sessions.reduce((s, x) => s + (x.guestCount || 0), 0)
-  const calls = sessions.flatMap((s) => s.calls || [])
+  // «Десерт» — напоминание официанту от ИИ, а не вызов гостя.
+  const calls = sessions.flatMap((s) => s.calls || []).filter((c) => c.kind !== 'dessert')
   const answered = calls.filter((c) => c.reactionSec != null)
   const durations = sessions.filter((s) => !s.active && s.durationMin > 0).map((s) => s.durationMin)
   const firstOrder = sessions.map((s) => s.firstOrderMin).filter((m) => m != null && m <= 180)

@@ -31,14 +31,14 @@ const activeUntil = (t) => !!t && (t === 'infinity' || new Date(t).getTime() > D
 
 // Приоритет блюд в рекомендациях («Кухня» → приоритет и «срочно продать»):
 // при равных парах гостю первой показываем приоритетную.
-async function loadPriorities(restaurantId, items) {
+export async function loadPriorities(restaurantId, items) {
   const { data } = await deps.supabase.from('menu_item_costing').select('dish_id, push_priority').eq('restaurant_id', restaurantId)
   const out = new Map((data || []).map((c) => [c.dish_id, c.push_priority || 0]))
   for (const it of items) if (it.urgent) out.set(it.id, 3)
   return out
 }
 
-async function loadMenu(restaurantId) {
+export async function loadMenu(restaurantId) {
   const { data, error } = await deps.supabase
     .from('menu_items')
     // '*' — чтобы работало и до миграции с is_hidden (колонки может не быть).
@@ -60,6 +60,10 @@ async function loadMenu(restaurantId) {
     stopped: activeUntil(mi.stop_until),
     urgent: activeUntil(mi.urgent_until),
     ingredients: Array.isArray(mi.ingredients) ? mi.ingredients : [],
+    // Роль блюда и время, когда его уместно предлагать, — ручная поправка
+    // (миграция 20261026010000_cart_advice); пусто — определяет mealCore.
+    role: mi.course_role || null,
+    mealTimes: Array.isArray(mi.meal_times) ? mi.meal_times : null,
   }))
 }
 
@@ -216,7 +220,7 @@ export async function generateAll({ force = false } = {}) {
 }
 
 // Активные пары ресторана: ручные первыми, затем по rank.
-async function loadActivePairs(restaurantId) {
+export async function loadActivePairs(restaurantId) {
   const { data, error } = await deps.supabase
     .from('menu_pairings')
     .select('dish_id, pair_dish_id, rank, lead, reason, source, updated_at')
@@ -227,7 +231,7 @@ async function loadActivePairs(restaurantId) {
     (a.source === 'manual' ? 0 : 1) - (b.source === 'manual' ? 0 : 1) || a.rank - b.rank)
 }
 
-async function loadGuest(deviceId) {
+export async function loadGuest(deviceId) {
   const { data: gid } = await deps.supabase.rpc('guest_id_for_device', { p_device_id: deviceId })
   if (!gid) return null
   const { data } = await deps.supabase.from('guests').select('dislikes, preferences').eq('id', gid).maybeSingle()

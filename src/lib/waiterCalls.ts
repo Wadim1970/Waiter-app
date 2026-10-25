@@ -7,8 +7,10 @@ export interface WaiterCall {
   table_number: string
   target_waiter_id: string | null
   // 'service'   — обычный вызов (кнопка-колокольчик у гостя);
-  // 'age_check' — гость заказал алкоголь, нужно подтвердить возраст.
-  kind: 'service' | 'age_check'
+  // 'age_check' — гость заказал алкоголь, нужно подтвердить возраст;
+  // 'dessert'   — гость разрешил позже предложить десерт, и время пришло
+  //               (горячее съедено) — подойти и предложить.
+  kind: 'service' | 'age_check' | 'dessert'
   status: 'pending' | 'acknowledged' | 'cancelled' | 'confirmed' | 'declined'
   reason: string | null
   created_at: string

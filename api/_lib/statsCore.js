@@ -178,9 +178,9 @@ export function aiStats(waiterEvents, guestEvents, dishes, revenue) {
 // отзывы, посадки с участием гостевого меню.
 export function guestAppStats(sessions) {
   const reviewsCount = sessions.filter((s) => s.review).length
-  const calls = sessions.flatMap((s) => s.calls || [])
+  const calls = sessions.flatMap((s) => s.calls || []).filter((c) => c.kind !== 'dessert')
   const answered = calls.filter((c) => c.reactionSec != null)
-  const withCalls = sessions.filter((s) => (s.calls || []).length).length
+  const withCalls = sessions.filter((s) => (s.calls || []).some((c) => c.kind !== 'dessert')).length
   return {
     calls: calls.length,
     answered: answered.length,

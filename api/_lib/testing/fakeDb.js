@@ -78,8 +78,10 @@ for (const op of Object.keys(OPS)) {
   Query.prototype[op] = function (c, v) { this.filters.push((r) => OPS[op](r, c, v)); return this }
 }
 
-export function fakeDb(tables = {}) {
+// rpcs — функции базы: { имя: (аргументы) => результат }.
+export function fakeDb(tables = {}, rpcs = {}) {
   const db = { tables: structuredClone(tables) }
   db.from = (t) => new Query(db, t)
+  db.rpc = async (name, args) => ({ data: rpcs[name] ? rpcs[name](args, db) : null, error: rpcs[name] ? null : { code: '42883', message: `function ${name} does not exist` } })
   return db
 }

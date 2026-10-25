@@ -253,17 +253,21 @@ export default function WaiterCallOverlay() {
   if (!activeCall) return null
 
   const isAgeCheck = activeCall.kind === 'age_check'
+  const isDessert = activeCall.kind === 'dessert'
 
   return (
     <div className={styles.overlay}>
       <div className={styles.modalBox}>
         <BellIcon />
         <h2 className={styles.title}>
-          {isAgeCheck ? 'Требуется подтвердить возраст' : 'Вызов официанта'}
+          {isAgeCheck ? 'Требуется подтвердить возраст' : isDessert ? 'Время предложить десерт' : 'Вызов официанта'}
         </h2>
         <p className={styles.tableNumber}>Стол №{activeCall.table_number}</p>
         {isAgeCheck && (
           <p className={styles.ageHint}>Гость заказал алкоголь</p>
+        )}
+        {isDessert && (
+          <p className={styles.ageHint}>{activeCall.reason || 'Гость согласился, чтобы ему предложили десерт'}</p>
         )}
         {queue.length > 1 && (
           <p className={styles.queueHint}>Ещё вызовов в очереди: {queue.length - 1}</p>
