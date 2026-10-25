@@ -16,7 +16,7 @@ const NOW = new Date('2026-10-25T12:00:00Z') // 15:00 МСК
 
 function seed() {
   return fakeDb({
-    restaurants: [{ restaurantId: R, name: 'Сыроварня', timezone: 'Europe/Moscow' }],
+    restaurants: [{ id: R, name: 'Сыроварня', timezone: 'Europe/Moscow' }],
     menu_items: [
       { id: 'b1', restaurant_id: R, dish_name: 'Борщ', menu_section: 'Популярное', section_order: 1, cost_rub: 830, cook_time_min: 15 },
       { id: 'b2', restaurant_id: R, dish_name: 'Борщ', menu_section: 'Супы', section_order: 2, cost_rub: 830, cook_time_min: 15 },

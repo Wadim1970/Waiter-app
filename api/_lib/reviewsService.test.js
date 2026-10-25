@@ -19,7 +19,7 @@ const OLGA = 'b0000000-0000-0000-0000-000000000002'
 beforeEach(() => {
   hall.deps.now = () => new Date('2026-10-25T17:00:00Z')
   hall.deps.db = fakeDb({
-    restaurants: [{ restaurantId: R, name: 'Сыроварня', timezone: 'Europe/Moscow' }],
+    restaurants: [{ id: R, name: 'Сыроварня', timezone: 'Europe/Moscow' }],
     tables: [{ id: T1, restaurant_id: R, number: 1, is_active: true }, { id: T2, restaurant_id: R, number: 2, is_active: true }],
     waiters: [{ id: ANNA, first_name: 'Анна', last_name: 'Петрова' }, { id: OLGA, first_name: 'Ольга', last_name: 'Смирнова' }],
     table_sessions: [
