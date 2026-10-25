@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase, supabaseRestaurants } from '../../../lib/supabase'
 import { getActiveShift } from '../QRScanner/QRScannerScreen'
@@ -6,6 +6,7 @@ import { getOrCreateOrder, addOrderItem, removeOrderItem, loadOrderItems } from 
 import type { TableWithSession } from '../../../lib/tables'
 import AiAssistantLayer from './AiAssistantLayer'
 import { readTableCtx } from '../../../lib/tableContext'
+import { hidePopularCopies } from '../../../lib/menuView'
 import styles from './MenuScreen.module.css'
 
 type MenuSection = { id: string; name: string; sort_order: number }
@@ -201,6 +202,13 @@ export default function MenuScreen() {
 
     query.then(({ data }) => setDishes(data || []))
   }, [activeSectionId, activeSubsectionId, activeSubSubsectionId])
+
+  // В режиме «Все» не показываем копию блюда из «Популярного», если оно есть в своём
+  // подразделе («два борща»). Поиск по id (AI-помощник) работает по полному списку dishes.
+  const visibleDishes = useMemo(
+    () => hidePopularCopies(dishes, subsections, activeSubsectionId) as MenuItem[],
+    [dishes, subsections, activeSubsectionId],
+  )
 
   const handleAdd = async (dish: MenuItem) => {
     const { data: groups } = await supabaseRestaurants
@@ -407,10 +415,10 @@ export default function MenuScreen() {
 
       {/* ── Dishes (карточки, без картинок) ── */}
       <div className={styles.content}>
-        {dishes.length === 0 && (
+        {visibleDishes.length === 0 && (
           <p className={styles.empty}>Блюда не найдены</p>
         )}
-        {dishes.map(dish => {
+        {visibleDishes.map(dish => {
           const qty = getQuantity(dish.id)
           return (
             <div key={dish.id} className={styles.dishRow} onClick={() => setInfoDish(dish)}>
