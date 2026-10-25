@@ -106,6 +106,7 @@ export function buildSession(session, ctx) {
     for (const it of its) {
       const mods = (modsByItem.get(it.id) || []).map((m) => modifierNames.get(m.modifier_id)).filter(Boolean)
       items.push({
+        dishId: it.item_id ?? null,
         name: dishNames.get(it.item_id) || 'Блюдо удалено из меню',
         seat: it.seat_number ?? null,
         quantity: it.quantity,
