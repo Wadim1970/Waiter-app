@@ -20,7 +20,9 @@ export const DEMO_JOB_MARK = 'Демо-доступ RestAI'
 
 export function demoConfig() {
   const env = process.env
-  const [from, to] = String(env.DEMO_TABLES || '1-9').split('-').map((n) => Number(n.trim()))
+  // DEMO_TABLES — какие столы отметить демо-официанту при первом входе
+  // («1-9»); не задано — все столы ресторана.
+  const [from, to] = String(env.DEMO_TABLES || '').split('-').map((n) => Number(n.trim()))
   return {
     code: String(env.DEMO_CODE || '1111'),
     phone: env.DEMO_WAITER_PHONE || '+70000000001',
@@ -29,7 +31,7 @@ export function demoConfig() {
     // «Сыроварня» — тестовый ресторан.
     restaurantId: env.DEMO_RESTAURANT_ID || 'dd89773c-0952-4fd1-9510-514094a928ee',
     tableFrom: from || 1,
-    tableTo: to || from || 9,
+    tableTo: to || from || Infinity,
     supabaseUrl: (env.SUPABASE_URL || env.VITE_SUPABASE_WAITER_URL || '').replace(/\/$/, ''),
     serviceKey: env.SUPABASE_SERVICE_KEY || '',
   }
@@ -76,9 +78,10 @@ export async function findDemoWaiterId(db, authUserId) {
 export async function ensureTableAssignments(db, cfg, waiterId) {
   const { data: tables, error } = await db
     .from('tables')
-    .select('id, number')
+    .select('id, number, is_active')
     .eq('restaurant_id', cfg.restaurantId)
   if (error) throw error
+  const active = (tables ?? []).filter((t) => t.is_active !== false)
   const inRestaurant = new Map((tables ?? []).map((t) => [t.id, t.number]))
 
   const { data: rows, error: exErr } = await db
@@ -87,7 +90,7 @@ export async function ensureTableAssignments(db, cfg, waiterId) {
     .eq('waiter_id', waiterId)
   // Нет колонки source (миграция 20261024140000 не применена) — галочек в
   // приложении ещё нет, оставляем как было: закрепление навсегда.
-  if (exErr?.code === '42703') return legacyAssignments(db, cfg, waiterId, tables ?? [])
+  if (exErr?.code === '42703') return legacyAssignments(db, cfg, waiterId, active)
   if (exErr) throw exErr
 
   const mine = (rows ?? []).filter((r) => inRestaurant.has(r.table_id))
@@ -108,7 +111,7 @@ export async function ensureTableAssignments(db, cfg, waiterId) {
 
   let added = 0
   if (!selfTables.size) {
-    const seed = (tables ?? []).filter((t) => t.number >= cfg.tableFrom && t.number <= cfg.tableTo)
+    const seed = active.filter((t) => t.number >= cfg.tableFrom && t.number <= cfg.tableTo)
     if (seed.length) {
       const { error: insErr } = await db.from('waiter_table_assignments').insert(
         seed.map((t) => ({ waiter_id: waiterId, table_id: t.id, is_permanent: true, assigned_date: todayUtc(), source: 'self' })),
@@ -163,7 +166,7 @@ export async function ensureTodayShift(db, cfg, waiterId) {
         slots_available: 0,
         pay_amount: 0,
         duties: DEMO_JOB_MARK,
-        responsibility_zone: `Столы ${cfg.tableFrom}–${cfg.tableTo}`,
+        responsibility_zone: Number.isFinite(cfg.tableTo) ? `Столы ${cfg.tableFrom}–${cfg.tableTo}` : 'Все столы зала',
       })
       .select('id')
       .single()

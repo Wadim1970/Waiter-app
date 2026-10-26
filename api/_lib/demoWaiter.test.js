@@ -8,6 +8,7 @@ const R = 'dd89773c-0952-4fd1-9510-514094a928ee'
 const OTHER = '22222222-2222-2222-2222-222222222222'
 const W = 'w-demo'
 const cfg = { restaurantId: R, tableFrom: 1, tableTo: 3 }
+const allTables = { restaurantId: R, tableFrom: 1, tableTo: Infinity }
 const T = (n) => `t${n}`
 const tables = [1, 2, 3, 4].map((n) => ({ id: T(n), restaurant_id: R, number: n })).concat([{ id: 'x1', restaurant_id: OTHER, number: 1 }])
 const mine = (db) => db.tables.waiter_table_assignments.filter((a) => a.waiter_id === W)
@@ -38,4 +39,12 @@ test('снятая галочка при следующем входе не во
   assert.deepEqual(sig(db), ['t3:self'])
   db.tables.waiter_table_assignments = []
   assert.deepEqual((await ensureTableAssignments(db, cfg, W)).tables, [1, 2, 3])
+})
+
+test('по умолчанию — все столы ресторана (DEMO_TABLES не задан)', async () => {
+  const { demoConfig } = await import('./demoWaiter.js')
+  delete process.env.DEMO_TABLES
+  assert.equal(demoConfig().tableTo, Infinity)
+  const db = fakeDb({ tables, waiter_table_assignments: [] })
+  assert.deepEqual((await ensureTableAssignments(db, allTables, W)).tables, [1, 2, 3, 4])
 })

@@ -1,5 +1,12 @@
 .screen {
-  min-height: 100vh;
+  /* Экран прокручивается сам: #root приложения ровно в высоту экрана и
+     обрезает лишнее (как и на других экранах), поэтому прокрутка страницы
+     не работала — нижний ряд столов уходил за край без возможности долистать. */
+  height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
   background: white;
   display: flex;
   flex-direction: column;

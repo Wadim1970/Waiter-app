@@ -9,7 +9,7 @@
 //   2. Создаёт (или обновляет пароль) auth-пользователя демо-официанта по
 //      телефону-заглушке DEMO_WAITER_PHONE (+70000000001).
 //   3. Создаёт строку в waiters и привязывает её к этому пользователю.
-//   4. Закрепляет за ним столы DEMO_TABLES (1–9) «Сыроварни» навсегда,
+//   4. Отмечает ему столы «Сыроварни» (DEMO_TABLES, по умолчанию — все) — снять можно в приложении,
 //      заводит смену на сегодня, проверяет, что вход паролем работает.
 import fs from 'node:fs'
 import path from 'node:path'
@@ -100,7 +100,7 @@ await resetDemoName(db, cfg, waiterId)
 
 const { tables, added } = await ensureTableAssignments(db, cfg, waiterId)
 console.log(`• Отмечены столы ${tables.join(', ') || '— нет!'} (добавлено ${added}; снять можно в приложении, вкладка «Все столы»)`)
-if (!tables.length) console.log(`  ⚠ В ресторане ${cfg.restaurantId} нет столов ${cfg.tableFrom}–${cfg.tableTo}`)
+if (!tables.length) console.log(`  ⚠ В ресторане ${cfg.restaurantId} нет столов для демо-официанта`)
 
 try {
   await ensureTodayShift(db, cfg, waiterId)
