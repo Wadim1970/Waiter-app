@@ -65,32 +65,76 @@ export async function findDemoWaiterId(db, authUserId) {
   return data?.id ?? null
 }
 
-// Столы tableFrom..tableTo ресторана — навсегда за демо-официантом.
+// Столы демо-официанта — его СОБСТВЕННЫЕ галочки (source = 'self'), как если
+// бы он сам отметил их во вкладке «Все столы»: снять можно. Раньше они
+// ставились «как администратором» (source = 'admin', навсегда) — такие
+// галочки в приложении не снимаются, и все столы 1–9 висели отмеченными.
+//   • прежние «админские» закрепления демо-официанта переводим в его галочки;
+//   • столы tableFrom..tableTo отмечаем, только если у него нет НИ ОДНОЙ
+//     своей галочки в этом ресторане (первый вход или всё сняли) — иначе
+//     уважаем его выбор: снятая галочка при следующем входе не вернётся.
 export async function ensureTableAssignments(db, cfg, waiterId) {
   const { data: tables, error } = await db
     .from('tables')
     .select('id, number')
     .eq('restaurant_id', cfg.restaurantId)
-    .gte('number', cfg.tableFrom)
-    .lte('number', cfg.tableTo)
   if (error) throw error
+  const inRestaurant = new Map((tables ?? []).map((t) => [t.id, t.number]))
 
-  const { data: existing, error: exErr } = await db
+  const { data: rows, error: exErr } = await db
     .from('waiter_table_assignments')
-    .select('table_id')
+    .select('id, table_id, source, is_permanent')
     .eq('waiter_id', waiterId)
-    .eq('is_permanent', true)
+  // Нет колонки source (миграция 20261024140000 не применена) — галочек в
+  // приложении ещё нет, оставляем как было: закрепление навсегда.
+  if (exErr?.code === '42703') return legacyAssignments(db, cfg, waiterId, tables ?? [])
   if (exErr) throw exErr
 
+  const mine = (rows ?? []).filter((r) => inRestaurant.has(r.table_id))
+  const selfTables = new Set(mine.filter((r) => r.source === 'self').map((r) => r.table_id))
+  let converted = 0
+  for (const r of mine.filter((x) => x.source !== 'self')) {
+    if (selfTables.has(r.table_id)) {
+      const { error: delErr } = await db.from('waiter_table_assignments').delete().eq('id', r.id)
+      if (delErr) throw delErr
+    } else {
+      const { error: upErr } = await db.from('waiter_table_assignments')
+        .update({ source: 'self', is_permanent: true }).eq('id', r.id)
+      if (upErr) throw upErr
+      selfTables.add(r.table_id)
+    }
+    converted++
+  }
+
+  let added = 0
+  if (!selfTables.size) {
+    const seed = (tables ?? []).filter((t) => t.number >= cfg.tableFrom && t.number <= cfg.tableTo)
+    if (seed.length) {
+      const { error: insErr } = await db.from('waiter_table_assignments').insert(
+        seed.map((t) => ({ waiter_id: waiterId, table_id: t.id, is_permanent: true, assigned_date: todayUtc(), source: 'self' })),
+      )
+      if (insErr) throw insErr
+      seed.forEach((t) => selfTables.add(t.id))
+      added = seed.length
+    }
+  }
+  return { tables: [...selfTables].map((id) => inRestaurant.get(id)).sort((a, b) => a - b), added, converted }
+}
+
+async function legacyAssignments(db, cfg, waiterId, tables) {
+  const seed = tables.filter((t) => t.number >= cfg.tableFrom && t.number <= cfg.tableTo)
+  const { data: existing, error } = await db.from('waiter_table_assignments')
+    .select('table_id').eq('waiter_id', waiterId).eq('is_permanent', true)
+  if (error) throw error
   const have = new Set((existing ?? []).map((a) => a.table_id))
-  const missing = (tables ?? []).filter((t) => !have.has(t.id))
+  const missing = seed.filter((t) => !have.has(t.id))
   if (missing.length) {
     const { error: insErr } = await db.from('waiter_table_assignments').insert(
       missing.map((t) => ({ waiter_id: waiterId, table_id: t.id, is_permanent: true, assigned_date: todayUtc() })),
     )
     if (insErr) throw insErr
   }
-  return { tables: (tables ?? []).map((t) => t.number).sort((a, b) => a - b), added: missing.length }
+  return { tables: seed.map((t) => t.number).sort((a, b) => a - b), added: missing.length, converted: 0 }
 }
 
 // Подтверждённая смена на сегодня. Без свободных мест (slots_available = 0) —

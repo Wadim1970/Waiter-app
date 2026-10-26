@@ -10,9 +10,11 @@ interface Props {
   // Стол закреплён администратором — галочка стоит и не снимается.
   locked?: boolean
   onToggle?: (table: TableWithSession, selected: boolean) => void
+  // Нажали на галочку стола, закреплённого администратором, — объяснить почему не снимается.
+  onLockedTap?: (table: TableWithSession) => void
 }
 
-export default function TableCard({ table, onClick, checked = false, locked = false, onToggle }: Props) {
+export default function TableCard({ table, onClick, checked = false, locked = false, onToggle, onLockedTap }: Props) {
   const colors = STATUS_COLORS[table.status]
   // При "ждут счёт" дописываем, какой счёт нести: общий или раздельный —
   // гость выбрал это, когда звал официанта.
@@ -46,7 +48,7 @@ export default function TableCard({ table, onClick, checked = false, locked = fa
         <label
           className={styles.check}
           title={locked ? 'Закреплён администратором' : undefined}
-          onClick={e => e.stopPropagation()}
+          onClick={e => { e.stopPropagation(); if (locked) onLockedTap?.(table) }}
         >
           <input
             type="checkbox"

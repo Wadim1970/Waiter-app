@@ -99,7 +99,7 @@ if (!waiterId) {
 await resetDemoName(db, cfg, waiterId)
 
 const { tables, added } = await ensureTableAssignments(db, cfg, waiterId)
-console.log(`• Столы ${tables.join(', ') || '— не найдены!'} закреплены навсегда (добавлено ${added})`)
+console.log(`• Отмечены столы ${tables.join(', ') || '— нет!'} (добавлено ${added}; снять можно в приложении, вкладка «Все столы»)`)
 if (!tables.length) console.log(`  ⚠ В ресторане ${cfg.restaurantId} нет столов ${cfg.tableFrom}–${cfg.tableTo}`)
 
 try {

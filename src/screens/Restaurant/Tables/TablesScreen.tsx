@@ -145,6 +145,11 @@ export default function TablesScreen() {
     }
   }
 
+  const handleLockedTap = (table: TableWithSession) => {
+    setNotice(`Стол ${table.number} закрепил за вами администратор — снять его может только он`)
+    setTimeout(() => setNotice(null), 4000)
+  }
+
   const handleTableClick = async (table: TableWithSession) => {
     // Сначала ищем активный (не оплаченный) заказ стола — В НЁМ МОГУТ БЫТЬ И
     // НЕотправленные позиции (status 'new'), которые официант набрал в корзину,
@@ -257,7 +262,7 @@ export default function TablesScreen() {
                 table={table}
                 onClick={handleTableClick}
                 {...(tab === 'all' && waiterId
-                  ? { onToggle: handleToggle, checked: !!marks[table.id]?.self, locked: !!marks[table.id]?.locked }
+                  ? { onToggle: handleToggle, onLockedTap: handleLockedTap, checked: !!marks[table.id]?.self, locked: !!marks[table.id]?.locked }
                   : {})}
               />
             ))}
