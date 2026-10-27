@@ -73,6 +73,21 @@ test('заказы посадки: по table_session_id, старые — по 
   assert.deepEqual(ordersOfSession(s, orders).map((o) => o.id), ['o1', 'o2'])
 })
 
+test('неотправленные корзины (status new) не входят в итог и список блюд посадки', () => {
+  const s = { id: 's1', table_id: 't1', waiter_id: null, status: 'free', guest_count: 2, started_at: '2026-10-22T08:00:00Z', ended_at: '2026-10-22T09:30:00Z', is_active: false }
+  const out = buildSession(s, {
+    orders: [{ id: 'o1' }],
+    itemsByOrder: new Map([['o1', [
+      { id: 'i1', item_id: 'd1', seat_number: 1, quantity: 1, unit_price: 500, status: 'sent', sent_at: '2026-10-22T08:20:00Z' },
+      { id: 'i2', item_id: 'd2', seat_number: 2, quantity: 3, unit_price: 300, status: 'new', sent_at: null },
+    ]]]),
+    dishNames: new Map([['d1', 'Салат'], ['d2', 'Десерт']]),
+  })
+  assert.equal(out.total, 500)
+  assert.deepEqual(out.items.map((i) => i.name), ['Салат'])
+  assert.equal(out.firstOrderMin, 20)
+})
+
 test('посадка целиком: чек, места, официант, вызовы, доп. продажи, отзыв', () => {
   const s = { id: 's1', table_id: 't1', waiter_id: null, status: 'free', guest_count: 0, started_at: '2026-10-22T08:00:00Z', ended_at: '2026-10-22T09:30:00Z', is_active: false }
   const out = buildSession(s, {

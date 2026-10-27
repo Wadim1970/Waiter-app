@@ -173,38 +173,11 @@ export default function TablesScreen() {
       return
     }
 
-    // Заказа нет. Свободный стол — на экран гостей; занятый (гость отсканировал
-    // QR) с непустыми черновиками корзин — на экран корзин гостей.
-    if (table.status === 'free') {
-      navigate(`/restaurant/table/${table.id}/guests`, { state: { table } })
-    } else {
-      // Стол «Занят», но заказа в БД ещё нет. Смотрим черновики корзин гостей:
-      // если кто-то уже что-то набрал (даже не отправив на кухню) — открываем
-      // экран с корзиной каждого гостя; если ни у кого ничего — ведём на тот же
-      // экран, что и по свободному столу (гости → меню).
-      const { data: drafts } = await supabase.rpc('get_table_cart_drafts', { p_table_id: table.id })
-      if (Array.isArray(drafts) && drafts.length > 0) {
-        // Материализуем черновики гостей в заказ (status 'new') и открываем
-        // КОРЗИНУ СТОЛА (AllOrdersScreen): официант сперва видит, что гости уже
-        // набрали, и оттуда либо редактирует (тап по гостю → экран заказа),
-        // либо сам отправляет на кухню. Тот же экран, что и для стола с уже
-        // существующим заказом (ветка order?.id выше). Раньше отсюда сразу
-        // проваливались в меню, минуя просмотр корзины — это и убираем.
-        const seats = (drafts as { seat_number: number }[])
-          .map(d => d.seat_number)
-          .sort((a, b) => a - b)
-        let orderId: string | undefined
-        for (const s of seats) {
-          const { data } = await supabase.rpc('take_guest_cart', { p_table_id: table.id, p_seat_number: s })
-          orderId = Array.isArray(data) ? data[0]?.order_id : (data as { order_id?: string })?.order_id
-        }
-        navigate(`/restaurant/table/${table.id}/all-orders`, {
-          state: { table, guests: [], orderId },
-        })
-      } else {
-        navigate(`/restaurant/table/${table.id}/guests`, { state: { table } })
-      }
-    }
+    // Заказа нет — на экран гостей (там заказ заводится, когда официант набирает
+    // блюда). Корзины гостей теперь лежат в самом заказе стола, отдельного
+    // «взять корзину» нет: если гость что-то набрал, заказ уже существует и
+    // открывается веткой выше.
+    navigate(`/restaurant/table/${table.id}/guests`, { state: { table } })
   }
 
   if (authorized === false) {

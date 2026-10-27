@@ -105,7 +105,12 @@ export async function getOrCreateOrder(
     .select('id')
     .eq('table_id', tableId)
     .eq('restaurant_id', restaurantId)
-    .eq('status', 'new')
+    // Тот же заказ, что видит гость (cart_*, place_guest_order): неоплаченный
+    // new/cooking. Раньше искали только 'new' и после отправки на кухню
+    // заводили второй заказ на тот же стол.
+    .in('status', ['new', 'cooking'])
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle()
 
   if (existing?.id) return existing.id
@@ -144,6 +149,11 @@ export async function addOrderItem(
       .eq('order_id', orderId)
       .eq('item_id', itemId)
       .eq('seat_number', seatNumber)
+      // Плюсуем только в неотправленную строку: к уже отправленной на кухню
+      // добавлять порцию нельзя — кухня её не увидит.
+      .eq('status', 'new')
+      .is('comment', null)
+      .limit(1)
       .maybeSingle()
 
     if (existing) {
