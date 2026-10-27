@@ -103,7 +103,8 @@ export function buildSession(session, ctx) {
   const items = []
   let total = 0
   for (const o of orders) {
-    const its = itemsByOrder.get(o.id) || []
+    // Строки 'new' — корзины, ещё не отправленные на кухню: это не заказ.
+    const its = (itemsByOrder.get(o.id) || []).filter((it) => it.status !== 'new')
     total += orderItemsTotal(its, modsByItem)
     for (const it of its) {
       const mods = (modsByItem.get(it.id) || []).map((m) => modifierNames.get(m.modifier_id)).filter(Boolean)
@@ -123,7 +124,7 @@ export function buildSession(session, ctx) {
 
   const seats = new Set(items.map((i) => i.seat).filter((s) => s != null))
   // Через сколько после посадки ушёл на кухню первый заказ.
-  const firstSent = orders.flatMap((o) => (itemsByOrder.get(o.id) || []).map((it) => it.sent_at)).filter(Boolean)
+  const firstSent = orders.flatMap((o) => (itemsByOrder.get(o.id) || []).filter((it) => it.status !== 'new').map((it) => it.sent_at)).filter(Boolean)
     .map((t) => new Date(t).getTime()).sort((a, b) => a - b)[0]
   const firstOrderMin = firstSent ? Math.max(0, Math.round((firstSent - new Date(session.started_at).getTime()) / 60000)) : null
   const waiter = resolveSessionWaiter(session, {

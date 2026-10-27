@@ -85,17 +85,17 @@ test('зал сегодня: что сейчас, вызов, закреплен
   assert.deepEqual(t1.layout, { x: 10, y: 10, w: 8, h: 8, shape: 'round', rotation: 0 })
   assert.equal(t2.layout, null)
   assert.equal(t1.live.sessionId, 's2')
-  assert.equal(t1.live.total, 830)
+  assert.equal(t1.live.total, 0) // единственная строка стола — неотправленная корзина (status new): в итог не входит
   assert.deepEqual(t1.live.waiter, { id: W2, name: 'Демо-официант', inferred: true }) // по ИИ-событию заказа
   assert.equal(t1.pendingCall, true)
-  assert.deepEqual(t1.day, { sessions: 2, guests: 5, revenue: 2 * 830 + 4170 + 160 + 830 })
+  assert.deepEqual(t1.day, { sessions: 2, guests: 5, revenue: 2 * 830 + 4170 + 160 })
   assert.deepEqual(t1.assigned.map((a) => [a.name, a.permanent]), [['Анна Петрова', true]])
   assert.deepEqual(t2.assigned, []) // без официанта — админка подсветит
   assert.equal(t2.day.sessions, 0) // ночь на 22-е — день 21-го
   assert.equal(t2.reservations.length, 1)
   assert.deepEqual(t3.assigned.map((a) => a.name), ['Демо-официант'])
   assert.equal(h.summary.sessions, 2)
-  assert.equal(h.summary.revenue, 6820)
+  assert.equal(h.summary.revenue, 5990)
   assert.ok(h.waiters.some((w) => w.id === W2)) // закреплённый фрилансер — в списке
 })
 

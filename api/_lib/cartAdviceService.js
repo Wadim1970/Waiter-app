@@ -136,7 +136,7 @@ async function guestFood(rem, menu) {
   const byId = new Map(menu.map((m) => [m.id, m]))
   return (items || [])
     .filter((it) => mine.has(`${it.order_id}:${it.seat_number}`) || (!mine.size && it.seat_number === rem.seat_number))
-    .filter((it) => it.status !== 'cancelled' && byId.has(it.item_id) && isFood(roleOf(byId.get(it.item_id))))
+    .filter((it) => it.status !== 'cancelled' && it.status !== 'new' && byId.has(it.item_id) && isFood(roleOf(byId.get(it.item_id))))
     .map((it) => ({ readyAt: it.ready_at || null }))
 }
 

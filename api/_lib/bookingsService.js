@@ -43,7 +43,9 @@ async function appVisits(restaurantId, guests, tableById) {
     (q) => q.eq('restaurant_id', restaurantId))
   const orderById = new Map(orders.filter((o) => o.status !== 'cancelled').map((o) => [o.id, o]))
   const mine = seats.filter((s) => orderById.has(s.order_id))
-  const items = await selectIn('order_items', 'id, order_id, item_id, seat_number, quantity, unit_price, status', 'order_id', mine.map((s) => s.order_id))
+  // Строки 'new' — неотправленные корзины, не заказ.
+  const items = (await selectIn('order_items', 'id, order_id, item_id, seat_number, quantity, unit_price, status', 'order_id', mine.map((s) => s.order_id)))
+    .filter((i) => i.status !== 'new')
   const modsByItem = groupBy(await selectIn('order_item_modifiers', 'order_item_id, price_delta', 'order_item_id', items.map((i) => i.id)), 'order_item_id')
   const sessions = await selectIn('table_sessions', 'id, table_id, waiter_id, guest_count, started_at', 'id', orders.map((o) => o.table_session_id))
   const sessionById = new Map(sessions.map((s) => [s.id, s]))
@@ -99,7 +101,7 @@ async function reservationVisits(restaurantId, reservations, tableById) {
   const mods = await selectIn('order_item_modifiers', 'order_item_id, price_delta', 'order_item_id', items.map((i) => i.id))
   const modsByItem = groupBy(mods, 'order_item_id')
   const names = await dishNames(items.map((i) => i.item_id))
-  const itemsByOrder = groupBy(items.filter((i) => i.status !== 'cancelled'), 'order_id')
+  const itemsByOrder = groupBy(items.filter((i) => i.status !== 'cancelled' && i.status !== 'new'), 'order_id')
   const ordersBySession = groupBy(live, 'table_session_id')
 
   const out = new Map() // reservation id → visit
