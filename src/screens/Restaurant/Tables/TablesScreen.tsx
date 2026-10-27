@@ -167,10 +167,19 @@ export default function TablesScreen() {
       .maybeSingle()
 
     if (order?.id) {
-      navigate(`/restaurant/table/${table.id}/all-orders`, {
-        state: { table, guests: [], orderId: order.id }
-      })
-      return
+      // Заказ заводится, когда гость входит за стол (даже с пустой корзиной).
+      // Пока в нём нет ни одной строки, открывать нечего — ведём на экран гостей.
+      const { count } = await supabase
+        .from('order_items')
+        .select('id', { count: 'exact', head: true })
+        .eq('order_id', order.id)
+
+      if ((count ?? 0) > 0) {
+        navigate(`/restaurant/table/${table.id}/all-orders`, {
+          state: { table, guests: [], orderId: order.id }
+        })
+        return
+      }
     }
 
     // Заказа нет — на экран гостей (там заказ заводится, когда официант набирает
