@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { buildMarks } from './tableMarks.js'
+import { presentGuests } from './guestsPresent.js'
 
 // self — своя галочка (снять можно), locked — закреплён администратором (снять нельзя).
 export interface TableMark { self: boolean; locked: boolean }
@@ -55,6 +56,8 @@ export interface TableSessionRow {
   waiter_id: string | null
   status: TableStatus
   guest_count: number
+  // Сколько мест оплачено (гость ушёл). Присутствуют сейчас: guest_count − guests_left.
+  guests_left?: number
   started_at: string | null
   is_active: boolean
   bill_type: string | null
@@ -80,7 +83,7 @@ export function applySessionToTables(
     return {
       ...t,
       status: session.status,
-      guestCount: session.guest_count,
+      guestCount: presentGuests(session.guest_count, session.guests_left),
       startedAt: session.started_at,
       sessionId: session.id,
       waiterId: session.waiter_id,
@@ -92,7 +95,7 @@ export function applySessionToTables(
 // Плоская строка вью public.tables_with_active_session (миграция 004):
 // LEFT JOIN стола с ЕДИНСТВЕННОЙ активной сессией сделан в БД, так что
 // сюда больше не долетает история закрытых смен.
-const VIEW_COLUMNS = 'id, number, zone, capacity, session_id, session_status, guest_count, started_at, session_waiter_id, session_bill_type'
+const VIEW_COLUMNS = 'id, number, zone, capacity, session_id, session_status, guest_count, guests_present, started_at, session_waiter_id, session_bill_type'
 
 function mapViewRow(t: any): TableWithSession {
   return {
@@ -101,7 +104,8 @@ function mapViewRow(t: any): TableWithSession {
     zone: t.zone as TableZone,
     capacity: t.capacity,
     status: (t.session_status ?? 'free') as TableStatus,
-    guestCount: t.guest_count ?? 0,
+    // Сколько гостей сидит сейчас (всего минус ушедшие, оплатившие своё место).
+    guestCount: t.guests_present ?? t.guest_count ?? 0,
     startedAt: t.started_at ?? null,
     sessionId: t.session_id ?? null,
     waiterId: t.session_waiter_id ?? null,
