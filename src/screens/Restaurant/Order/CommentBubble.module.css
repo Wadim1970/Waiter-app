@@ -1,0 +1,146 @@
+/* Комментарии к заказу: пузырь в цвете гостя и поле ввода официанта. */
+.bubble {
+  margin: 8px 0 4px;
+  padding: 8px 10px;
+  border-left: 4px solid #6b7280;
+  border-radius: 8px;
+  background: #f4f5f7;
+  box-sizing: border-box;
+}
+
+.unread {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.acked {
+  opacity: 0.6;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+}
+
+.author {
+  font-weight: 700;
+}
+
+.time {
+  color: #717f98;
+  font-weight: 400;
+}
+
+.newBadge {
+  margin-left: auto;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: #d30000;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.text {
+  margin: 4px 0 0;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 15px;
+  line-height: 1.3;
+  color: #000;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ackBtn {
+  margin-top: 6px;
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 1px solid #8e9096;
+  border-radius: 16px;
+  background: #fff;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #000;
+  cursor: pointer;
+}
+
+.ackDone {
+  border-color: transparent;
+  background: transparent;
+  color: #15803d;
+}
+
+.composerOpen {
+  display: block;
+  margin: 10px 0 2px;
+  padding: 6px 0;
+  border: none;
+  background: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #717f98;
+  cursor: pointer;
+  text-align: left;
+}
+
+.composer {
+  margin: 10px 0 4px;
+}
+
+.composerText {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid #b9b9b9;
+  border-radius: 8px;
+  /* 16px — чтобы iOS не увеличивал страницу при фокусе */
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  resize: none;
+}
+
+.composerError {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #d30000;
+}
+
+.composerButtons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
+.composerCancel,
+.composerSend {
+  min-height: 36px;
+  padding: 6px 16px;
+  border-radius: 18px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.composerCancel {
+  border: 1px solid #8e9096;
+  background: #fff;
+  color: #000;
+}
+
+.composerSend {
+  border: none;
+  background: #EB651A;
+  color: #fff;
+}
+
+.composerSend:disabled {
+  background: #b9b9b9;
+  cursor: not-allowed;
+}

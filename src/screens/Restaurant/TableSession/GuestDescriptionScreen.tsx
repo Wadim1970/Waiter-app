@@ -4,18 +4,8 @@ import type { TableWithSession } from '../../../lib/tables'
 import { getOrCreateOrder, saveGuestAttributes } from '../../../lib/orders'
 import { saveTableCtx, readTableCtx } from '../../../lib/tableContext'
 import { getActiveShift } from '../QRScanner/QRScannerScreen'
+import { GUEST_COLORS } from '../../../lib/guestColors'
 import styles from './GuestDescriptionScreen.module.css'
-
-const GUEST_COLORS = [
-  '#02a826',
-  '#ce00b9',
-  '#ff9500',
-  '#003daf',
-  '#6c03ed',
-  '#0f929c',
-  '#700061',
-  '#979200',
-]
 
 const GENDER_OPTIONS = ['Муж', 'Жен']
 const AGE_OPTIONS    = ['3-5', '6-9', '10-14', '15-18', '19-30', '30-40', '40-50', '50-60', '60+']

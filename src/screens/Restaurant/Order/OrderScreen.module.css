@@ -465,3 +465,24 @@
   font-size: 14px;
   color: #15b200;
 }
+
+/* ───── Комментарии: ссылка на комментарии других гостей ───── */
+.otherComments {
+  display: block;
+  width: 100%;
+  margin: 10px 0 0;
+  padding: 8px 0;
+  border: none;
+  background: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #717f98;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Отступы для комментариев: справа оставляем место под вкладку «МЕНЮ». */
+.commentsWrap {
+  padding: 0 34px 0 12px;
+}

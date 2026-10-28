@@ -460,3 +460,42 @@
 .sendBtnClear {
   background: #8e9096;
 }
+
+/* ───── Комментарии к заказу ───── */
+/* Полоска закреплена вверху прокручиваемого списка (под шапкой и кружками гостей). */
+.commentsBar {
+  position: sticky;
+  top: -4px;
+  z-index: 5;
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 8px 16px;
+  border: none;
+  border-bottom: 1px solid #e3e5ea;
+  background: #f7f7f9;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #000;
+  text-align: left;
+  cursor: pointer;
+}
+
+.commentsBarNew {
+  color: #d30000;
+}
+
+.tableComments {
+  margin: 0 0 8px;
+  padding: 4px 4px 8px;
+}
+
+.tableCommentsTitle {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #717f98;
+}
