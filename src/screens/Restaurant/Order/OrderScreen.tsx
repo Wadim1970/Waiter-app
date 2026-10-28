@@ -6,9 +6,13 @@ import type { LoadedOrderItem, GuestAttrs } from '../../../lib/orders'
 import { getActiveShift } from '../QRScanner/QRScannerScreen'
 import { useRestaiHint } from '../../../lib/useRestaiHint'
 import AiHintText from '../../shared/AiHintText'
+import { GUEST_COLORS } from '../../../lib/guestColors'
+import { supabase } from '../../../lib/supabase'
+import { loadOrderComments, addOrderComment, ackOrderComment } from '../../../lib/orderComments'
+import type { OrderComment } from '../../../lib/orderComments'
+import { forSeat } from '../../../lib/commentView'
+import { CommentBubble, CommentComposer } from './CommentBubble'
 import styles from './OrderScreen.module.css'
-
-const GUEST_COLORS = ['#02a826','#ce00b9','#ff9500','#003daf','#6c03ed','#0f929c','#700061','#979200']
 
 type GuestData = GuestAttrs
 
@@ -50,6 +54,8 @@ export default function OrderScreen() {
   const [orderItems, setOrderItems] = useState<LoadedOrderItem[]>(initialItems)
   const [itemsLoaded, setItemsLoaded] = useState(initialItems.length > 0)
   const [guestAttrs, setGuestAttrs] = useState<Record<number, GuestAttrs>>(initialAttrs)
+  // Комментарии гостей и официанта к заказу (order_comments).
+  const [comments, setComments] = useState<OrderComment[]>([])
   const touchStartX = useRef(0)
 
   useEffect(() => {
@@ -62,6 +68,21 @@ export default function OrderScreen() {
       setGuestAttrs(attrs)
       setItemsLoaded(true)
     })
+  }, [orderId])
+
+  // Комментарии: загрузка и обновление «вживую» (гость отправил заказ с комментарием).
+  useEffect(() => {
+    if (!orderId) return
+    let alive = true
+    const load = () => { loadOrderComments(orderId).then(c => { if (alive) setComments(c) }) }
+    load()
+    const filter = `order_id=eq.${orderId}`
+    const channel = supabase
+      .channel(`order-comments:${orderId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'order_comments', filter }, load)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'order_comments', filter }, load)
+      .subscribe()
+    return () => { alive = false; supabase.removeChannel(channel) }
   }, [orderId])
 
   const guestColor = GUEST_COLORS[activeGuest] ?? '#02a826'
@@ -116,6 +137,32 @@ export default function OrderScreen() {
     if (!guestStillHasItems) {
       goToGuestDescription(activeGuest)
     }
+  }
+
+  // Комментарии этого гостя и сколько их у остальных.
+  const seatNumber = activeGuest + 1
+  const commentInfo = forSeat(comments, seatNumber, { visibleSeats: [...new Set(orderItems.map(i => i.seat_number))] })
+
+  const toggleAck = async (c: OrderComment) => {
+    const next = !c.acknowledged_at
+    setComments(prev => prev.map(x => x.id === c.id ? { ...x, acknowledged_at: next ? new Date().toISOString() : null } : x))
+    try {
+      await ackOrderComment(c.id, next)
+    } catch {
+      if (orderId) loadOrderComments(orderId).then(setComments)
+    }
+  }
+
+  const saveGuestComment = async (text: string) => {
+    if (!orderId) return
+    await addOrderComment(orderId, seatNumber, text)
+    setComments(await loadOrderComments(orderId))
+  }
+
+  const goToAllOrders = () => {
+    navigate(`/restaurant/table/${table?.id ?? ''}/all-orders`, {
+      state: { table, guests, orderId, orderItems, guestAttrs }
+    })
   }
 
   const handleSwipeEnd = (e: React.TouchEvent) => {
@@ -200,6 +247,13 @@ export default function OrderScreen() {
 
       {/* ── Scrollable content ── */}
       <div className={`${styles.content} ${!guestDesc ? styles.contentNoDesc : ''}`}>
+        {commentInfo.mine.length > 0 && (
+          <div className={styles.commentsWrap}>
+            {commentInfo.mine.map(c => (
+              <CommentBubble key={c.id} comment={c} onToggleAck={toggleAck} />
+            ))}
+          </div>
+        )}
         {itemsLoaded && currentItems.length === 0 && (
           <p className={styles.empty}>Блюда не выбраны</p>
         )}
@@ -263,6 +317,21 @@ export default function OrderScreen() {
             </div>
           )
         })}
+
+        <div className={styles.commentsWrap}>
+          {orderId && (
+            <CommentComposer
+              label={`Комментарий для гостя ${seatNumber}`}
+              placeholder="Например: без кинзы, острое отдельно"
+              onSubmit={saveGuestComment}
+            />
+          )}
+          {commentInfo.others > 0 && (
+            <button type="button" className={styles.otherComments} onClick={goToAllOrders}>
+              💬 Комментарии других гостей: {commentInfo.others} →
+            </button>
+          )}
+        </div>
 
         {/* ── AI hint block ── */}
         <div className={styles.aiBlock}>

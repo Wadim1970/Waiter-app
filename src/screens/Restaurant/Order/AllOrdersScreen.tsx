@@ -11,9 +11,12 @@ import { fetchPendingCalls } from '../../../lib/waiterCalls'
 import { polishCoachSignals } from '../../../lib/api'
 import { readTableCtx } from '../../../lib/tableContext'
 import AiHintText from '../../shared/AiHintText'
+import { GUEST_COLORS } from '../../../lib/guestColors'
+import { loadOrderComments, addOrderComment, ackOrderComment } from '../../../lib/orderComments'
+import type { OrderComment } from '../../../lib/orderComments'
+import { groupComments, firstUnread } from '../../../lib/commentView'
+import { CommentBubble, CommentComposer } from './CommentBubble'
 import styles from './AllOrdersScreen.module.css'
-
-const GUEST_COLORS = ['#02a826','#ce00b9','#ff9500','#003daf','#6c03ed','#0f929c','#700061','#979200']
 
 type GuestData = GuestAttrs
 
@@ -73,6 +76,8 @@ export default function AllOrdersScreen() {
   // списка карточек — официант не должен видеть уже закрытую гостем корзину.
   const [guestPaidStatus, setGuestPaidStatus] = useState<Record<number, string>>({})
   const [itemsLoaded, setItemsLoaded] = useState(initialItems.length > 0)
+  // Комментарии гостей и официанта к заказу (order_comments).
+  const [comments, setComments] = useState<OrderComment[]>([])
   const [orderStatus, setOrderStatus] = useState<string>('new')
   const [sessionStartedAt, setSessionStartedAt] = useState<string | null>(table?.startedAt ?? null)
   const [btnLoading, setBtnLoading] = useState(false)
@@ -109,12 +114,14 @@ export default function AllOrdersScreen() {
 
   const refreshOrder = useCallback(async () => {
     if (!orderId) { setItemsLoaded(true); return }
-    const [items, attrs, status, paidStatus] = await Promise.all([
+    const [items, attrs, status, paidStatus, orderComments] = await Promise.all([
       loadOrderItems(orderId),
       loadGuestAttributes(orderId),
       getOrderStatus(orderId),
       getGuestPaidStatus(orderId),
+      loadOrderComments(orderId),
     ])
+    setComments(orderComments)
     setOrderItems(items)
     setGuestAttrs(attrs)
     setOrderStatus(status ?? 'new')
@@ -147,6 +154,9 @@ export default function AllOrdersScreen() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'order_items', filter }, () => { refreshOrder() })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'order_items', filter }, () => { refreshOrder() })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'order_items', filter }, () => { refreshOrder() })
+      // Комментарии: гость написал при отправке заказа или другой официант оставил/отметил.
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'order_comments', filter }, () => { loadOrderComments(orderId).then(setComments) })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'order_comments', filter }, () => { loadOrderComments(orderId).then(setComments) })
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
@@ -259,6 +269,30 @@ export default function AllOrdersScreen() {
   // мест: их корзины должны пропадать из интерфейса официанта.
   const seatsWithItems = [...new Set(orderItems.map(i => i.seat_number))].sort()
   const visibleSeats = seatsWithItems.filter(seat => guestPaidStatus[seat] !== 'paid')
+  const paidSeats = Object.entries(guestPaidStatus).filter(([, st]) => st === 'paid').map(([seat]) => Number(seat))
+  const commentView = groupComments(comments, { visibleSeats, paidSeats })
+
+  // Отметка «учтено»: сразу в интерфейсе, затем в базе (на сбой — перечитываем).
+  const toggleAck = async (c: OrderComment) => {
+    const next = !c.acknowledged_at
+    setComments(prev => prev.map(x => x.id === c.id ? { ...x, acknowledged_at: next ? new Date().toISOString() : null } : x))
+    try {
+      await ackOrderComment(c.id, next)
+    } catch {
+      if (orderId) loadOrderComments(orderId).then(setComments)
+    }
+  }
+
+  const saveTableComment = async (text: string) => {
+    if (!orderId) return
+    await addOrderComment(orderId, null, text)
+    setComments(await loadOrderComments(orderId))
+  }
+
+  const jumpToUnread = () => {
+    const c = firstUnread(comments, { visibleSeats, paidSeats })
+    if (c) document.getElementById(`comment-${c.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
   const totalPrice = orderItems
     .filter(i => guestPaidStatus[i.seat_number] !== 'paid')
     .reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
@@ -321,6 +355,20 @@ export default function AllOrdersScreen() {
       </div>
 
       <div className={styles.content}>
+        {commentView.total > 0 && (
+          <button type="button" className={styles.commentsBar} onClick={jumpToUnread}>
+            <span aria-hidden="true">💬 </span>Комментарии: {commentView.total}
+            {commentView.unread > 0 && <b className={styles.commentsBarNew}> · новых: {commentView.unread}</b>}
+          </button>
+        )}
+        {commentView.table.length > 0 && (
+          <div className={styles.tableComments}>
+            <div className={styles.tableCommentsTitle}>Комментарии к столу</div>
+            {commentView.table.map(c => (
+              <CommentBubble key={c.id} comment={c} onToggleAck={toggleAck} />
+            ))}
+          </div>
+        )}
         {itemsLoaded && visibleSeats.length === 0 && (
           <p className={styles.empty}>Нет блюд</p>
         )}
@@ -380,10 +428,21 @@ export default function AllOrdersScreen() {
                   </div>
                 )
               })}
+              {(commentView.bySeat.get(seat) ?? []).map(c => (
+                <CommentBubble key={c.id} comment={c} onToggleAck={toggleAck} />
+              ))}
               <div className={styles.guestCardTotal}>{guestTotal} руб</div>
             </div>
           )
         })}
+
+        {orderId && (
+          <CommentComposer
+            label="Комментарий к столу"
+            placeholder="Например: гости торопятся, принести детский прибор"
+            onSubmit={saveTableComment}
+          />
+        )}
       </div>
 
       <div className={styles.fixedBottom}>
