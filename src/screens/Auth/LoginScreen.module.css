@@ -1,0 +1,73 @@
+/* Экран входа по коду. Оформление берём у экрана кода из SMS и меняем только то,
+   что мешало на телефоне: при появлении и скрытии клавиатуры поля и кнопка
+   «прыгали», потому что форма стояла по центру экрана, а кнопка — у нижнего края.
+   Теперь всё привязано к верху и идёт одним потоком — клавиатура ничего не двигает. */
+
+.container {
+  composes: container from './VerificationScreen.module.css';
+  align-items: flex-start;
+}
+
+.form {
+  composes: form from './VerificationScreen.module.css';
+  padding-top: clamp(5rem, 20vh, 10rem);
+  padding-bottom: 0;
+}
+
+/* Место под подсказку зарезервировано на две строки: текст ошибки не раздвигает форму. */
+.hint {
+  composes: hint from './VerificationScreen.module.css';
+  min-height: 2.8em;
+}
+
+.submitButton {
+  composes: submitButton from './VerificationScreen.module.css';
+  position: static;
+  transform: none;
+  flex-shrink: 0;
+}
+
+.submitButton:active {
+  transform: scale(0.98);
+}
+
+/* Одно настоящее поле ввода поверх четырёх клеток: прозрачное, на всю ширину
+   клеток, нажатие по любой клетке попадает в него. Фокус никуда не перескакивает. */
+.codeBox {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.codeField {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  /* 16px+ — чтобы iOS не увеличивал страницу при фокусе */
+  font-size: 16px;
+  letter-spacing: 1em;
+  text-align: center;
+}
+
+.codeField::selection {
+  background: transparent;
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cellActive {
+  border-color: #EB651A;
+  box-shadow: 0 0 0 2px rgba(235, 101, 26, 0.1);
+}
