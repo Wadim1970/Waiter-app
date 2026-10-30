@@ -176,3 +176,17 @@ test('фото с компьютера: проверка файла, загру�
   await assert.rejects(() => svc.uploadPhoto(R, { photo: Buffer.from('<svg/>').toString('base64') }), /JPG, PNG или WebP/)
   await assert.rejects(() => svc.uploadPhoto(R, { photo: Buffer.alloc(800 * 1024, 1).toString('base64') }), /слишком большое/)
 })
+
+test('вино: аромат, сорт винограда и год — свои поля', () => {
+  const f = dishFields({
+    name: 'Белое вино', productType: 'alcohol', price: 650, specs: [{ key: 'Полнота', value: 'Легкое' }, { key: 'Аромат', value: 'лишнее' }],
+    aroma: ' Крыжовник, лайм ', grape: 'Sauvignon Blanc', vintage: '2022',
+  })
+  assert.deepEqual(f.nutritional_info, { 'Аромат': 'Крыжовник, лайм', 'Сорт винограда': 'Sauvignon Blanc', 'Год производства': 2022, 'Полнота': 'Легкое' })
+  const v = dishView({ id: 1, dish_name: 'Белое вино', product_type: 'alcohol', nutritional_info: { ...f.nutritional_info, calories: 115 } })
+  assert.equal(v.aroma, 'Крыжовник, лайм')
+  assert.equal(v.grape, 'Sauvignon Blanc')
+  assert.equal(v.vintage, 2022)
+  assert.deepEqual(v.specs, [{ key: 'Полнота', value: 'Легкое' }])
+  assert.throws(() => dishFields({ name: 'X', productType: 'alcohol', price: 1, vintage: '21' }), /четыре цифры/)
+})

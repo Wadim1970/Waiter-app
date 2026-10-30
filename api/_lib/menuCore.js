@@ -7,6 +7,8 @@
 // menu_subsections → menu_sub_subsections; у блюда — section_id/subsection_id/
 // sub_subsection_id («место у официанта»).
 
+import { AROMA_KEY, GRAPE_KEY, VINTAGE_KEY } from './drinkProfile.js'
+
 export const PRODUCT_TYPES = ['food', 'drink', 'alcohol']
 export const COURSE_ROLES = ['breakfast', 'soup', 'salad', 'starter', 'main', 'side', 'sauce', 'bread', 'soft', 'hot_drink', 'alco', 'dessert', 'other']
 export const MEAL_TIMES = ['breakfast', 'lunch', 'dinner', 'late']
@@ -14,6 +16,9 @@ export const WEIGHT_UNITS = ['г', 'мл', 'шт', 'кг', 'л']
 
 const KBJU = [['kcal', 'calories_kcal'], ['protein', 'protein_g'], ['fat', 'fat_g'], ['carbs', 'carbs_g']]
 const FOOD_KEYS = new Set(['calories_kcal', 'protein_g', 'fat_g', 'carbs_g', 'weight_value', 'weight_unit'])
+// Старые КБЖУ без единиц (calories, fat…) и поля вина, у которых в форме
+// свои поля, — не «прочие свойства».
+const NOT_SPECS = new Set([...FOOD_KEYS, 'calories', 'protein', 'fat', 'carbs', AROMA_KEY, GRAPE_KEY, VINTAGE_KEY])
 
 export const POPULAR = 'популярное'
 export const norm = (s) => String(s ?? '').trim().toLowerCase().replace(/ё/g, 'е').replace(/\s+/g, ' ')
@@ -59,7 +64,11 @@ export function dishView(row, { modifiers = [], now = new Date(), popularTwinId 
     ingredients,
     kbju: Object.values(kbju).some((v) => v != null) ? kbju : null,
     // Свойства напитка («Крепость», «Полнота»…) — прочие ключи nutritional_info.
-    specs: Object.entries(info).filter(([k, v]) => !FOOD_KEYS.has(k) && v != null && v !== '').map(([key, value]) => ({ key, value: String(value) })),
+    specs: Object.entries(info).filter(([k, v]) => !NOT_SPECS.has(k) && v != null && v !== '').map(([key, value]) => ({ key, value: String(value) })),
+    // Вино: аромат, сорт винограда, год производства — свои поля в форме.
+    aroma: info[AROMA_KEY] != null ? String(info[AROMA_KEY]) : '',
+    grape: info[GRAPE_KEY] != null ? String(info[GRAPE_KEY]) : '',
+    vintage: num(info[VINTAGE_KEY]),
     tags: Array.isArray(row.tags) ? row.tags : [],
     imageUrl: row.image_url || '',
     thumbUrl: row.image_url_thumbnail || '',
@@ -112,9 +121,17 @@ export function dishFields(b) {
   for (const s of Array.isArray(b.specs) ? b.specs : []) {
     const key = text(s?.key, 60)
     const value = text(s?.value, 200)
-    if (!key || !value || FOOD_KEYS.has(key)) continue
+    if (!key || !value || NOT_SPECS.has(key)) continue
     info[key] = /^\d+([.,]\d+)?$/.test(value) ? Number(value.replace(',', '.')) : value
   }
+
+  const aroma = text(b.aroma, 1000)
+  const grape = text(b.grape, 200)
+  const vintage = num(b.vintage)
+  if (vintage != null && (!Number.isInteger(vintage) || vintage < 1800 || vintage > new Date().getFullYear() + 1)) throw bad('Год производства — четыре цифры, например 2021')
+  if (aroma) info[AROMA_KEY] = aroma
+  if (grape) info[GRAPE_KEY] = grape
+  if (vintage != null) info[VINTAGE_KEY] = vintage
 
   const ingredients = (Array.isArray(b.ingredients) ? b.ingredients : String(b.ingredients || '').split(','))
     .map((s) => text(s, 200)).filter(Boolean)

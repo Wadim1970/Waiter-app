@@ -88,3 +88,13 @@ test('состав блюда — в меню целиком; «напитки»
   const [, user] = buildSuggestMessages({ menu, tag: 'напитки', cart: [] })
   assert.match(user.content, /безалкогольные напитки/)
 })
+
+test('меню для ИИ: у вина — вкус, сорт, год, аромат', async () => {
+  const { drinkNotes } = await import('./drinkProfile.js')
+  const { text } = menuForPrompt([{
+    name: 'Белое вино Sauvignon Blanc', price: 650, section: 'Алкогольные напитки', productType: 'alcohol', available: true,
+    description: 'Свежее белое вино', ingredients: ['цитрус', 'минералы'],
+    drinkNotes: drinkNotes({ 'Крепость': 12.5, 'Сорт винограда': 'Sauvignon Blanc', 'Год производства': 2022, 'Аромат': 'крыжовник и лайм' }),
+  }])
+  assert.match(text, /Вкус: цитрус, минералы\. крепость 12\.5%; сорт винограда: Sauvignon Blanc; год производства: 2022; аромат: крыжовник и лайм/)
+})

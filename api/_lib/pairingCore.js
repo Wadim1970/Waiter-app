@@ -159,6 +159,8 @@ export function compactMenu(items) {
     section: it.section,
     price: Number(it.price) || 0,
     desc: String(it.description || '').replace(/\s+/g, ' ').slice(0, 90),
+    // Вино к блюду подбирают по сорту, полноте, кислотности, аромату.
+    ...(it.drinkNotes ? { notes: String(it.drinkNotes).slice(0, 200) } : {}),
   }))
 }
 
