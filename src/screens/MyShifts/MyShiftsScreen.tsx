@@ -20,6 +20,8 @@ export default function MyShiftsScreen() {
   const [confirmedShifts, setConfirmedShifts] = useState<ShiftWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedShift, setSelectedShift] = useState<ShiftWithDetails | null>(null)
+  // Оценка и отзыв ресторана о смене (админка: Официанты → Фрилансеры).
+  const [reviews, setReviews] = useState<Record<string, { rating: number; comment: string | null }>>({})
 
   // Дефолтную под-вкладку выбираем один раз при первом входе (см. loadShifts).
   const didInitTab = useRef(false)
@@ -85,6 +87,10 @@ export default function MyShiftsScreen() {
       getMyShifts(waiterId, 'approved'),
       getMyShifts(waiterId, 'confirmed')
     ])
+
+    // Нет таблицы отзывов (миграция не применена) — просто без отзывов.
+    const { data: reviewRows } = await supabaseWaiter.from('waiter_reviews').select('booking_id, rating, comment').eq('waiter_id', waiterId)
+    setReviews(Object.fromEntries((reviewRows || []).map((r: { booking_id: string; rating: number; comment: string | null }) => [r.booking_id, r])))
 
     if (waiting.data) setWaitingShifts(waiting.data)
     if (approved.data) setApprovedShifts(approved.data)
@@ -298,14 +304,25 @@ const handleCloseDetails = () => {
       ) : (
         <div className={styles.pastShiftsList}>
           {allPastShifts.map(shift => (
-            <div key={shift.id} className={styles.pastShiftCard}>
-              <WorkingShiftCard
-  restaurantName={shift.job.restaurant.name}
-  address={shift.job.restaurant.address}
-  shiftDate={shift.job.shift_date}
-  startTime={shift.job.start_time}
-  endTime={shift.job.end_time}
-/>
+            <div key={shift.id}>
+              <div className={styles.pastShiftCard}>
+                <WorkingShiftCard
+                  restaurantName={shift.job.restaurant.name}
+                  address={shift.job.restaurant.address}
+                  shiftDate={shift.job.shift_date}
+                  startTime={shift.job.start_time}
+                  endTime={shift.job.end_time}
+                />
+              </div>
+              {reviews[shift.id] && (
+                <div className={styles.restaurantReview} aria-label={`Оценка ресторана: ${reviews[shift.id].rating} из 5`}>
+                  <span className={styles.restaurantReviewTitle}>Оценка ресторана</span>
+                  <span className={styles.restaurantReviewStars}>
+                    {'★'.repeat(reviews[shift.id].rating)}<span className={styles.restaurantReviewOff}>{'★'.repeat(5 - reviews[shift.id].rating)}</span>
+                  </span>
+                  {reviews[shift.id].comment && <p className={styles.restaurantReviewText}>«{reviews[shift.id].comment}»</p>}
+                </div>
+              )}
             </div>
           ))}
         </div>
