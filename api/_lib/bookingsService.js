@@ -5,6 +5,7 @@
 // в ЭТОМ ресторане: визиты гостя в другие рестораны платформы не показываем.
 
 import { deps, selectAll, selectIn, restaurantOf, tablesOf, waitersByIds, groupBy, httpError, layoutOf, reservationView } from './hallService.js'
+import { zonesOf } from './zonesService.js'
 import { businessDay, businessDateOf, addDays, isDateStr, orderItemsTotal, waiterName } from './hallCore.js'
 import {
   BOOKING_DAYS_AHEAD, normalizePhone, phoneVariants, guestHistory, guestBadges, loyaltyDemo, bookingDates,
@@ -238,6 +239,7 @@ export async function getBookings(restaurantId, dateStr) {
 
   const day = withDate.filter((r) => r.date === date)
   const byTable = groupBy(day, 'table_id')
+  const zoneList = (await zonesOf(restaurantId, tables)).zones
   const tableById = new Map(tables.map((t) => [t.id, t]))
   return {
     restaurant,
@@ -245,7 +247,8 @@ export async function getBookings(restaurantId, dateStr) {
     maxDate,
     date,
     calendar,
-    zones: [...new Set(tables.map((t) => t.zone || 'main'))],
+    zones: zoneList.map((z) => z.key),
+    zoneNames: Object.fromEntries(zoneList.map((z) => [z.key, z.name])),
     tables: tables.map((t) => ({
       id: t.id, number: t.number, zone: t.zone || 'main', capacity: t.capacity, layout: layoutOf(t),
       reservations: (byTable.get(t.id) || []).map(view),

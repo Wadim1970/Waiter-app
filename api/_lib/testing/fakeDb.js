@@ -19,6 +19,7 @@ const OPS = {
   lt: (r, c, v) => r[c] != null && cmp(r[c], v) < 0,
   lte: (r, c, v) => r[c] != null && cmp(r[c], v) <= 0,
   in: (r, c, v) => v.includes(r[c]),
+  is: (r, c, v) => (v === null ? r[c] == null : r[c] === v),
 }
 
 class Query {

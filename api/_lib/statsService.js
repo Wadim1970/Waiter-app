@@ -5,6 +5,7 @@
 import { addDays } from './hallCore.js'
 import { aggregate, byDay } from './staffCore.js'
 import { loadPeriod } from './staffService.js'
+import { zonesOf } from './zonesService.js'
 import { compare, byHour, byWeekday, dishStats, tableStats, aiStats, guestAppStats } from './statsCore.js'
 
 export async function getStats(restaurantId, fromStr, toStr) {
@@ -33,6 +34,7 @@ export async function getStats(restaurantId, fromStr, toStr) {
     byWeekday: days >= 7 ? byWeekday(data.sessions, period.days) : null,
     dishes: dishStats(data.sessions, data.dishes),
     tables: tableStats(data.sessions, data.tables, days),
+    zoneNames: Object.fromEntries((await zonesOf(restaurantId, data.tables)).zones.map((z) => [z.key, z.name])),
     ai: aiStats(data.events, data.guestEvents, data.dishes, totals.revenue, data.cartEvents),
     guestApp: guestAppStats(data.sessions),
   }
