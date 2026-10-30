@@ -5,13 +5,27 @@ import { buildMarks } from './tableMarks.js'
 export interface TableMark { self: boolean; locked: boolean }
 export type TableMarks = Record<string, TableMark>
 
-export type TableZone = 'main' | 'veranda' | 'banquet'
+// Зал стола: main / veranda / banquet или свой зал ресторана (ключ из
+// restaurant_zones — «Ресторан → Столы» в админке).
+export type TableZone = string
 export type TableStatus = 'free' | 'occupied' | 'preparing' | 'resting' | 'bill_requested' | 'call'
 
-export const ZONE_LABELS: Record<TableZone, string> = {
+export const ZONE_LABELS: Record<string, string> = {
   main: 'основной',
   veranda: 'веранда',
   banquet: 'банкет',
+}
+
+// Названия залов ресторана — подгружаются вместе со столами.
+const zoneNames: Record<string, string> = {}
+export const zoneLabel = (zone: string) => zoneNames[zone] || ZONE_LABELS[zone] || ''
+
+async function loadZoneNames(restaurantId: string) {
+  // Нет таблицы залов (миграция ещё не применена) — остаются прежние названия.
+  const { data } = await supabase.from('restaurant_zones').select('key, name').eq('restaurant_id', restaurantId)
+  for (const z of (data || []) as { key: string; name: string }[]) {
+    zoneNames[z.key] = ZONE_LABELS[z.key] && ['Основной зал', 'Веранда', 'Банкетный зал'].includes(z.name) ? ZONE_LABELS[z.key] : z.name.toLowerCase()
+  }
 }
 
 export const STATUS_LABELS: Record<TableStatus, string> = {
@@ -110,6 +124,7 @@ function mapViewRow(t: any): TableWithSession {
 }
 
 export async function getMyTables(waiterId: string, restaurantId: string): Promise<TableWithSession[]> {
+  const zonesLoaded = loadZoneNames(restaurantId).catch(() => {})
   const today = new Date().toISOString().split('T')[0]
 
   // Небольшой запрос: какие столы закреплены за официантом в ЭТОМ ресторане.
@@ -135,16 +150,20 @@ export async function getMyTables(waiterId: string, restaurantId: string): Promi
 
   if (error) throw error
 
+  await zonesLoaded
   return (data as any[]).map(mapViewRow)
 }
 
 export async function getAllTables(restaurantId: string): Promise<TableWithSession[]> {
-  const { data, error } = await supabase
-    .from('tables_with_active_session')
-    .select(VIEW_COLUMNS)
-    .eq('restaurant_id', restaurantId)
-    .eq('table_is_active', true)
-    .order('number')
+  const [{ data, error }] = await Promise.all([
+    supabase
+      .from('tables_with_active_session')
+      .select(VIEW_COLUMNS)
+      .eq('restaurant_id', restaurantId)
+      .eq('table_is_active', true)
+      .order('number'),
+    loadZoneNames(restaurantId).catch(() => {}),
+  ])
 
   if (error) throw error
 

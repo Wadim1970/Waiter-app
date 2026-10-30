@@ -161,7 +161,34 @@ test('схема: сохранение раскладки, новый стол, 
   const { id } = await svc.createTable(R, { number: 10, zone: 'veranda', capacity: 2 })
   assert.ok(id)
   await svc.updateTable(R, id, { isActive: false })
-  await svc.createTable(R, { number: 10 }) // номер выключенного стола свободен
+  // Номер убранного стола: стол возвращается на схему (номер в ресторане один).
+  const back = await svc.createTable(R, { number: 10, capacity: 6 })
+  assert.deepEqual(back, { id, restored: true })
+  assert.equal(svc.deps.db.tables.tables.find((t) => t.id === id).is_active, true)
+  await svc.updateTable(R, id, { isActive: false })
+  await assert.rejects(() => svc.updateTable(R, T2, { number: 10 }), (e) => e.status === 409 && /убранного/.test(e.message))
+  await assert.rejects(() => svc.createTable(R, { number: 11, zone: 'nope' }), (e) => e.status === 400)
+})
+
+test('залы: свои названия, порядок, удаление только пустого', async () => {
+  const zones = await import('./zonesService.js')
+  svc.deps.db.tables.restaurant_zones = [
+    { id: 'c0000000-0000-0000-0000-00000000000a', restaurant_id: R, key: 'main', name: 'Основной зал', sort_order: 1 },
+  ]
+  const vip = await zones.createZone(R, { name: ' ВИП  зал ' })
+  await assert.rejects(() => zones.createZone(R, { name: 'вип зал' }), (e) => e.status === 409)
+  const { id } = await svc.createTable(R, { number: 20, zone: vip.key, capacity: 8 })
+  let t = await svc.getTables(R)
+  assert.deepEqual(t.zones.map((z) => [z.key === vip.key ? 'vip' : z.key, z.name]), [['main', 'Основной зал'], ['vip', 'ВИП зал'], ['veranda', 'Веранда']]) // veranda — стол есть, зала в списке нет
+  assert.equal(t.zonesEditable, true)
+  await zones.updateZone(R, { id: vip.id, name: 'Терраса' })
+  await assert.rejects(() => zones.deleteZone(R, vip.id), (e) => e.status === 409)
+  await svc.updateTable(R, id, { isActive: false })
+  await zones.deleteZone(R, vip.id)
+  t = await svc.getTables(R)
+  assert.deepEqual(t.zones.map((z) => z.name), ['Основной зал', 'Веранда'])
+  const h = await svc.getHall(R, '2026-10-22')
+  assert.equal(h.zoneNames.main, 'Основной зал')
 })
 
 test('закрепление: на дату и снятие', async () => {

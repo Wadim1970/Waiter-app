@@ -7,6 +7,7 @@ import {
   DEFAULT_TZ, businessDay, businessDateOf, addDays, isDateStr, assignmentsForDate, buildSession,
   ordersOfSession, inWindow, daySummary, waiterName, reservationConflict, sanitizeLayout,
 } from './hallCore.js'
+import { zonesOf, assertZone } from './zonesService.js'
 
 export const deps = { db: supabase, now: () => new Date() }
 
@@ -185,6 +186,7 @@ export async function getHall(restaurantId, dateStr) {
   ])
   const assigned = assignmentsForDate(assignRows, date)
 
+  const zoneList = (await zonesOf(restaurantId, tables)).zones
   const sessionIds = raw ? raw.sessions.map((s) => s.waiter_id) : []
   const waiters = await restaurantWaiters(restaurantId, tableIds, [...assignRows.map((a) => a.waiter_id), ...sessionIds])
 
@@ -223,7 +225,9 @@ export async function getHall(restaurantId, dateStr) {
   return {
     restaurant, date, today, mode,
     day: { from: day.from.toISOString(), to: day.to.toISOString() },
-    zones: [...new Set(outTables.map((t) => t.zone))],
+    // Все залы ресторана по порядку (и пустые) и их названия.
+    zones: zoneList.map((z) => z.key),
+    zoneNames: Object.fromEntries(zoneList.map((z) => [z.key, z.name])),
     tables: outTables,
     unassignedReservations: (resByTable.get(null) || []).map(reservationView),
     waiters: [...waiters.values()].map((w) => ({ id: w.id, name: waiterName(w) })).sort((a, b) => a.name.localeCompare(b.name, 'ru')),
@@ -318,16 +322,46 @@ function tableFields(body) {
   return out
 }
 
+// Номер стола в ресторане один на всё время (так устроена база): занят
+// столом на схеме — нельзя; занят убранным столом — при добавлении стол
+// вернётся (createTable), а сменить номер на него нельзя.
 async function assertFreeNumber(restaurantId, number, exceptId = null) {
-  const { data, error } = await deps.db.from('tables').select('id').eq('restaurant_id', restaurantId).eq('number', number).eq('is_active', true)
+  const { data, error } = await deps.db.from('tables').select('id, is_active').eq('restaurant_id', restaurantId).eq('number', number)
   if (error) throw error
-  if ((data || []).some((t) => t.id !== exceptId)) throw httpError(409, `Стол № ${number} уже есть`)
+  const other = (data || []).filter((t) => t.id !== exceptId)
+  if (other.some((t) => t.is_active !== false)) throw httpError(409, `Стол № ${number} уже есть`)
+  if (exceptId && other.length) throw httpError(409, `Номер ${number} был у стола, убранного со схемы. Выберите другой номер или добавьте стол № ${number} заново — он вернётся`)
+}
+
+// Столы для раздела «Ресторан → Столы»: залы и расстановка.
+export async function getTables(restaurantId) {
+  const restaurant = await restaurantOf(restaurantId)
+  const tables = await tablesOf(restaurantId)
+  const { zones, editable } = await zonesOf(restaurantId, tables)
+  return {
+    restaurant,
+    zones,
+    zonesEditable: editable,
+    tables: tables.map((t) => ({ id: t.id, number: t.number, zone: t.zone || 'main', capacity: t.capacity, layout: layoutOf(t) })),
+  }
 }
 
 export async function createTable(restaurantId, body) {
   const fields = tableFields({ zone: 'main', capacity: 4, ...body })
   if (!fields.number) throw httpError(400, 'Укажите номер стола')
+  await assertZone(restaurantId, fields.zone)
   await assertFreeNumber(restaurantId, fields.number)
+  // Стол с этим номером когда-то убрали со схемы — возвращаем его (номер
+  // в ресторане один, а история посадок стола сохраняется).
+  const { data: old, error: oldErr } = await deps.db.from('tables').select('id')
+    .eq('restaurant_id', restaurantId).eq('number', fields.number).eq('is_active', false).maybeSingle()
+  if (oldErr) throw oldErr
+  if (old) {
+    const { error } = await deps.db.from('tables')
+      .update({ is_active: true, ...fields, ...sanitizeLayout(body.layout || {}) }).eq('id', old.id).eq('restaurant_id', restaurantId)
+    if (error) throw error
+    return { id: old.id, restored: true }
+  }
   const { data, error } = await deps.db.from('tables')
     .insert({ restaurant_id: restaurantId, is_active: true, ...fields, ...sanitizeLayout(body.layout || {}) })
     .select('id').single()
@@ -338,6 +372,7 @@ export async function createTable(restaurantId, body) {
 export async function updateTable(restaurantId, tableId, body) {
   await tableOf(restaurantId, tableId)
   const fields = tableFields(body)
+  if (fields.zone) await assertZone(restaurantId, fields.zone)
   if (fields.number) await assertFreeNumber(restaurantId, fields.number, tableId)
   if (Object.keys(fields).length === 0) return { updated: false }
   const { error } = await deps.db.from('tables').update(fields).eq('id', tableId).eq('restaurant_id', restaurantId)

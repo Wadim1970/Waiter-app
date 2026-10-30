@@ -1,4 +1,4 @@
-import { STATUS_LABELS, STATUS_COLORS, ZONE_LABELS, formatElapsedTime } from '../../../lib/tables'
+import { STATUS_LABELS, STATUS_COLORS, zoneLabel, formatElapsedTime } from '../../../lib/tables'
 import type { TableWithSession } from '../../../lib/tables'
 import styles from './TableCard.module.css'
 
@@ -41,7 +41,7 @@ export default function TableCard({ table, onClick, checked = false, locked = fa
         <span className={styles.info}>{formatElapsedTime(table.startedAt)}</span>
       </div>
       <div className={styles.bottomLeft}>
-        <span className={styles.zone}>{ZONE_LABELS[table.zone]}</span>
+        <span className={styles.zone}>{zoneLabel(table.zone)}</span>
         <span className={styles.status}>{STATUS_LABELS[table.status]}{billNote}</span>
       </div>
       {onToggle && (
