@@ -7,6 +7,7 @@ import type { TableWithSession } from '../../../lib/tables'
 import AiAssistantLayer from './AiAssistantLayer'
 import { readTableCtx } from '../../../lib/tableContext'
 import { hidePopularCopies } from '../../../lib/menuView'
+import { drinkProfile } from '../../../lib/drinkProfile'
 import styles from './MenuScreen.module.css'
 
 type MenuSection = { id: string; name: string; sort_order: number }
@@ -20,7 +21,7 @@ type MenuItem = {
   cost_rub: number
   cook_time_min: number
   weight_g: number
-  nutritional_info: { calories_kcal?: number; protein_g?: number; fat_g?: number; carbs_g?: number } | null
+  nutritional_info: { calories_kcal?: number; protein_g?: number; fat_g?: number; carbs_g?: number; [key: string]: unknown } | null
   ingredients: string | string[]
   image_url: string | null
   section_id: string
@@ -554,23 +555,61 @@ export default function MenuScreen() {
                 {showVolume ? `${infoDish.weight_g}` : `${infoDish.cook_time_min} мин · ${infoDish.weight_g} г`}
               </span>
             </div>
-            {infoDish.description && <p className={styles.sheetDesc}>{infoDish.description}</p>}
-            {(() => {
-              const composition = formatIngredients(infoDish.ingredients)
-              return composition ? (
-                <div className={styles.sheetBlock}>
-                  <span className={styles.sheetBlockLabel}>Состав</span>
-                  <p className={styles.sheetDesc} style={{ margin: 0 }}>{composition}</p>
+            {infoDish.product_type === 'alcohol' ? (() => {
+              // Напиток: о напитке, вкус (ноты — в ingredients), аромат, характеристики.
+              const p = drinkProfile(infoDish.nutritional_info)
+              const taste = formatIngredients(infoDish.ingredients)
+              return (
+                <>
+                  {infoDish.description && (
+                    <div className={styles.sheetBlock}>
+                      <span className={styles.sheetBlockLabel}>О напитке</span>
+                      <p className={styles.sheetDesc} style={{ margin: 0 }}>{infoDish.description}</p>
+                    </div>
+                  )}
+                  {taste && (
+                    <div className={styles.sheetBlock}>
+                      <span className={styles.sheetBlockLabel}>Вкус</span>
+                      <p className={styles.sheetDesc} style={{ margin: 0 }}>{taste}</p>
+                    </div>
+                  )}
+                  {p.aroma && (
+                    <div className={styles.sheetBlock}>
+                      <span className={styles.sheetBlockLabel}>Аромат</span>
+                      <p className={styles.sheetDesc} style={{ margin: 0 }}>{p.aroma}</p>
+                    </div>
+                  )}
+                  {(p.strength || p.rows.length > 0) && (
+                    <div className={styles.sheetBlock}>
+                      <span className={styles.sheetBlockLabel}>Характеристики</span>
+                      <p className={styles.sheetDesc} style={{ margin: 0 }}>
+                        {[p.strength && `Крепость: ${p.strength}`, ...p.rows.map(([k, v]: [string, string]) => `${k}: ${v}`)].filter(Boolean).join(' · ')}
+                      </p>
+                    </div>
+                  )}
+                </>
+              )
+            })() : (
+              <>
+              {infoDish.description && <p className={styles.sheetDesc}>{infoDish.description}</p>}
+              {(() => {
+                const composition = formatIngredients(infoDish.ingredients)
+                return composition ? (
+                  <div className={styles.sheetBlock}>
+                    <span className={styles.sheetBlockLabel}>Состав</span>
+                    <p className={styles.sheetDesc} style={{ margin: 0 }}>{composition}</p>
+                  </div>
+                ) : null
+              })()}
+              {infoDish.nutritional_info && (
+                <div className={styles.nutrition}>
+                  <NutrCell value={infoDish.nutritional_info.calories_kcal} label="ккал" />
+                  <NutrCell value={infoDish.nutritional_info.protein_g} label="белки" />
+                  <NutrCell value={infoDish.nutritional_info.fat_g} label="жиры" />
+                  <NutrCell value={infoDish.nutritional_info.carbs_g} label="углев." />
                 </div>
-              ) : null
-            })()}
-            {infoDish.nutritional_info && (
-              <div className={styles.nutrition}>
-                <NutrCell value={infoDish.nutritional_info.calories_kcal} label="ккал" />
-                <NutrCell value={infoDish.nutritional_info.protein_g} label="белки" />
-                <NutrCell value={infoDish.nutritional_info.fat_g} label="жиры" />
-                <NutrCell value={infoDish.nutritional_info.carbs_g} label="углев." />
-              </div>
+              )}
+              </>
             )}
             <button
               className={styles.sheetAdd}

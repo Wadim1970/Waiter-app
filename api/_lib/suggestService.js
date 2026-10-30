@@ -13,6 +13,7 @@ import {
   buildCoachMessages, parseCoachPolish,
 } from './suggestCore.js'
 import { mealAt, mealOfCart, roleOf, suitsMeal } from './mealCore.js'
+import { drinkNotes } from './drinkProfile.js'
 
 export const supabase = createClient(
   process.env.SUPABASE_URL || process.env.VITE_SUPABASE_WAITER_URL,
@@ -28,7 +29,7 @@ const FLAG_PRI = { stop: 3, expiring: 2, special: 1 }
 const CACHE_TTL_SEC = 300
 
 // Дайджест меню: блюдо + маржа/приоритет + флаг дня.
-const BASE_COLS = 'id, dish_name, description, ingredients, cost_rub, menu_section, product_type, is_available'
+const BASE_COLS = 'id, dish_name, description, ingredients, nutritional_info, cost_rub, menu_section, product_type, is_available'
 const KITCHEN_COLS = 'stop_until, urgent_until, urgent_note'
 const MEAL_COLS = 'course_role, meal_times'
 
@@ -76,6 +77,8 @@ export async function buildDigest(restaurantId) {
       name: mi.dish_name,
       description: mi.description || '',
       ingredients: Array.isArray(mi.ingredients) ? mi.ingredients : [],
+      // Напиток: крепость, сорт винограда, год, полнота, аромат.
+      drinkNotes: mi.product_type === 'alcohol' ? drinkNotes(mi.nutritional_info) : '',
       price: mi.cost_rub,
       section: mi.menu_section,
       productType: mi.product_type,
@@ -244,8 +247,9 @@ export function cacheKey({ restaurantId, stage, tag, guest, cartItemIds }) {
     // предпочтений/ограничений гостя (исключаем неподходящее); v8 — pitch как
     // скрипт продаж (директива + реплика в «…»), тег «закуски/салаты»; v9 —
     // модель видит всё меню, короткие принципы, без выдуманных «хвалят»;
-    // v10 — время дня (меню без неуместного сейчас, строка о приёме пищи).
-    v: 10,
+    // v10 — время дня (меню без неуместного сейчас, строка о приёме пищи);
+    // v11 — у вин в меню сорт винограда, год, аромат.
+    v: 11,
     m: mealAt(new Date(), tzCache.get(restaurantId) || 'Europe/Moscow'),
     r: restaurantId,
     s: stage || '',

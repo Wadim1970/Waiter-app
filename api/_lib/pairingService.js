@@ -14,6 +14,7 @@ import {
   chunk, capPairUsage, dislikeMatcher, guestTasteLine, buildPersonalMessages, parsePersonal,
 } from './pairingCore.js'
 import { mealAt, mealOfCart, roleOf, suitsMeal } from './mealCore.js'
+import { drinkNotes } from './drinkProfile.js'
 
 const ANCHORS_PER_CALL = 12
 const PARALLEL_CALLS = 3
@@ -61,6 +62,7 @@ export async function loadMenu(restaurantId) {
     stopped: activeUntil(mi.stop_until),
     urgent: activeUntil(mi.urgent_until),
     ingredients: Array.isArray(mi.ingredients) ? mi.ingredients : [],
+    drinkNotes: mi.product_type === 'alcohol' ? drinkNotes(mi.nutritional_info) : '',
     // Роль блюда и время, когда его уместно предлагать, — ручная поправка
     // (миграция 20261026010000_cart_advice); пусто — определяет mealCore.
     role: mi.course_role || null,

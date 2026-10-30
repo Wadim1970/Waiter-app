@@ -124,7 +124,10 @@ export function menuForPrompt(digest) {
         it.dailyFlag === 'special' ? `спец дня от шефа${it.dailyNote ? `: ${it.dailyNote}` : ''}` : null,
       ].filter(Boolean)
       const price = it.price != null ? ` — ${Math.round(Number(it.price))} ₽` : ''
-      lines.push(`${n}. ${it.name}${price}${desc ? `. ${desc}` : ''}${ingr ? `. Состав: ${ingr}` : ''}${marks.length ? ` [${marks.join('; ')}]` : ''}`)
+      // У алкоголя «состав» — это ноты вкуса, свойства — отдельно.
+      const alco = it.productType === 'alcohol'
+      const notes = alco && it.drinkNotes ? `. ${it.drinkNotes}` : ''
+      lines.push(`${n}. ${it.name}${price}${desc ? `. ${desc}` : ''}${ingr ? `. ${alco ? 'Вкус' : 'Состав'}: ${ingr}` : ''}${notes}${marks.length ? ` [${marks.join('; ')}]` : ''}`)
     }
   }
   return { text: lines.join('\n'), byNum }
