@@ -92,10 +92,19 @@ export function assignmentsForDate(rows, dateStr) {
 
 const minutesBetween = (a, b) => Math.max(0, Math.round((new Date(b) - new Date(a)) / 60000))
 
+// Сколько блюдо ждали: от «ушло на кухню» до «готово». Отметку «готово»
+// могли поставить сильно позже (забыли нажать) — больше 3 часов не верим,
+// как и в отчёте кухни (kitchenCore.MAX_SANE_MIN).
+export function waitMinutes(sentAt, readyAt) {
+  if (!sentAt || !readyAt) return null
+  const min = (new Date(readyAt) - new Date(sentAt)) / 60000
+  return min >= 0 && min <= 180 ? Math.round(min) : null
+}
+
 // Полная посадка для истории стола. Входы — сырые строки БД одного стола.
 export function buildSession(session, ctx) {
   const {
-    orders = [], itemsByOrder = new Map(), modsByItem = new Map(), dishNames = new Map(), modifierNames = new Map(),
+    orders = [], itemsByOrder = new Map(), modsByItem = new Map(), dishNames = new Map(), dishNorms = new Map(), modifierNames = new Map(),
     calls = [], events = [], reviews = [], waiters = new Map(), assignedWaiterId = null, now = new Date(),
   } = ctx
   const end = session.ended_at || (session.is_active ? now.toISOString() : session.started_at)
@@ -117,6 +126,10 @@ export function buildSession(session, ctx) {
         modifiers: mods,
         comment: it.comment || null,
         status: it.status || null,
+        sentAt: it.sent_at || null,
+        readyAt: it.ready_at || null,
+        waitMin: waitMinutes(it.sent_at, it.ready_at),
+        normMin: dishNorms.get(it.item_id) ?? null,
       })
     }
   }

@@ -71,3 +71,41 @@ test('жалоба разобрана и снова открыта; чужой �
   assert.equal(r.summary.unresolved, 2)
   await assert.rejects(() => svc.resolveReview(R, { id: 5, resolved: true }), (e) => e.status === 404)
 })
+
+test('визит отзыва: только его посадка — гости по местам, заказ, ожидание блюд, вызовы', async () => {
+  const t = hall.deps.db.tables
+  t.menu_items = [{ id: 'd1', dish_name: 'Борщ', cook_time_min: 15 }, { id: 'd2', dish_name: 'Морс' }]
+  t.orders = [
+    { id: 'o1', table_id: T2, table_session_id: 's2', status: 'closed', created_at: '2026-10-25T09:05:00Z' },
+    { id: 'o0', table_id: T2, table_session_id: 'чужая', status: 'closed', created_at: '2026-10-25T07:00:00Z' },
+  ]
+  t.order_items = [
+    { id: 'i1', order_id: 'o1', item_id: 'd1', seat_number: 1, quantity: 1, unit_price: 400, status: 'served', sent_at: '2026-10-25T09:06:00Z', ready_at: '2026-10-25T09:31:00Z' },
+    { id: 'i2', order_id: 'o1', item_id: 'd2', seat_number: 2, quantity: 2, unit_price: 150, status: 'served', sent_at: '2026-10-25T09:06:00Z', ready_at: null },
+    { id: 'i0', order_id: 'o0', item_id: 'd2', seat_number: 1, quantity: 1, unit_price: 150, status: 'served' },
+  ]
+  t.order_guests = [{ order_id: 'o1', seat_number: 1, device_id: 'dev-anna' }, { order_id: 'o1', seat_number: 2, device_id: 'dev-x' }]
+  t.guests = [{ id: 'g1', name: 'Мария', phone: '89991234567', device_id: 'dev-old' }]
+  t.guest_devices = [{ device_id: 'dev-anna', guest_id: 'g1' }]
+  t.waiter_calls = [
+    { id: 'c1', table_id: T2, status: 'done', created_at: '2026-10-25T09:40:00Z', acknowledged_at: '2026-10-25T09:42:30Z', acknowledged_by: OLGA, reason: 'Счёт' },
+    { id: 'c0', table_id: T2, status: 'done', created_at: '2026-10-25T07:10:00Z', acknowledged_at: '2026-10-25T07:11:00Z' },
+  ]
+
+  const v = await svc.getReviewVisit(R, 2)
+  assert.equal(v.review.food, 2)
+  assert.equal(v.session.id, 's2')
+  assert.equal(v.session.guestCount, 3)
+  assert.equal(v.session.total, 700)
+  assert.deepEqual(v.session.waiter, { id: OLGA, name: 'Ольга Смирнова', inferred: true })
+  assert.deepEqual(v.session.items.map((i) => [i.name, i.waitMin, i.normMin]), [['Борщ', 25, 15], ['Морс', null, null]])
+  assert.deepEqual(v.session.calls.map((c) => [c.reason, c.reactionSec, c.acknowledgedBy]), [['Счёт', 150, 'Ольга Смирнова']])
+  assert.deepEqual(v.guests, [
+    { seat: 1, verified: true, guestId: 'g1', name: 'Мария', phone: '+79991234567' },
+    { seat: 2, verified: false, guestId: null, name: null, phone: null },
+  ])
+
+  const lost = await svc.getReviewVisit(R, 4) // стола № 9 нет
+  assert.equal(lost.session, null)
+  await assert.rejects(() => svc.getReviewVisit(R, 5), (e) => e.status === 404)
+})
