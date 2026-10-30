@@ -203,3 +203,23 @@ export function orderNumbers(order, sections) {
   const rest = sections.map((s) => s.name).filter((n) => !names.includes(n))
   return new Map([...names, ...rest].map((n, i) => [n, i + 1]))
 }
+
+// Картинка из браузера (data:URL или base64) → байты. Принимаем только
+// WebP, JPEG и PNG (проверяем по первым байтам, а не по подписи) и не
+// больше 700 КБ — браузер присылает уже уменьшенную.
+export const MAX_IMAGE_BYTES = 700 * 1024
+const IMAGE_KINDS = [
+  { type: 'image/webp', ext: 'webp', test: (b) => b.toString('ascii', 0, 4) === 'RIFF' && b.toString('ascii', 8, 12) === 'WEBP' },
+  { type: 'image/jpeg', ext: 'jpg', test: (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff },
+  { type: 'image/png', ext: 'png', test: (b) => b.toString('hex', 0, 8) === '89504e470d0a1a0a' },
+]
+
+export function decodeImage(data, what = 'Фото') {
+  const raw = String(data || '').replace(/^data:[^,]*,/, '')
+  if (!raw) throw bad(`${what}: файл пустой`)
+  const buf = Buffer.from(raw, 'base64')
+  if (buf.length > MAX_IMAGE_BYTES) throw bad(`${what} слишком большое — уменьшите его`)
+  const kind = IMAGE_KINDS.find((k) => buf.length > 12 && k.test(buf))
+  if (!kind) throw bad(`${what}: нужен файл JPG, PNG или WebP`)
+  return { buf, type: kind.type, ext: kind.ext }
+}

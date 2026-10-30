@@ -155,3 +155,24 @@ test('удалить блюдо; чужое — 404', async () => {
   assert.equal(hall.deps.db.tables.menu_items.some((r) => r.id === STEAK), false)
   await assert.rejects(() => svc.deleteDish(R, STEAK), (e) => e.status === 404)
 })
+
+test('фото с компьютера: проверка файла, загрузка в хранилище, адреса', async () => {
+  const saved = []
+  hall.deps.db.storage = {
+    from: (bucket) => ({
+      upload: async (path, buf, opts) => { saved.push({ bucket, path, size: buf.length, type: opts.contentType }); return { error: null } },
+      getPublicUrl: (path) => ({ data: { publicUrl: `https://supabase.restai.pro/storage/v1/object/public/${bucket}/${path}` } }),
+    }),
+  }
+  const webp = Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(4), Buffer.from('WEBPVP8 '), Buffer.alloc(20)]).toString('base64')
+  const jpeg = `data:image/jpeg;base64,${Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).toString('base64')}`
+  const r = await svc.uploadPhoto(R, { dishId: BORSCH, photo: webp, thumb: jpeg })
+  assert.match(r.imageUrl, new RegExp(`/menu-images/${R}/dishes/${BORSCH}_[0-9a-f]{8}\\.webp$`))
+  assert.match(r.thumbUrl, /_thumb\.jpg$/)
+  assert.deepEqual(saved.map((s) => s.type), ['image/webp', 'image/jpeg'])
+
+  const n = await svc.uploadPhoto(R, { photo: webp })
+  assert.match(n.imageUrl, /\/dishes\/new_/)
+  await assert.rejects(() => svc.uploadPhoto(R, { photo: Buffer.from('<svg/>').toString('base64') }), /JPG, PNG или WebP/)
+  await assert.rejects(() => svc.uploadPhoto(R, { photo: Buffer.alloc(800 * 1024, 1).toString('base64') }), /слишком большое/)
+})
