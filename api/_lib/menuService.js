@@ -2,9 +2,10 @@
 // menuCore.js. Пишем сразу так, чтобы меню совпадало у гостя (menu_section,
 // section_order) и у официанта (дерево разделов, section_id…).
 
+import crypto from 'node:crypto'
 import { deps, selectAll, selectIn, restaurantOf, groupBy, httpError } from './hallService.js'
 import {
-  dishView, dishFields, sharedOf, popularTwins, sectionsOf, orderNumbers, isPopular, norm,
+  dishView, dishFields, sharedOf, popularTwins, sectionsOf, orderNumbers, isPopular, norm, decodeImage,
   PRODUCT_TYPES, COURSE_ROLES, MEAL_TIMES, WEIGHT_UNITS,
 } from './menuCore.js'
 
@@ -302,4 +303,31 @@ async function dropEmptySubsection(restaurantId, name) {
     const { error: delErr } = await deps.db.from('menu_subsections').delete().eq('id', sub.id)
     if (delErr) throw delErr
   }
+}
+
+// Фото блюда с компьютера: браузер уже уменьшил его (крупное — для карточки,
+// миниатюра — для списка); кладём оба в хранилище, как и прежние фото меню:
+// menu-images/<ресторан>/dishes/<блюдо>_<хэш>.webp и …_thumb.webp. Хэш от
+// содержимого — новая картинка получает новый адрес, гость не увидит старую
+// из кэша. В меню ссылки попадут, когда блюдо сохранят.
+export const PHOTO_BUCKET = 'menu-images'
+
+export async function uploadPhoto(restaurantId, body) {
+  const photo = decodeImage(body.photo, 'Фото')
+  const thumb = body.thumb ? decodeImage(body.thumb, 'Миниатюра') : photo
+  const dish = /^[0-9a-f-]{36}$/i.test(String(body.dishId || '')) ? body.dishId : 'new'
+  const hash = crypto.createHash('sha1').update(photo.buf).digest('hex').slice(0, 8)
+  const base = `${restaurantId}/dishes/${dish}_${hash}`
+  const storage = deps.db.storage.from(PHOTO_BUCKET)
+  const urls = {}
+  for (const [key, img, suffix] of [['imageUrl', photo, ''], ['thumbUrl', thumb, '_thumb']]) {
+    const path = `${base}${suffix}.${img.ext}`
+    const { error } = await storage.upload(path, img.buf, { contentType: img.type, upsert: true, cacheControl: '31536000' })
+    if (error) {
+      console.error('menu photo upload failed:', error)
+      throw httpError(502, 'Хранилище фото не ответило — попробуйте ещё раз')
+    }
+    urls[key] = storage.getPublicUrl(path).data.publicUrl
+  }
+  return urls
 }
