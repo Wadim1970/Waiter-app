@@ -105,17 +105,19 @@ export async function loadDay(tableIds, day, { withNames = false } = {}) {
   const orders = await selectIn('orders', 'id, table_id, table_session_id, status, created_at', 'table_id', tableIds,
     (q) => q.gte('created_at', lookback).lt('created_at', day.to.toISOString()))
   const orderIds = orders.map((o) => o.id)
-  const items = await selectIn('order_items', 'id, order_id, item_id, seat_number, quantity, unit_price, status, comment, sent_at', 'order_id', orderIds)
+  const items = await selectIn('order_items', 'id, order_id, item_id, seat_number, quantity, unit_price, status, comment, sent_at, ready_at', 'order_id', orderIds)
   const mods = await selectIn('order_item_modifiers', 'order_item_id, modifier_id, price_delta', 'order_item_id', items.map((i) => i.id))
   const calls = await selectIn('waiter_calls', 'id, table_id, status, created_at, acknowledged_at, acknowledged_by, reason, kind', 'table_id', tableIds,
     (q) => q.gte('created_at', lookback).lt('created_at', day.to.toISOString()))
   const events = await selectIn('ai_suggestion_events', 'order_id, waiter_id, outcome', 'order_id', orderIds)
 
   let dishNames = new Map()
+  let dishNorms = new Map()
   let modifierNames = new Map()
   if (withNames) {
-    const dishes = await selectIn('menu_items', 'id, dish_name', 'id', items.map((i) => i.item_id))
+    const dishes = await selectIn('menu_items', 'id, dish_name, cook_time_min', 'id', items.map((i) => i.item_id))
     dishNames = new Map(dishes.map((d) => [d.id, d.dish_name]))
+    dishNorms = new Map(dishes.filter((d) => d.cook_time_min > 0).map((d) => [d.id, d.cook_time_min]))
     const modRows = await selectIn('modifiers', 'id, name', 'id', mods.map((m) => m.modifier_id))
     modifierNames = new Map(modRows.map((m) => [m.id, m.name]))
   }
@@ -125,7 +127,7 @@ export async function loadDay(tableIds, day, { withNames = false } = {}) {
     itemsByOrder: groupBy(items, 'order_id'),
     modsByItem: groupBy(mods, 'order_item_id'),
     eventsByOrder: groupBy(events, 'order_id'),
-    dishNames, modifierNames,
+    dishNames, dishNorms, modifierNames,
   }
 }
 
@@ -139,6 +141,7 @@ export function sessionContext(session, raw, extra) {
     itemsByOrder: raw.itemsByOrder,
     modsByItem: raw.modsByItem,
     dishNames: raw.dishNames,
+    dishNorms: raw.dishNorms,
     modifierNames: raw.modifierNames,
     calls: raw.calls.filter((c) => c.table_id === session.table_id && inWindow(c.created_at, session, { beforeMin: 0, now })),
     events: orders.flatMap((o) => raw.eventsByOrder.get(o.id) || []),

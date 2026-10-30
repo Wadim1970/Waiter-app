@@ -64,12 +64,16 @@ export function byDay(reviews, dates) {
   for (const r of reviews) m.get(r.date)?.push(r)
   return dates.map((date) => {
     const list = m.get(date)
+    const food = list.map((r) => r.food).filter((v) => v != null)
+    const service = list.map((r) => r.service).filter((v) => v != null)
     return {
       date,
       reviews: list.length,
       complaints: list.filter((r) => r.complaint).length,
-      foodAvg: avg(list.map((r) => r.food).filter((v) => v != null)),
-      serviceAvg: avg(list.map((r) => r.service).filter((v) => v != null)),
+      foodAvg: avg(food),
+      foodCount: food.length,
+      serviceAvg: avg(service),
+      serviceCount: service.length,
     }
   })
 }
