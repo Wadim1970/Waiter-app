@@ -12,6 +12,7 @@
 
 import crypto from 'node:crypto'
 import { norm, WEIGHT_UNITS, parseWeight } from './menuCore.js'
+import { GRAPE_KEY, VINTAGE_KEY } from './drinkProfile.js'
 
 export const STATUSES = ['draft', 'confirmed', 'rejected']
 export const SOURCES = ['menu', 'ai', 'manual']
@@ -150,6 +151,34 @@ export const FACT_TYPES = {
       return good({ item_ids: ids })
     },
   },
+  // Вино: сорта винограда (купаж — несколько) и год урожая. Берутся из меню (поля «Сорт винограда»
+  // и «Год производства»); подтверждает шеф/сомелье. Вкус и аромат вина — длинные описания,
+  // для вопросов с вариантами ответа не годятся и фактами не делаются.
+  wine_grape: {
+    label: 'Сорта винограда', na: false, ai: false, batch: false, menu: true,
+    check(v) {
+      if (!Array.isArray(v.grapes)) return bad('Нужен список сортов винограда')
+      const seen = new Set()
+      const grapes = []
+      for (const g of v.grapes) {
+        const name = text(g, 60)
+        if (!name || seen.has(norm(name))) continue
+        seen.add(norm(name))
+        grapes.push(name)
+      }
+      if (!grapes.length) return bad('Укажите хотя бы один сорт')
+      if (grapes.length > 12) return bad('Не больше 12 сортов')
+      return good({ grapes })
+    },
+  },
+  wine_vintage: {
+    label: 'Год урожая', na: false, ai: false, batch: false, menu: true,
+    check(v) {
+      const year = Number(v.year)
+      if (!Number.isInteger(year) || year < 1900 || year > 2100) return bad('Год — целое число от 1900 до 2100')
+      return good({ year })
+    },
+  },
   flavor_profile: {
     label: 'Вкусовой профиль', na: true, ai: true, batch: true, menu: false,
     check(v) {
@@ -214,6 +243,16 @@ export function deriveMenuFacts(dishRow, modifierGroups = []) {
     const r = validateFact('guest_description', { text: dishRow.description })
     if (r.ok) out.guest_description = r.value
   }
+  // Вино: сорта и год — из полей напитка (nutritional_info).
+  const info = dishRow.nutritional_info && typeof dishRow.nutritional_info === 'object' && !Array.isArray(dishRow.nutritional_info) ? dishRow.nutritional_info : {}
+  if (info[GRAPE_KEY] != null && String(info[GRAPE_KEY]).trim()) {
+    const r = validateFact('wine_grape', { grapes: String(info[GRAPE_KEY]).split(/[,;/]+/) })
+    if (r.ok) out.wine_grape = r.value
+  }
+  if (info[VINTAGE_KEY] != null && info[VINTAGE_KEY] !== '') {
+    const r = validateFact('wine_vintage', { year: Number(info[VINTAGE_KEY]) })
+    if (r.ok) out.wine_vintage = r.value
+  }
   const mods = []
   for (const g of modifierGroups) for (const o of g.options || []) mods.push(`${g.name}: ${o.name}`)
   if (mods.length) {
@@ -228,6 +267,7 @@ export function deriveMenuFacts(dishRow, modifierGroups = []) {
 export function menuBasis(type, value) {
   if (!value || value.na) return null
   if (type === 'ingredients') return value.items.map((i) => norm(i.name)).sort()
+  if (type === 'wine_grape') return value.grapes.map((g) => norm(g)).sort()
   return value
 }
 export const menuHash = (type, value) => (value ? hashOf(menuBasis(type, value)) : null)

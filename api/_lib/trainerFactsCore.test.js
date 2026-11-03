@@ -179,3 +179,51 @@ test('разбор ответа ИИ: валидное берём, мусор и
   assert.equal(parseAiDrafts('не json'), null)
   assert.equal(parseAiDrafts('[1,2]'), null)
 })
+
+// ── вино: сорта винограда и год урожая ──
+const wine = (extra = {}) => ({
+  id: 'w1', dish_name: 'Chateau Cantemerle', menu_section: 'Вино', product_type: 'alcohol', weight_g: '750 мл',
+  ingredients: ['Мягкий', 'живой вкус с шелковистой текстурой'], // у вин это обрывки описания, а не состав
+  nutritional_info: { 'Сорт винограда': 'Каберне Совиньон, Мерло; Каберне фран', 'Год производства': 2021 }, ...extra,
+})
+
+test('сорта винограда: список, дубли убираются, пустой нельзя', () => {
+  assert.deepEqual(validateFact('wine_grape', { grapes: ['Мерло', ' мерло ', 'Каберне фран'] }), { ok: true, value: { grapes: ['Мерло', 'Каберне фран'] } })
+  assert.equal(validateFact('wine_grape', { grapes: [] }).ok, false)
+  assert.equal(validateFact('wine_grape', { grapes: ['  '] }).ok, false)
+  assert.equal(validateFact('wine_grape', { grapes: 'Мерло' }).ok, false)
+  assert.equal(validateFact('wine_grape', { na: true }).ok, false)
+})
+
+test('год урожая: целое число 1900–2100', () => {
+  assert.deepEqual(validateFact('wine_vintage', { year: '2021' }), { ok: true, value: { year: 2021 } })
+  for (const bad of [1850, 2300, 2020.5, 'abc', null]) assert.equal(validateFact('wine_vintage', { year: bad }).ok, false, String(bad))
+})
+
+test('факты вина берутся из полей напитка; описание вкуса («состав» вина) фактами сорта/года не становится', () => {
+  const f = deriveMenuFacts(wine())
+  assert.deepEqual(f.wine_grape, { grapes: ['Каберне Совиньон', 'Мерло', 'Каберне фран'] })
+  assert.deepEqual(f.wine_vintage, { year: 2021 })
+  const none = deriveMenuFacts(wine({ nutritional_info: { 'Крепость': '13' } }))
+  assert.equal('wine_grape' in none || 'wine_vintage' in none, false)
+  assert.equal('wine_vintage' in deriveMenuFacts(wine({ nutritional_info: { 'Год производства': 'н/в' } })), false)
+})
+
+test('синхронизация: факты вина — черновики из меню; изменился год → подтверждённый факт в draft', () => {
+  const first = planSync(wine(), [], {}).inserts
+  assert.ok(first.some((i) => i.fact_type === 'wine_grape') && first.some((i) => i.fact_type === 'wine_vintage'))
+  const existing = Object.fromEntries(first.map((i, n) => [i.fact_type, { id: `f${n}`, status: 'confirmed', source: 'menu', confirmed_by: 'Шеф', ...i }]))
+  assert.deepEqual(planSync(wine(), [], existing), { inserts: [], updates: [] })
+  const plan = planSync(wine({ nutritional_info: { 'Сорт винограда': 'Каберне Совиньон, Мерло; Каберне фран', 'Год производства': 2022 } }), [], existing)
+  assert.deepEqual(plan.updates.map((u) => [u.fact_type, u.fields.status]), [['wine_vintage', 'draft']])
+  // порядок и регистр сортов — не изменение меню
+  const same = planSync(wine({ nutritional_info: { 'Сорт винограда': 'каберне фран, МЕРЛО, Каберне Совиньон', 'Год производства': 2021 } }), [], existing)
+  assert.deepEqual(same, { inserts: [], updates: [] })
+})
+
+test('ИИ и пакетное подтверждение вин не касаются', () => {
+  for (const t of ['wine_grape', 'wine_vintage']) {
+    assert.equal(AI_FACT_TYPES.includes(t), false)
+    assert.equal(BATCH_FACT_TYPES.includes(t), false)
+  }
+})

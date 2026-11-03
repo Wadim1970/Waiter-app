@@ -170,6 +170,21 @@ test('винная пара: только алкоголь этого ресто
   assert.deepEqual(factOf(STEAK, 'wine_pairing').value, { item_ids: [WINE] })
 })
 
+test('синхронизация создаёт факты вина (сорт, год); подтверждаются поштучно и сбрасываются при смене года', async () => {
+  t.menu_items.find((m) => m.id === WINE).nutritional_info = { 'Сорт винограда': 'Мальбек', 'Год производства': 2020 }
+  await svc.syncFacts(R)
+  assert.deepEqual(factOf(WINE, 'wine_grape').value, { grapes: ['Мальбек'] })
+  assert.deepEqual(factOf(WINE, 'wine_vintage').value, { year: 2020 })
+  assert.equal(factOf(WINE, 'wine_vintage').status, 'draft')
+  await svc.saveFact(R, { dishId: WINE, factType: 'wine_vintage', value: { year: 2020 }, confirm: true, actor: 'Сомелье' })
+  assert.equal(factOf(WINE, 'wine_vintage').status, 'confirmed')
+  const e = await err(svc.batchConfirm(R, { section: 'Вино', factType: 'wine_vintage', actor: 'Сомелье' }))
+  assert.equal(e.status, 400) // пакетно нельзя
+  t.menu_items.find((m) => m.id === WINE).nutritional_info = { 'Сорт винограда': 'Мальбек', 'Год производства': 2021 }
+  await svc.syncFacts(R)
+  assert.deepEqual([factOf(WINE, 'wine_vintage').status, factOf(WINE, 'wine_vintage').review_note], ['draft', 'menu_changed'])
+})
+
 test('список блюд: готовность по уровням и сводка по разделам', async () => {
   await svc.syncFacts(R)
   await svc.saveFact(R, { dishId: CAESAR, factType: 'ingredients', value: { items: [{ name: 'Курица', is_key: true }] }, confirm: true, actor: 'Шеф Иван' })
